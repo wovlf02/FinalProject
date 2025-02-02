@@ -35,4 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
-.env
+
+### JTE ###
+/jte-classes/
+src/main/resources/application.yml

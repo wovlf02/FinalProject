@@ -1,13 +1,16 @@
 package com.studymate.back.controller;
 
-import com.studymate.back.dto.AuthRequest;
+import com.studymate.back.dto.*;
 import com.studymate.back.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 인증 관련 API 컨트롤러
+ * 회원가입, 로그인, 이메일 인증 관련 API 제공
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -16,49 +19,32 @@ public class AuthController {
 
     private final AuthService authService;
 
-    /**
-     * 아이디 중복확인
-     * @param username 아이디
-     * @return 중복확인 완료 결과값
-     */
-    @GetMapping("/check-username")
-    public ResponseEntity<Boolean> checkUsernameAvailability(@RequestParam String username) {
-        boolean available = authService.checkUsernameAvailability(username);
-        return ResponseEntity.ok(available);
+    @PostMapping("/check-username")
+    public ResponseEntity<UsernameCheckResponse> checkUsername(@RequestBody UsernameCheckRequest request) {
+        boolean isAvailable = authService.checkUsername(request.getUsername());
+        return ResponseEntity.ok(new UsernameCheckResponse(isAvailable));
     }
 
-    /**
-     * 이메일 인증번호 발송 API
-     * @param email 이메일
-     * @return 인증번호 발송 메시지
-     */
-    @PostMapping("/send-email")
-    public ResponseEntity<String> sendVerificationEmail(@RequestParam String email) {
-        authService.sendVerificationEmail(email);
-        return ResponseEntity.ok("이메일 인증번호가 발송되었습니다.");
+    @PostMapping("/send-email-code")
+    public ResponseEntity<EmailVerificationResponse> sendVerificationEmail(@RequestBody EmailVerificationRequest request) {
+        authService.sendVerificationEmail(request.getEmail());
+        return ResponseEntity.ok(new EmailVerificationResponse("인증번호가 이메일로 전송되었습니다."));
     }
 
-    /**
-     * 이메일 인증번호 검증 API
-     * @param email 이메일
-     * @param code 인증번호
-     * @return 인증번호 검증 결과값
-     */
-    @PostMapping("/verify-email")
-    public ResponseEntity<Boolean> verifyEmail(@RequestParam String email, @RequestParam String code) {
-        boolean verified = authService.verifyEmail(email, code);
-        return ResponseEntity.ok(verified);
+    @PostMapping("/verify-email-code")
+    public ResponseEntity<VerifyEmailResponse> verifyEmail(@RequestBody EmailVerificationRequest request) {
+        authService.verifyEmail(request);
+        return ResponseEntity.ok(new VerifyEmailResponse("이메일 인증이 완료되었습니다."));
     }
 
-    /**
-     * 회원가입 API -> 아이디 중복확인, 이메일 인증 성공해야 가능
-     * @param request 회원가입 요청 데이터
-     * @return 회원가입 완료 메시지
-     */
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody AuthRequest.RegisterRequest request) {
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
         authService.register(request);
-        return ResponseEntity.ok("회원가입이 완료되었습니다.");
+        return ResponseEntity.ok(new RegisterResponse("회원가입이 완료되었습니다."));
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
 }
