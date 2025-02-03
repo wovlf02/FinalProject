@@ -8,9 +8,9 @@ import com.studymate.back.dto.LoginResponse;
 import com.studymate.back.entity.User;
 import com.studymate.back.repository.UserRepository;
 import com.studymate.back.utils.EmailUtil;
-import com.studymate.back.config.RedisConfig;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
