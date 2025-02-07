@@ -27,8 +27,8 @@ const RegisterScreen = () => {
     // 아이디 중복 확인
     const handleUserIdCheck = async () => {
         try{
-            const response = await api.post('/check-username', {username});
-            if(response.data.success){
+            const response = await api.post('/auth/check-username', {username});
+            if(!response.data.success){
                 setIsUsernameValid(true);
                 Alert.alert('중복 확인', '사용 가능한 아이디입니다.');
             } else {
@@ -66,23 +66,28 @@ const RegisterScreen = () => {
 
     // 인증번호 발송
     const sendEmailVerificationCode = async () => {
-        if(email && emailDomain){
-            try{
-                const response = await api.post('/send-email-verification-code', {email});
-                if(response.data.success){
-                    setIsAuthSent(true);
-                    setTimeLeft(300);
+        if (email && emailDomain) {
+            // 이메일 주소 조합
+            const fullEmail = `${email}@${emailDomain}`;
+
+            try {
+                const response = await api.post('/auth/send-email-code', { email: fullEmail });
+
+                if (!response.data.success) {
+                    setIsAuthSent(true); // 인증번호 발송 상태 설정
+                    setTimeLeft(300); // 타이머 300초 (5분) 설정
                     Alert.alert('인증번호 발송', response.data.message);
                 } else {
                     Alert.alert('오류', response.data.message);
                 }
-            } catch(error){
+            } catch (error) {
                 Alert.alert('오류', '인증번호 발송 중 문제가 발생했습니다.');
             }
         } else {
             Alert.alert('오류', '이메일을 올바르게 입력해주세요.');
         }
-    }
+    };
+
 
     // 이메일 도메인 선택 처리
     const handleDomainChange = (value) => {
@@ -93,7 +98,7 @@ const RegisterScreen = () => {
             setIsCustomDomain(false);
             setEmailDomain(value);
         }
-    }
+    };
 
     // 타이머 동작
     useEffect(() => {
@@ -105,17 +110,24 @@ const RegisterScreen = () => {
 
     // 인증번호 확인
     const checkEmailVerificationCode = async () => {
-        try{
-            const response = await api.post('/verify-email-verification-code', {email, code: authInput});
-            if(response.data.success){
+        try {
+            const fullEmail = `${email}@${emailDomain}`; // 이메일 주소 조합
+            const response = await api.post('/auth/verify-email-code', {
+                email: fullEmail,
+                code: authInput,
+            });
+
+            if (!response.data.success) {
                 Alert.alert('인증 성공', '인증이 완료되었습니다.');
             } else {
                 Alert.alert('인증 실패', '인증번호가 일치하지 않습니다.');
             }
-        } catch(error){
+        } catch (error) {
+            console.error('인증번호 확인 오류:', error);
             Alert.alert('오류', '인증번호 확인 중 문제가 발생했습니다.');
         }
-    }
+    };
+
 
     // 회원가입 처리
     const handleRegister = async () => {
@@ -127,7 +139,7 @@ const RegisterScreen = () => {
             email: `${email}@${emailDomain}`,
         };
         try{
-            const response = await api.post('/register', userData);
+            const response = await api.post('/auth/register', userData);
             if(response.data.success){
                 Alert.alert('회원가입 성공', response.data.message, [
                     {
@@ -141,7 +153,7 @@ const RegisterScreen = () => {
         } catch(error){
             Alert.alert('오류', '회원가입 중 문제가 발생했습니다.')
         }
-    }
+    };
 
     // 회원가입 버튼 활성화 여부 확인
     useEffect(() => {

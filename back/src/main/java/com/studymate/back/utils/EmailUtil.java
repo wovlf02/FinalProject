@@ -3,10 +3,12 @@ package com.studymate.back.utils;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Random;
 
 /**
@@ -17,6 +19,12 @@ import java.util.Random;
 public class EmailUtil {
 
     private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}") // 발신자 이메일을 yml에서 가져오기
+    private String fromEmail;
+
+    @Value("${spring.mail.sender-name:StudyMate}") // 발신자 이름 (기본값: StudyMate)
+    private String senderName;
 
     /**
      * 인증번호 생성 메서드
@@ -33,11 +41,12 @@ public class EmailUtil {
      * @param verificationCode 이메일 인증번호
      * @throws MessagingException 이메일 전송 실패 시 예외 발생
      */
-    public void sendVerificationEmail(String recipientEmail, String verificationCode) throws MessagingException {
+    public void sendVerificationEmail(String recipientEmail, String verificationCode) throws MessagingException, UnsupportedEncodingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
 
         helper.setTo(recipientEmail);
+        helper.setFrom(fromEmail, senderName); // yml에서 가져온 발신자 이메일과 이름 설정
         helper.setSubject("StudyMate 이메일 인증번호입니다.");
         helper.setText(buildEmailContent(verificationCode), true);
 

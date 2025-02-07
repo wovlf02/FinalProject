@@ -1,5 +1,6 @@
 package com.studymate.back.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,6 +14,18 @@ import java.util.Properties;
 @Configuration
 public class EmailConfig {
 
+    @Value("${spring.mail.host}")
+    private String mailHost;
+
+    @Value("${spring.mail.port}")
+    private int mailPort;
+
+    @Value("${spring.mail.username}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password}")
+    private String mailPassword;
+
     /**
      * JavaMailSender Bean 설정
      * -> Gmail SMTP를 사용하여 이메일 전송
@@ -22,26 +35,20 @@ public class EmailConfig {
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
-        // 환경 변수에서 값 가져오기 (기본값 설정)
-        String host = System.getenv("MAIL_HOST") != null ? System.getenv("MAIL_HOST") : "smtp.gmail.com";
-        int port = System.getenv("MAIL_PORT") != null ? Integer.parseInt(System.getenv("MAIL_PORT")) : 587;
-        String username = System.getenv("MAIL_USERNAME") != null ? System.getenv("MAIL_USERNAME") : "";
-        String password = System.getenv("MAIL_PASSWORD") != null ? System.getenv("MAIL_PASSWORD") : "";
-
         // SMTP 서버 설정
-        mailSender.setHost(host);
-        mailSender.setPort(port);
-        mailSender.setUsername(username);
-        mailSender.setPassword(password);
+        mailSender.setHost(mailHost);
+        mailSender.setPort(mailPort);
+        mailSender.setUsername(mailUsername);
+        mailSender.setPassword(mailPassword);
 
         // SMTP 프로퍼티 설정
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.smtp.ssl.enable", "true"); // SSL 활성화
-        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
-        props.put("mail.debug", "true"); // 디버깅 로그 활성화
+        props.put("mail.smtp.starttls.enable", "false"); // STARTTLS 비활성화 (SSL 사용 시 불필요)
+        props.put("mail.smtp.ssl.enable", "true");       // SSL 활성화
+        props.put("mail.smtp.ssl.trust", "smtp.naver.com"); // Gmail SMTP 신뢰
+        props.put("mail.debug", "true");                // 디버깅 로그 활성화
 
         return mailSender;
     }
