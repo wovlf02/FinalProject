@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import api from '../../api/api'; // 서버 API 호출 파일 import
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 const LoginScreen = ({ navigation }) => {
     const [username, setUsername] = useState('');
@@ -11,10 +12,15 @@ const LoginScreen = ({ navigation }) => {
     const handleLogin = async () => {
         try {
             const response = await api.post('/auth/login', { username, password });
+
             if (response.status === 200) {
-                Alert.alert('로그인 성공', '환영합니다!', [
-                    { text: '확인', onPress: () => navigation.navigate('Home') },
-                ]);
+                const { accessToken, refreshToken, username, email, name } = response.data;
+
+                // 🔒 보안 저장소에 Refresh Token 저장
+                await EncryptedStorage.setItem('refreshToken', refreshToken);
+
+                // 🔄 홈 화면으로 이동하며 사용자 데이터 전달
+                navigation.navigate('Home', { username, email, name, accessToken });
             }
         } catch (error) {
             console.error(error);

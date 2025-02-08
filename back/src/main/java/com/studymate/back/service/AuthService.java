@@ -134,5 +134,19 @@ public class AuthService {
         return new UsernameFindResponse(true, user.getUsername(), "아이디 찾기에 성공했습니다.");
     }
 
+    public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
+        // 아이디로 사용자 조회
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
+        // 새 비밀번호 암호화
+        String encryptedPassword = passwordEncoder.encode(request.getNewPassword());
+
+        // 사용자 비밀번호 업데이트
+        user.setPassword(encryptedPassword);
+        userRepository.save(user);
+
+        // 성공 응답 반환
+        return new ResetPasswordResponse(true, "비밀번호가 성공적으로 변경되었습니다.");
+    }
 }

@@ -42,9 +42,12 @@ const ResetPasswordScreen = ({ route, navigation }) => {
         }
 
         try {
-            const response = await api.post('/auth/reset-password', { userId, password });
+            const response = await api.post('/auth/reset-password', {
+                username: userId,
+                newPassword: password
+            });
             if (response.data.success) {
-                Alert.alert('성공', '비밀번호가 성공적으로 변경되었습니다.', [
+                Alert.alert('성공', response.data.message, [
                     { text: '확인', onPress: () => navigation.navigate('Login') },
                 ]);
             } else {
