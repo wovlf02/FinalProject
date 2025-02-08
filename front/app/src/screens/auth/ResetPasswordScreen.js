@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Dimensions, Image } from 'react-native';
 import api from '../../api/api';
 
 const { width, height } = Dimensions.get('window');
@@ -31,15 +31,18 @@ const ResetPasswordScreen = ({ route, navigation }) => {
         setPasswordConfirm(value);
     };
 
+    // 비밀번호 일치 여부 확인
+    const isPasswordMatching = password === passwordConfirm && passwordConfirm.length > 0;
+
     // 비밀번호 재설정 API 호출
     const handleResetPassword = async () => {
-        if (password !== passwordConfirm) {
+        if (!isPasswordMatching) {
             Alert.alert('오류', '비밀번호가 일치하지 않습니다.');
             return;
         }
 
         try {
-            const response = await api.post('/reset-password', { userId, password });
+            const response = await api.post('/auth/reset-password', { userId, password });
             if (response.data.success) {
                 Alert.alert('성공', '비밀번호가 성공적으로 변경되었습니다.', [
                     { text: '확인', onPress: () => navigation.navigate('Login') },
@@ -86,13 +89,22 @@ const ResetPasswordScreen = ({ route, navigation }) => {
             </Text>
 
             {/* 비밀번호 재입력 */}
-            <TextInput
-                style={styles.input}
-                placeholder="비밀번호 확인"
-                secureTextEntry
-                value={passwordConfirm}
-                onChangeText={handlePasswordConfirmChange}
-            />
+            <View style={styles.inputContainer}>
+                <TextInput
+                    style={styles.inputWithIcon}
+                    placeholder="비밀번호 확인"
+                    secureTextEntry
+                    value={passwordConfirm}
+                    onChangeText={handlePasswordConfirmChange}
+                />
+                {/* 일치 여부 아이콘 */}
+                {passwordConfirm.length > 0 && (
+                    <Image
+                        source={isPasswordMatching ? require('../../assets/check.png') : require('../../assets/x.png')}
+                        style={styles.icon}
+                    />
+                )}
+            </View>
 
             {/* 비밀번호 재설정 버튼 */}
             <TouchableOpacity style={styles.submitButton} onPress={handleResetPassword}>
@@ -131,6 +143,26 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         paddingHorizontal: 15,
         marginBottom: 20,
+    },
+    inputContainer: {
+        position: 'relative',
+        width: '100%',
+        marginBottom: 20,
+    },
+    inputWithIcon: {
+        width: '100%',
+        height: 50,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        paddingRight: 40, // 아이콘 공간 확보
+    },
+    icon: {
+        position: 'absolute',
+        right: 10,
+        top: 13, // 아이콘을 TextInput 중앙에 맞춤
+        width: 24,
+        height: 24,
     },
     strengthContainer: {
         width: '100%',

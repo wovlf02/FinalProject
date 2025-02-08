@@ -2,8 +2,10 @@ package com.studymate.back.controller;
 
 import com.studymate.back.dto.*;
 import com.studymate.back.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,5 +48,20 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    /**
+     * 아이디 찾기 API
+     * @param request UsernameFindRequest (요청 DTO)
+     * @return UsernameFindResponse (응답 DTO)
+     */
+    @PostMapping("/find-username")
+    public ResponseEntity<UsernameFindResponse> findUsername(@RequestBody UsernameFindRequest request) {
+        try {
+            UsernameFindResponse response = authService.findUsername(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new UsernameFindResponse(false, null, e.getMessage()));
+        }
     }
 }

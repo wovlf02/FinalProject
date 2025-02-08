@@ -1,10 +1,7 @@
 package com.studymate.back.service;
 
 import com.studymate.back.config.JwtProvider;
-import com.studymate.back.dto.EmailVerificationRequest;
-import com.studymate.back.dto.LoginRequest;
-import com.studymate.back.dto.RegisterRequest;
-import com.studymate.back.dto.LoginResponse;
+import com.studymate.back.dto.*;
 import com.studymate.back.entity.User;
 import com.studymate.back.repository.UserRepository;
 import com.studymate.back.utils.EmailUtil;
@@ -73,23 +70,22 @@ public class AuthService {
     /**
      * 회원가입 메서드
      * -> 이메일 인증이 완료된 경우에만 회원가입 가능
+     * -> 아이디 중복 확인, 입력값 유효성 검사 추가
      * -> 비밀번호는 BCrypt 암호화 후 저장
+     * -> 프론트에서 아이디 중복확인, 이메일 인증, 빈칸 여부 모두 확인하고 모든 절차가 완료되었을 경우에만 회원가입 버튼이 활성화되기에 서버에서는 별도로 체크하지 않음
      * @param request 회원가입 요청 DTO
      */
     public void register(RegisterRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("이메일 인증이 완료되지 않았습니다."));
-
-        if(!user.isEmailVerified()) {
-            throw new IllegalArgumentException("이메일 인증 후 회원가입을 완료할 수 있습니다.");
-        }
-
+        // 회원 정보 저장
+        User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setName(request.getName());
         user.setPhone(request.getPhone());
+        user.setEmail(request.getEmail());
         userRepository.save(user);
     }
+
 
     /**
      * 로그인 메서드
@@ -123,4 +119,20 @@ public class AuthService {
         // 로그인 성공 시 Access Token, Refresh Token, 사용자 정보 반환
         return new LoginResponse(accessToken, refreshToken, user.getUsername(), user.getEmail(), user.getName());
     }
+
+    /**
+     * 아이디 찾기 메서드
+     * @param request UsernameFindRequest (요청 DTO)
+     * @return UsernameFindResponse (응답 DTO)
+     */
+    public UsernameFindResponse findUsername(UsernameFindRequest request) {
+        // 이메일로 아이디 검색
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("해당 이메일로 가입된 사용자를 찾을 수 없습니다."));
+
+        // 응답 생성
+        return new UsernameFindResponse(true, user.getUsername(), "아이디 찾기에 성공했습니다.");
+    }
+
+
 }

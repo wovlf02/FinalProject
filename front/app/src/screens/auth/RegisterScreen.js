@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Dimensions, ScrollView } from 'react-native';
+import {View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Dimensions, ScrollView, Image} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import api from "../../api/api";
@@ -140,12 +140,12 @@ const RegisterScreen = () => {
         };
         try{
             const response = await api.post('/auth/register', userData);
-            if(response.data.success){
+            if(!response.data.success){
                 Alert.alert('회원가입 성공', response.data.message, [
                     {
                         text: '확인',
                         onPress: () => navigation.navigate('Login'),
-                    }
+                    },
                 ]);
             } else {
                 Alert.alert('회원가입 실패', response.data.message);
@@ -189,9 +189,14 @@ const RegisterScreen = () => {
                 />
                 {/* 체크/엑스 표시 */}
                 {isUsernameValid !== null && (
-                    <Text style={[styles.validationIconId, isUsernameValid ? styles.iconSuccess : styles.iconError]}>
-                        {isUsernameValid ? '✔︎' : '✖︎'}
-                    </Text>
+                    <Image
+                        source={
+                            isUsernameValid
+                                ? require('../../assets/check.png')
+                                : require('../../assets/x.png')
+                        }
+                        style={styles.idValidationIcon}
+                    />
                 )}
                 {/* 중복확인 버튼 */}
                 <TouchableOpacity style={styles.checkButtonInline} onPress={handleUserIdCheck}>
@@ -222,10 +227,16 @@ const RegisterScreen = () => {
                     onChangeText={handlePasswordConfirmChange}
                 />
                 {isPasswordMatch !== null && (
-                    <Text style={[styles.validationIconPassword, isPasswordMatch ? styles.iconSuccess : styles.iconError]}>
-                        {isPasswordMatch ? '✔' : '✘'}
-                    </Text>
+                    <Image
+                        source={
+                            isPasswordMatch
+                                ? require('../../assets/check.png')
+                                : require('../../assets/x.png')
+                        }
+                        style={styles.passwordValidationIcon}
+                    />
                 )}
+
             </View>
 
             {/* 이름 입력 */}
@@ -257,7 +268,7 @@ const RegisterScreen = () => {
                 {isCustomDomain ? (
                     <TextInput
                         style={styles.emailInput}
-                        placeholder=''
+                        placeholder=""
                         value={emailDomain}
                         onChangeText={setEmailDomain}
                     />
@@ -356,6 +367,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: height * 0.02,
         width: '100%',
+    },
+    idValidationIcon: {
+        position: 'absolute',
+        right: 118,
+        top: 16,
+        width: 24,
+        height: 24,
+    },
+    passwordValidationIcon: {
+        position: 'absolute',
+        right: 17,
+        top: 16,
+        width: 24,
+        height: 24,
     },
     emailInput: {
         flex: 3,

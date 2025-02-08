@@ -35,8 +35,8 @@ const FindAccountScreen = ({ navigation }) => {
             return;
         }
         try {
-            const response = await api.post('/send-email-verification-code', { email: fullEmail });
-            if (response.data.success) {
+            const response = await api.post('/auth/send-email-code', { email: fullEmail });
+            if (!response.data.success) {
                 Alert.alert('인증번호 발송', '인증번호가 이메일로 전송되었습니다.');
                 setIsAuthSent(true);
                 startTimer();
@@ -50,8 +50,8 @@ const FindAccountScreen = ({ navigation }) => {
 
     const verifyAuthCode = async () => {
         try {
-            const response = await api.post('/verify-email-verification-code', { email: fullEmail, code: authCode });
-            if (response.data.success) {
+            const response = await api.post('/auth/verify-email-code', { email: fullEmail, code: authCode });
+            if (!response.data.success) {
                 Alert.alert('인증 성공', '인증이 완료되었습니다.');
                 setIsAuthVerified(true);
             } else {
@@ -64,10 +64,17 @@ const FindAccountScreen = ({ navigation }) => {
 
     const handleFindUsername = async () => {
         try {
-            const response = await api.post('/find-username', { email: fullEmail });
+            const response = await api.post('/auth/find-username', { email: fullEmail });
             if (response.data.success) {
                 setUsername(response.data.username);
-                Alert.alert('아이디 찾기 성공', `회원님의 아이디는 "${response.data.username}"입니다.`);
+                Alert.alert('아이디 찾기 성공', `회원님의 아이디는 "${response.data.username}"입니다.`, [
+                    {
+                        text: '확인',
+                        onPress: () => {
+                            navigation.navigate('Login');
+                        },
+                    },
+                ]);
             } else {
                 Alert.alert('아이디 찾기 실패', response.data.message || '아이디를 찾을 수 없습니다.');
             }
@@ -154,20 +161,28 @@ const FindAccountScreen = ({ navigation }) => {
                     <TouchableOpacity style={styles.authButton} onPress={sendAuthCode}>
                         <Text style={styles.buttonText}>인증번호 발송</Text>
                     </TouchableOpacity>
+
+                    {/* 인증번호 입력 및 타이머, 인증 버튼 */}
                     {isAuthSent && (
                         <View style={styles.authContainer}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="인증번호 입력"
-                                value={authCode}
-                                onChangeText={setAuthCode}
-                                keyboardType="number-pad"
-                            />
-                            <TouchableOpacity style={styles.authButton} onPress={verifyAuthCode}>
-                                <Text style={styles.buttonText}>인증번호 확인</Text>
-                            </TouchableOpacity>
+                            <View style={styles.inputGroupRow}>
+                                <TextInput
+                                    style={styles.inputSmall}
+                                    placeholder="인증번호"
+                                    keyboardType="number-pad"
+                                    value={authCode}
+                                    onChangeText={setAuthCode}
+                                />
+                                <Text style={styles.timer}>
+                                    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                                </Text>
+                                <TouchableOpacity style={styles.authButtonInline} onPress={verifyAuthCode}>
+                                    <Text style={styles.buttonText}>확인</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     )}
+
                     {isAuthVerified && (
                         <TouchableOpacity style={styles.submitButton} onPress={handleFindUsername}>
                             <Text style={styles.buttonText}>아이디 확인</Text>
@@ -179,12 +194,15 @@ const FindAccountScreen = ({ navigation }) => {
             {/* 비밀번호 찾기 */}
             {activeTab === 'password' && (
                 <View style={styles.contentContainer}>
+                    {/* 아이디 입력 */}
                     <TextInput
                         style={styles.input}
                         placeholder="아이디"
                         value={userId}
                         onChangeText={setUserId}
                     />
+
+                    {/* 이메일 입력 */}
                     <View style={styles.emailContainer}>
                         <TextInput
                             style={styles.emailInput}
@@ -216,28 +234,36 @@ const FindAccountScreen = ({ navigation }) => {
                             </View>
                         )}
                     </View>
+
+                    {/* 인증번호 발송 버튼 */}
                     <TouchableOpacity style={styles.authButton} onPress={sendAuthCode}>
                         <Text style={styles.buttonText}>인증번호 발송</Text>
                     </TouchableOpacity>
+
+                    {/* 인증번호 입력 및 확인 */}
                     {isAuthSent && (
                         <View style={styles.authContainer}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="인증번호 입력"
-                                value={authCode}
-                                onChangeText={setAuthCode}
-                                keyboardType="number-pad"
-                            />
-                            <TouchableOpacity style={styles.authButton} onPress={verifyAuthCode}>
-                                <Text style={styles.buttonText}>인증번호 확인</Text>
-                            </TouchableOpacity>
+                            <View style={styles.inputGroupRow}>
+                                <TextInput
+                                    style={styles.inputSmall}
+                                    placeholder="인증번호"
+                                    keyboardType="number-pad"
+                                    value={authCode}
+                                    onChangeText={setAuthCode}
+                                />
+                                <Text style={styles.timer}>
+                                    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                                </Text>
+                                <TouchableOpacity style={styles.authButtonInline} onPress={verifyAuthCode}>
+                                    <Text style={styles.buttonText}>확인</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     )}
-                    {isAuthVerified && (
-                        <TouchableOpacity style={
-                            submitButton}
-                                          onPress={handleFindPassword}
-                        >
+
+                    {/* 비밀번호 재설정 버튼 */}
+                    {isAuthVerified && userId && (
+                        <TouchableOpacity style={styles.submitButton} onPress={handleFindPassword}>
                             <Text style={styles.buttonText}>비밀번호 재설정</Text>
                         </TouchableOpacity>
                     )}
@@ -254,8 +280,17 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     tabContainer: {
-        flexDirection: 'row',
-        marginBottom: 20,
+        position: 'absolute', // 절대 위치
+        bottom: 0, // 화면 하단
+        left: 0,
+        right: 0,
+        flexDirection: 'row', // 가로 정렬
+        justifyContent: 'space-between', // 탭 간 간격 균등
+        alignItems: 'center', // 수직 정렬
+        paddingVertical: 10, // 세로 패딩
+        paddingHorizontal: 20, // 좌우 패딩
+        borderTopWidth: 0, // 경계선 제거
+        backgroundColor: 'transparent', // 배경 투명
     },
     tab: {
         flex: 1,
@@ -280,6 +315,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        width: '100%',
     },
     emailContainer: {
         flexDirection: 'row',
@@ -289,64 +325,91 @@ const styles = StyleSheet.create({
     },
     emailInput: {
         flex: 3,
-        height: 60,
+        height: height * 0.06,
         backgroundColor: '#FFFFFF',
-        borderRadius: 10,
-        paddingHorizontal: 15,
-        marginRight: 5,
+        borderRadius: height * 0.015,
+        paddingHorizontal: width * 0.04,
+        marginRight: width * 0.02,
     },
     atSymbol: {
         fontSize: 20,
-        marginHorizontal: 5,
+        marginHorizontal: width * 0.02,
     },
     pickerContainer: {
         flex: 4,
-        height: 60,
+        height: height * 0.06,
         backgroundColor: '#FFFFFF',
-        borderRadius: 10,
+        borderRadius: height * 0.015,
         justifyContent: 'center',
     },
     picker: {
         width: '100%',
         height: '100%',
-        paddingVertical: 9, // 글자 잘림 문제 해결
     },
-    input: {
+    authContainer: {
         width: '100%',
-        height: 50,
+        marginBottom: height * 0.03,
+    },
+    inputGroupRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    inputSmall: {
+        flex: 2,
+        height: height * 0.06,
         backgroundColor: '#FFFFFF',
-        borderRadius: 10,
-        paddingHorizontal: 15,
-        marginBottom: 15,
+        borderRadius: height * 0.015,
+        paddingHorizontal: width * 0.04,
+        marginRight: width * 0.02,
+    },
+    timer: {
+        flex: 1,
+        textAlign: 'center',
+        color: '#FF0000',
+        fontWeight: 'bold',
+        fontSize: height * 0.02,
+    },
+    authButtonInline: {
+        flex: 1.5,
+        height: height * 0.06,
+        backgroundColor: '#007BFF',
+        borderRadius: height * 0.015,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     authButton: {
         width: '100%',
-        height: 50,
+        height: height * 0.06,
         backgroundColor: '#007BFF',
-        borderRadius: 10,
+        borderRadius: height * 0.015,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 15,
-    },
-    submitButton: {
-        width: '100%',
-        height: 50,
-        backgroundColor: '#007BFF',
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 15,
+        marginBottom: height * 0.03,
     },
     buttonText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: 'bold',
     },
-    authContainer: {
+    submitButton: {
         width: '100%',
+        height: height * 0.06,
+        backgroundColor: '#007BFF',
+        borderRadius: height * 0.015,
+        justifyContent: 'center',
         alignItems: 'center',
+        marginTop: 15,
+    },
+    input: {
+        width: '100%',
+        height: height * 0.06,
+        backgroundColor: '#FFFFFF',
+        borderRadius: height * 0.015,
+        paddingHorizontal: width * 0.04,
+        marginBottom: height * 0.02,
     },
 });
 
 export default FindAccountScreen;
-

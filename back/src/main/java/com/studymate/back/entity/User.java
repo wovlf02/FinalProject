@@ -76,7 +76,7 @@ public class User {
      * Default: false
      * Not Null
      */
-    @Column(nullable = false)
+    @Column(nullable = false, name = "email_verified")
     @Builder.Default
     private boolean emailVerified = false;
 
