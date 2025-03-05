@@ -2,7 +2,6 @@ package com.studymate.back.service;
 
 import com.studymate.back.config.JwtProvider;
 import com.studymate.back.dto.*;
-import com.studymate.back.repository.UserRepository;
 import com.studymate.back.utils.EmailUtil;
 import lombok.RequiredArgsConstructor;
 
