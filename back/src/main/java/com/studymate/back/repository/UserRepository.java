@@ -7,44 +7,53 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * JPA를 활용한 사용자 정보 접근 Layer
+ * UserRepository (사용자 리포지토리)
+ * users 테이블과 연동되는 JPA Repository
  * 기본적인 CRUD 기능 제공
+ * 사용자 아이디(username), 닉네임(nickname), 이메일(email) 기반 조회 기능 추가
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
-     * 아이디로 사용자 조회 -> 로그인 시 사용
-     * @param username 아이디
-     * @return Optional<User>
+     * 아이디(username)로 사용자 찾기
+     * @param username  조회할 사용자 아이디
+     * @return  Optional<User> 객체 반환 (존재하지 않을 경우 Optional.empty())
      */
     Optional<User> findByUsername(String username);
 
     /**
-     * 이메일로 사용자 조회 -> 아이디 찾기 시 사용
-     * @param email 이메일
-     * @return Optional<User>
+     * 이메일(email)로 사용자 찾기
+     * @param email 조회할 사용자 이메일
+     * @return  Optional<User> 객체 반환 (존재하지 않을 경우 Optional.empty())
      */
     Optional<User> findByEmail(String email);
 
     /**
-     * Refresh Token으로 사용자 조회 -> JWT Access Token 재발급 시 사용
-     * @param refreshToken Refresh Token
-     * @return Optional<User>
+     * 닉네임(nickname)으로 사용자 찾기
+     * @param nickname 조회할 사용자 닉네임
+     * @return  Optional<User> 객체 반환 (존재하지 않을 경우 Optional.empty())
      */
-    Optional<User> findByRefreshToken(String refreshToken);
+    Optional<User> findByNickname(String nickname);
 
     /**
-     * 아이디로 존재 여부 확인 -> 회원가입 시 아이디 중복 검사
-     * @param username 아이디
-     * @return true: 존재, false: 존재X
+     * 특정 아이디(username)가 존재하는지 확인
+     * @param username  중복 여부 확인할 아이디
+     * @return  존재하면 true, 존재하지 않으면 false 반환
      */
     boolean existsByUsername(String username);
 
     /**
-     * 이메일 존재 여부 확인 -> 회원가입 시 이메일 중복 검사
-     * @param email 이메일
-     * @return true: 존재, false: 존재X
+     * 특정 이메일(email)이 존재하는지 확인
+     * @param email 중복 여부 확인할 이메일
+     * @return  존재하면 true, 없으면 false 반환
      */
     boolean existsByEmail(String email);
+
+    /**
+     * 특정 닉네임(nickname)이 존재하는지 확인
+     * @param nickname  중복 여부 확인할 닉네임
+     * @return  존재하면 true, 없으면 false 반환
+     */
+    boolean existsByNickname(String nickname);
 }
