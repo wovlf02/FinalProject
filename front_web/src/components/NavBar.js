@@ -1,8 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import '../css/NavBar.css';
+
+const HeaderBar = ({ selectedTab }) => {
+  return (
+    <div className="header-bar">
+      <div className="header-bar-logo">로고</div>
+      <div>{selectedTab}</div>
+      <div>로그인 정보</div>
+    </div>
+  );
+};
+
+const SideMenu = ({ menuItems, handleNavigation }) => {
+  return (
+    <div className="side-menu">
+      <ul className="side-menu-list">
+        {menuItems.map((item) => (
+          <li key={item.name} className="side-menu-list-item">
+            <button
+              onClick={() => handleNavigation(item.name, item.path)}
+              className="side-menu-button"
+            >
+              {item.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 const NavBar = () => {
   const navigate = useNavigate();
+  const [selectedTab, setSelectedTab] = useState('대시보드');
 
   const menuItems = [
     { name: '대시보드', path: '/dashboard' },
@@ -10,29 +41,23 @@ const NavBar = () => {
     { name: '단원 평가', path: '/evaluation' },
     { name: '통계', path: '/statistics' },
     { name: '커뮤니티', path: '/community' },
+    { name: '팀 학습', path: '/teamStudy' },
   ];
 
+  const handleNavigation = (name, path) => {
+    setSelectedTab(name);
+    navigate(path);
+  };
+
   return (
-    <div style={{ width: '200px', backgroundColor: '#f8f9fa', padding: '20px' }}>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {menuItems.map((item) => (
-          <li key={item.name} style={{ marginBottom: '10px' }}>
-            <button
-              onClick={() => navigate(item.path)}
-              style={{
-                width: '100%',
-                padding: '10px',
-                textAlign: 'left',
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              {item.name}
-            </button>
-          </li>
-        ))}
-      </ul>
+    <div>
+      <HeaderBar selectedTab={selectedTab} />
+      <div style={{ display: 'flex' }}>
+        <SideMenu menuItems={menuItems} handleNavigation={handleNavigation} />
+        <div style={{ flex: 1, padding: '20px' }}>
+          {/* 페이지 콘텐츠 */}
+        </div>
+      </div>
     </div>
   );
 };
