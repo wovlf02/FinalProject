@@ -13,9 +13,9 @@ import lombok.Getter;
  * 
  * [필드 설명]
  * available: true인 경우 사용 가능한 닉네임, false인 경우 중복된 닉니엠
- * 
- * [사용 위치]
- * AuthController의 /check-nickname API에서 사용
+ *
+ * [사용 API]
+ * POST /api/auth/check-nickname
  */
 @Getter
 @AllArgsConstructor

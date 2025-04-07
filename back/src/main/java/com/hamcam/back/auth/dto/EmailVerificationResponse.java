@@ -10,6 +10,9 @@ import lombok.Getter;
  * {
  *     "message": "인증번호가 이메일로 전송되었습니다."
  * }
+ *
+ * [사용 API]
+ * POST /api/auth/send-email-code
  */
 @Getter
 @AllArgsConstructor

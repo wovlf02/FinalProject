@@ -4,12 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * 이메에ㅣㄹ 인증번호 검증이 성공한 경우 클라이언트에 응답하는 DTO
+ * 이메일 인증번호 검증이 성공한 경우 클라이언트에 응답하는 DTO
  *
  * [예시 응답]
  * {
  *     "message": "이메일 인증이 완료되었습니다."
  * }
+ *
+ * [사용 API]
+ * POST /api/auth/verify-email-code
  */
 @Getter
 @AllArgsConstructor

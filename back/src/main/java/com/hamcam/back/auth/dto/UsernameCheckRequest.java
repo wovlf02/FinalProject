@@ -16,6 +16,9 @@ import lombok.Setter;
  *     "username": "example"
  * }
  *
+ * [사용 API]
+ * POST /api/auth/check-username
+ *
  * [Flow]
  * 1. 클라이언트가 사용하고자 하는 아이디를 서버에 전달
  * 2. 서버는 해당 아이디가 DB에 이미 존재하는지 확인

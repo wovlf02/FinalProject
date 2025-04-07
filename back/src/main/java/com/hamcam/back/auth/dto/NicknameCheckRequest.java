@@ -12,6 +12,9 @@ import lombok.Setter;
  *     "nickname": "example"
  * }
  *
+ * [사용 API]
+ * POST /api/auth/check-nickname
+ *
  * [Flow]
  * 1. 클라이언트에서 닉네임을 입력하면 해당 값을 서버로 전달
  * 2. 서버는 DB에서 동일한 닉네임 존재 여부를 확인
