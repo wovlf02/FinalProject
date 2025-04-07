@@ -68,6 +68,13 @@ public class RegisterRequest {
     private String email;
 
     /**
+     * 사용자 학습 목표
+     * ex) 하루 3시간 이상 공부하기, 2027 수능 대비
+     * 마이페이지 등에서 사용자 동기 부여에 활용 가능
+     */
+    private String goal;
+
+    /**
      * 사용자 프로필 이미지 (선택)
      * 이미지 파일 자체 (JPEG, PNG 등)
      * 서버에서 바이너리 데이터 처리 또는 S3 등 외부 저장소 업로드 가능
