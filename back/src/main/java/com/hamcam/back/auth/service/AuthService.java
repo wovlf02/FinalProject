@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -60,7 +62,7 @@ public class AuthService {
         try {
             emailUtil.sendVerificationEmail(email, code);
         } catch (Exception e) {
-            throw new RuntimeException("이메일 전송 실패: ", e.getMessage());
+            throw new RuntimeException("이메일 전송 실패: ", e);
         }
     }
 
@@ -98,8 +100,15 @@ public class AuthService {
         user.setNickname(request.getNickname());
         user.setGoal(request.getGoal());
 
-        // 프로필 사진 저장 (선택)
-        user.setProfileImage(request.getProfileImage());
+        // 프로필 이미지 파일 저장 (MultipartFile -> byte[] 변환)
+        MultipartFile file = request.getProfileImage();
+        if(file != null && !file.isEmpty()) {
+            try {
+                user.setProfileImage(file.getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException("프로필 이미지 저장 중 오류 발생", e);
+            }
+        }
 
         userRepository.save(user);
     }

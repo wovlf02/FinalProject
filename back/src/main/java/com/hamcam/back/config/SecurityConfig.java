@@ -1,5 +1,7 @@
 package com.hamcam.back.config;
 
+
+import com.hamcam.back.auth.service.CustomUserDetailsService;
 import com.hamcam.back.auth.util.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -11,7 +13,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
@@ -47,7 +48,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // JWT 인증 필터 생성
-        JwtAuthenticationFilter jwtFilter = new AuthenticationFilter(jwtProvider, userDetailsService);
+        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtProvider, userDetailsService);
 
         http
                 .csrf(csrf -> csrf.disable())

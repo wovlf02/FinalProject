@@ -1,5 +1,6 @@
 package com.hamcam.back.config;
 
+import com.hamcam.back.auth.service.CustomUserDetailsService;
 import com.hamcam.back.auth.util.JwtProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

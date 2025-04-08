@@ -22,9 +22,9 @@ public class JwtProvider {
 
     /**
      * application.yml에서 secret key 및 토큰 유효 시간 설정을 불러옴
-     * @param secret
-     * @param accessTokenValidity
-     * @param refreshTokenValidity
+     * @param secret JWT Secret Key
+     * @param accessTokenValidity Access Token 유효 시간
+     * @param refreshTokenValidity Refresh Token 유효 시간
      */
     public JwtProvider(
             @Value("${jwt.secret}") String secret,
