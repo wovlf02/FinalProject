@@ -108,7 +108,7 @@ public class AuthController {
             ResetPasswordResponse response = authService.resetPassword(request);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badReqeust().body(new ResetPasswordResponse(false, e.getMessage()));
+            return ResponseEntity.badRequest().body(new ResetPasswordResponse(false, e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(new ResetPasswordResponse(false, "비밀번호 변경 중 오류가 발생했습니다."));
         }
