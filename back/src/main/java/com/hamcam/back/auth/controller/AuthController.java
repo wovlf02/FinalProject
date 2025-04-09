@@ -1,6 +1,7 @@
 package com.hamcam.back.auth.controller;
 
-import com.hamcam.back.auth.dto.*;
+import com.hamcam.back.auth.dto.request.*;
+import com.hamcam.back.auth.dto.response.*;
 import com.hamcam.back.auth.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
