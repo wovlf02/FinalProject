@@ -55,16 +55,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())   // CSRF 보호 비활성화 (JWT 사용)
-                .cors(cors -> cors.disable())   // CORS 설정 (필요에 따라 수정 가능)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))   // 세션 사용 안 함
+                .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화 (JWT 사용 시 필요)
+                .cors() // CORS 활성화
+                .and()
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 사용 안 함
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()  // 회원가입, 로그인, 이메일 인증은 인증 없이 접근 가능
+                        .requestMatchers("/api/auth/**").permitAll() // 인증 없이 접근 가능한 경로
                         .anyRequest().authenticated() // 그 외 모든 요청은 인증 필요
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userDetailsService),
                         UsernamePasswordAuthenticationFilter.class); // JWT 인증 필터 추가
         return http.build();
-
     }
+
 }
