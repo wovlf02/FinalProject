@@ -46,9 +46,27 @@ public class AuthController {
         return ResponseEntity.ok(new RegisterResponse("회원가입이 완료되었습니다."));
     }
 
+    // @PostMapping("/login")
+    // public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    //     return ResponseEntity.ok(authService.login(request));
+    // }
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        try {
+            // 요청 데이터 출력
+            System.out.println("로그인 요청 - username: " + loginRequest.getUsername());
+            System.out.println("로그인 요청 - password: " + loginRequest.getPassword());
+    
+            // 로그인 처리
+            LoginResponse response = authService.login(loginRequest);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            // 사용자 조회 실패 또는 비밀번호 불일치
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        } catch (Exception e) {
+            // 기타 서버 오류
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("로그인 처리 중 오류가 발생했습니다.");
+        }
     }
 
     /**
