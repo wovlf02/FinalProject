@@ -42,7 +42,7 @@ public class ChatMessage {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
-    private ChatRoom chatRoom;
+    private ChatRoom room;
 
     /**
      * 메시지를 보낸 사용자 (ManyToOne)
@@ -70,8 +70,8 @@ public class ChatMessage {
      * 보안 및 저장 방식에 따라 S3 등 외부 저장소 사용 고려 가능
      */
     @Lob
-    @Column(name = "file")
-    private byte[] file;
+    @Column(name = "file_url")
+    private String fileUrl;
 
     /**
      * 첨부파일의 MIME 타입
