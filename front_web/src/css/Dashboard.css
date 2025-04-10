@@ -1,0 +1,9 @@
+.dashboard {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.calendar-container {
+  margin: 20px auto;
+  max-width: 500px;
+}

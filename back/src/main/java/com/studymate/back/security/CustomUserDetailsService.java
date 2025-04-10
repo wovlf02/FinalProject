@@ -1,5 +1,7 @@
 package com.studymate.back.security;
 
+import com.studymate.back.entity.User;
+import com.studymate.back.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
