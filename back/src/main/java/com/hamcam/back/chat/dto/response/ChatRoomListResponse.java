@@ -1,5 +1,6 @@
 package com.hamcam.back.chat.dto.response;
 
+import com.hamcam.back.chat.entity.ChatRoom;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,7 +35,7 @@ public class ChatRoomListResponse {
      * study: 스터디 실시간 토론
      * group: 그룹 내 채팅
      */
-    private String roomType;
+    private ChatRoom.RoomType roomType;
 
     /**
      * 외부 연동 기준 ID

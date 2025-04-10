@@ -84,7 +84,7 @@ public class ChatController {
      * - CHAT_ROOMS 테이블에서 room_id 기준으로 단일 row 조회
      */
     @GetMapping("/rooms/{roomId}")
-    public ResponseEntity<ChatRoomResponse> getRoomDetail(@PathVariable String roomId) {
+    public ResponseEntity<ChatRoomResponse> getRoomDetail(@PathVariable Long roomId) {
         ChatRoomResponse response = chatRoomService.getRoomDetail(roomId);
         return ResponseEntity.ok(response);
     }
@@ -101,7 +101,7 @@ public class ChatController {
      * - 서버에서 입장 상태를 관리 (Redis 또는 세션, DB 캐시 등 활용 가능)
      */
     @PostMapping("/rooms/{roomId}/join")
-    public ResponseEntity<String> joinRoom(@PathVariable String roomId, @RequestBody ChatJoinRequest request) {
+    public ResponseEntity<String> joinRoom(@PathVariable Long roomId, @RequestBody ChatJoinRequest request) {
         chatRoomService.joinRoom(roomId, request);
         return ResponseEntity.ok("채팅방에 입장하였습니다.");
     }
@@ -119,7 +119,7 @@ public class ChatController {
      * - 사용자가 퇴장하면 클라이언트에서 메시지 수신 중단
      */
     @DeleteMapping("/rooms/{roomId}/exit")
-    public ResponseEntity<String> exitRoom(@PathVariable String roomId, @RequestBody ChatJoinRequest request) {
+    public ResponseEntity<String> exitRoom(@PathVariable Long roomId, @RequestBody ChatJoinRequest request) {
         chatRoomService.exitRoom(roomId, request);
         return ResponseEntity.ok("채팅방에서 나갔습니다.");
     }

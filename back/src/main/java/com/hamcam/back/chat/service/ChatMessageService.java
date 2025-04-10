@@ -55,14 +55,14 @@ public class ChatMessageService {
         String fileUrl = null;
         MultipartFile file = request.getFile();
 
-        if(file != null && !file.isEmpty()) {
-            try {
-                // S3 등에 업로드한 후 반환되는 URL
-                fileUrl = cloudStorageUtil.upload(file, "chat");
-            } catch (IOException e) {
-                throw new RuntimeException("파일 업로드 중 오류 발생", e);
-            }
-        }
+//        if(file != null && !file.isEmpty()) {
+//            try {
+//                // S3 등에 업로드한 후 반환되는 URL
+//                fileUrl = cloudStorageUtil.upload(file, "chat");
+//            } catch (IOException e) {
+//                throw new RuntimeException("파일 업로드 중 오류 발생", e);
+//            }
+//        }
 
         // 4. 메시지 엔티티 생성
         ChatMessage message = ChatMessage.builder()
