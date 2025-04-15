@@ -27,7 +27,6 @@ public class JwtProvider {
 
     /**
      * Refresh Token 만료 시간 -> 30일
-     *
      */
     private final long refreshTokenExpiration;
 
