@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * Spring Security 설정
  * JWT 기반 인증 적용
  */
+
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {

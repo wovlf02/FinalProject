@@ -30,6 +30,7 @@ public class EmailConfig {
      * JavaMailSender Bean 설정
      * -> Gmail SMTP를 사용하여 이메일 전송
      * @return JavaMailSender 인스턴스
+     *
      */
     @Bean
     public JavaMailSender javaMailSender() {

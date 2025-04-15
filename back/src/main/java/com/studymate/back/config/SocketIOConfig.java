@@ -7,6 +7,7 @@ import org.springframework.web.socket.server.standard.ServerEndpointExporter;
 @Configuration
 public class SocketIOConfig {
 
+
     @Bean
     public ServerEndpointExporter serverEndpointExporter() {
         return new ServerEndpointExporter();
