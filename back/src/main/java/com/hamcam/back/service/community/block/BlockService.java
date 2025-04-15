@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 /**
  * 차단(Block) 서비스
  * <p>
- * 사용자가 게시글, 댓글, 대댓글을 차단하거나 차단을 해제하고,
- * 차단한 목록을 조회할 수 있도록 처리합니다.
+ * 사용자가 게시글, 댓글, 대댓글을 차단하거나 해제하며,
+ * 본인이 차단한 콘텐츠 목록을 조회할 수 있도록 지원합니다.
  * </p>
  */
 @Service
@@ -32,13 +32,20 @@ public class BlockService {
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
 
-    // 인증된 사용자 ID (실제 서비스에서는 SecurityContextHolder로 대체)
+    /**
+     * 현재 로그인된 사용자 ID 반환 (Mock)
+     * @return 사용자 ID
+     */
     private Long getCurrentUserId() {
-        return 1L; // mock user id
+        return 1L;
     }
 
     // ================== 게시글 차단 ==================
 
+    /**
+     * 게시글 차단
+     * @param postId 차단할 게시글 ID
+     */
     public void blockPost(Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
@@ -51,6 +58,10 @@ public class BlockService {
         }
     }
 
+    /**
+     * 게시글 차단 해제
+     * @param postId 차단 해제할 게시글 ID
+     */
     public void unblockPost(Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
@@ -60,6 +71,10 @@ public class BlockService {
                 .ifPresent(blockRepository::delete);
     }
 
+    /**
+     * 차단한 게시글 목록 조회
+     * @return BlockedPostListResponse
+     */
     public BlockedPostListResponse getBlockedPosts() {
         User user = User.builder().id(getCurrentUserId()).build();
         List<Block> blocks = blockRepository.findByUserAndPostIsNotNull(user);
@@ -75,6 +90,10 @@ public class BlockService {
 
     // ================== 댓글 차단 ==================
 
+    /**
+     * 댓글 차단
+     * @param commentId 차단할 댓글 ID
+     */
     public void blockComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
@@ -87,6 +106,10 @@ public class BlockService {
         }
     }
 
+    /**
+     * 댓글 차단 해제
+     * @param commentId 차단 해제할 댓글 ID
+     */
     public void unblockComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
@@ -96,6 +119,10 @@ public class BlockService {
                 .ifPresent(blockRepository::delete);
     }
 
+    /**
+     * 차단한 댓글 목록 조회
+     * @return BlockedCommentListResponse
+     */
     public BlockedCommentListResponse getBlockedComments() {
         User user = User.builder().id(getCurrentUserId()).build();
         List<Block> blocks = blockRepository.findByUserAndCommentIsNotNull(user);
@@ -111,6 +138,10 @@ public class BlockService {
 
     // ================== 대댓글 차단 ==================
 
+    /**
+     * 대댓글 차단
+     * @param replyId 차단할 대댓글 ID
+     */
     public void blockReply(Long replyId) {
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 대댓글이 존재하지 않습니다."));
@@ -123,6 +154,10 @@ public class BlockService {
         }
     }
 
+    /**
+     * 대댓글 차단 해제
+     * @param replyId 차단 해제할 대댓글 ID
+     */
     public void unblockReply(Long replyId) {
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 대댓글이 존재하지 않습니다."));
@@ -132,6 +167,10 @@ public class BlockService {
                 .ifPresent(blockRepository::delete);
     }
 
+    /**
+     * 차단한 대댓글 목록 조회
+     * @return BlockedReplyListResponse
+     */
     public BlockedReplyListResponse getBlockedReplies() {
         User user = User.builder().id(getCurrentUserId()).build();
         List<Block> blocks = blockRepository.findByUserAndReplyIsNotNull(user);

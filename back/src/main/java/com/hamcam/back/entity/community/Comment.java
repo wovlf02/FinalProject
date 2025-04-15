@@ -58,9 +58,15 @@ public class Comment {
     private LocalDateTime updatedAt;
 
     /**
-     * 좋아요 수
+     * 좋아요 수 (캐싱용 - 최신 좋아요 수는 Like 테이블을 통해 계산)
      */
     private int likeCount;
+
+    /**
+     * 좋아요 객체 리스트
+     */
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Like> likes = new ArrayList<>();
 
     /**
      * 대댓글 목록

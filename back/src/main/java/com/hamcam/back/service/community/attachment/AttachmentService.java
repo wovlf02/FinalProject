@@ -15,20 +15,24 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.MalformedURLException;
 import java.nio.file.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 첨부파일(Attachment) 서비스
+ * 첨부파일 서비스 클래스
  * <p>
- * 게시글, 댓글, 대댓글에 첨부된 파일을 업로드, 다운로드, 조회, 삭제하는 기능을 제공합니다.
- * </p>
+ * 게시글, 댓글, 대댓글에 첨부된 파일을 업로드, 조회, 다운로드, 삭제하는 기능을 제공합니다.
+ * 내부적으로 파일은 서버 디렉토리에 저장되며, 메타정보는 DB에 저장됩니다.
  */
 @Service
 @RequiredArgsConstructor
 public class AttachmentService {
 
+    /**
+     * 첨부파일 저장 기본 디렉토리
+     */
     private static final String ATTACHMENT_DIR = "uploads/community/";
 
     private final AttachmentRepository attachmentRepository;
@@ -36,8 +40,15 @@ public class AttachmentService {
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
 
-    // ===== 파일 업로드 =====
+    // ===== 첨부파일 업로드 =====
 
+    /**
+     * 게시글에 첨부파일 업로드
+     *
+     * @param postId 대상 게시글 ID
+     * @param files 업로드할 MultipartFile 배열
+     * @return 저장된 첨부파일 개수
+     */
     public int uploadPostFiles(Long postId, MultipartFile[] files) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
@@ -56,6 +67,9 @@ public class AttachmentService {
         return attachments.size();
     }
 
+    /**
+     * 댓글에 첨부파일 업로드
+     */
     public int uploadCommentFiles(Long commentId, MultipartFile[] files) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
@@ -74,6 +88,9 @@ public class AttachmentService {
         return attachments.size();
     }
 
+    /**
+     * 대댓글에 첨부파일 업로드
+     */
     public int uploadReplyFiles(Long replyId, MultipartFile[] files) {
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 대댓글이 존재하지 않습니다."));
@@ -94,23 +111,38 @@ public class AttachmentService {
 
     // ===== 목록 조회 =====
 
+    /**
+     * 게시글의 첨부파일 목록 조회
+     */
     public AttachmentListResponse getPostAttachments(Long postId) {
         List<Attachment> list = attachmentRepository.findByPostId(postId);
         return toListResponse(list);
     }
 
+    /**
+     * 댓글의 첨부파일 목록 조회
+     */
     public AttachmentListResponse getCommentAttachments(Long commentId) {
         List<Attachment> list = attachmentRepository.findByCommentId(commentId);
         return toListResponse(list);
     }
 
+    /**
+     * 대댓글의 첨부파일 목록 조회
+     */
     public AttachmentListResponse getReplyAttachments(Long replyId) {
         List<Attachment> list = attachmentRepository.findByReplyId(replyId);
         return toListResponse(list);
     }
 
-    // ===== 다운로드 =====
+    // ===== 파일 다운로드 =====
 
+    /**
+     * 첨부파일 다운로드 처리
+     *
+     * @param attachmentId 다운로드할 첨부파일 ID
+     * @return Spring Resource 객체
+     */
     public Resource downloadAttachment(Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다."));
@@ -132,6 +164,11 @@ public class AttachmentService {
 
     // ===== 삭제 =====
 
+    /**
+     * 첨부파일 삭제 처리
+     *
+     * @param attachmentId 삭제할 첨부파일 ID
+     */
     public void deleteAttachment(Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new IllegalArgumentException("삭제할 첨부파일이 존재하지 않습니다."));
@@ -146,8 +183,11 @@ public class AttachmentService {
         attachmentRepository.delete(attachment);
     }
 
-    // ===== 유틸 =====
+    // ===== 내부 유틸 =====
 
+    /**
+     * Attachment 리스트를 AttachmentListResponse로 변환
+     */
     private AttachmentListResponse toListResponse(List<Attachment> list) {
         List<AttachmentResponse> result = list.stream()
                 .map(file -> AttachmentResponse.builder()
@@ -161,8 +201,14 @@ public class AttachmentService {
         return new AttachmentListResponse(result);
     }
 
+    /**
+     * 저장 파일의 메타데이터를 담기 위한 레코드 클래스
+     */
     private record FileMeta(String original, String stored, String type) {}
 
+    /**
+     * MultipartFile 배열을 실제 디스크에 저장하고 메타정보를 리턴
+     */
     private List<FileMeta> saveFiles(MultipartFile[] files) {
         try {
             Path dirPath = Paths.get(ATTACHMENT_DIR);
@@ -170,10 +216,14 @@ public class AttachmentService {
                 Files.createDirectories(dirPath);
             }
 
-            return List.of(files).stream()
+            return Arrays.stream(files)
                     .filter(file -> !file.isEmpty())
                     .map(file -> {
                         String original = file.getOriginalFilename();
+                        if (original == null || !original.contains(".")) {
+                            throw new IllegalArgumentException("파일 이름이 유효하지 않습니다: 확장자가 없습니다.");
+                        }
+
                         String extension = original.substring(original.lastIndexOf('.') + 1);
                         String stored = UUID.randomUUID() + "_" + original;
 
@@ -193,6 +243,10 @@ public class AttachmentService {
         }
     }
 
+
+    /**
+     * 특정 확장자 또는 MIME 타입이 이미지 미리보기 가능한지 여부 확인
+     */
     private boolean isPreviewable(String contentTypeOrExtension) {
         String lower = contentTypeOrExtension.toLowerCase();
         return lower.matches(".*(jpg|jpeg|png|gif|bmp|webp)$") || lower.startsWith("image/");

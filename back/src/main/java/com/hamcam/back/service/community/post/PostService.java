@@ -4,7 +4,6 @@ import com.hamcam.back.dto.community.post.request.*;
 import com.hamcam.back.dto.community.post.response.*;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.Post;
-import com.hamcam.back.repository.community.post.PostQueryRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -25,7 +24,6 @@ import java.util.stream.Collectors;
 public class PostService {
 
     private final PostRepository postRepository;
-    private final PostQueryRepository postQueryRepository;
 
     // 추후 인증 정보에서 가져올 사용자 ID
     private Long getCurrentUserId() {
@@ -93,22 +91,23 @@ public class PostService {
     // 조건별 필터링
     public PostListResponse filterPosts(String category, String sort, int minLikes, String keyword) {
         Pageable pageable = PageRequest.of(0, 20);
-        Page<Post> result = postQueryRepository.searchPosts(category, keyword, minLikes, sort, pageable);
+        Page<Post> result = postRepository.searchFilteredPosts(category, keyword, minLikes, sort, pageable);
         return PostListResponse.from(result);
     }
 
-    // 인기 게시글
+    // 인기 게시글 조회
     public PopularPostListResponse getPopularPosts() {
         Pageable pageable = PageRequest.of(0, 10);
-        Page<Post> result = postQueryRepository.findPopularPosts(pageable);
+        Page<Post> result = postRepository.findPopularPosts(pageable);
         return PopularPostListResponse.from(result.getContent());
     }
 
     // 활동 랭킹
     public RankingResponse getPostRanking() {
-        Page<Object[]> rankingData = postQueryRepository.getUserPostRanking(PageRequest.of(0, 10));
+        Page<Object[]> rankingData = postRepository.getUserPostRanking(PageRequest.of(0, 10));
         return RankingResponse.from(rankingData.getContent());
     }
+
 
     // AI 기반 자동완성
     public PostAutoFillResponse autoFillPost(ProblemReferenceRequest request) {

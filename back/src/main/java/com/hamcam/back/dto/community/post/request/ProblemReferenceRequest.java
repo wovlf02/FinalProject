@@ -21,4 +21,16 @@ public class ProblemReferenceRequest {
      * 요청자 사용자 ID
      */
     private Long userId;
+
+    /**
+     * 문제 제목
+     * 게시글 자동 완성 시 제목 추천에 사용됨
+     */
+    private String problemTitle;
+
+    /**
+     * 문제 분류 또는 카테고리
+     * (예: 구현, DFS, DP 등 → 본문 내용 생성에 사용됨)
+     */
+    private String category;
 }

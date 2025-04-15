@@ -1,10 +1,13 @@
 package com.hamcam.back.dto.community.comment.response;
 
+import com.hamcam.back.entity.community.Comment;
+import com.hamcam.back.entity.community.Reply;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 댓글 응답 DTO
@@ -16,53 +19,38 @@ import java.util.List;
 @AllArgsConstructor
 public class CommentResponse {
 
-    /**
-     * 댓글 ID
-     */
     private Long commentId;
-
-    /**
-     * 작성자 ID
-     */
     private Long writerId;
-
-    /**
-     * 작성자 닉네임
-     */
     private String writerNickname;
-
-    /**
-     * 프로필 이미지 URL
-     */
     private String profileImageUrl;
-
-    /**
-     * 댓글 내용
-     */
     private String content;
-
-    /**
-     * 작성 시각
-     */
     private LocalDateTime createdAt;
-
-    /**
-     * 수정 시각
-     */
     private LocalDateTime updatedAt;
-
-    /**
-     * 좋아요 수
-     */
     private int likeCount;
-
-    /**
-     * 내가 좋아요 눌렀는지 여부
-     */
     private boolean liked;
+    private List<ReplyResponse> replies;
 
     /**
-     * 대댓글 리스트
+     * Comment → CommentResponse 변환 정적 메서드
+     *
+     * @param comment 댓글 엔티티
+     * @param replies 대댓글 리스트
+     * @return 댓글 응답 DTO
      */
-    private List<ReplyResponse> replies;
+    public static CommentResponse from(Comment comment, List<Reply> replies) {
+        return new CommentResponse(
+                comment.getId(),
+                comment.getWriter().getId(),
+                comment.getWriter().getUsername(), // 닉네임으로 따로 필드 있을 경우 수정
+                comment.getWriter().getProfileImageUrl(), // User 엔티티에 해당 필드 필요
+                comment.getContent(),
+                comment.getCreatedAt(),
+                comment.getUpdatedAt(),
+                comment.getLikes().size(), // Like 리스트 필요
+                false, // 임시 liked 값 (SecurityContextHolder 도입 시 수정)
+                replies.stream()
+                        .map(ReplyResponse::from)
+                        .collect(Collectors.toList())
+        );
+    }
 }

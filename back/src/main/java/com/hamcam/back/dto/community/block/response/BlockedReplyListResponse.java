@@ -8,8 +8,8 @@ import java.util.List;
 /**
  * 차단된 대댓글 목록 응답 DTO
  * <p>
- * 사용자가 차단한 대댓글(reply)의 ID 목록을 제공합니다.
- * 프론트에서 해당 ID를 렌더링하지 않도록 처리할 수 있습니다.
+ * 사용자가 차단한 대댓글(reply)의 상세 차단 정보를 제공합니다.
+ * 각 항목은 차단된 콘텐츠 ID와 타입("REPLY")을 포함합니다.
  * </p>
  */
 @Data
@@ -17,7 +17,7 @@ import java.util.List;
 public class BlockedReplyListResponse {
 
     /**
-     * 차단된 대댓글 ID 목록
+     * 차단된 대댓글 정보 리스트
      */
-    private List<Long> blockedReplyIds;
+    private List<BlockedTargetResponse> blockedReplies;
 }

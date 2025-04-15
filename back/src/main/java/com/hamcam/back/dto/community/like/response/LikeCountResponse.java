@@ -16,5 +16,5 @@ public class LikeCountResponse {
     /**
      * 좋아요 수
      */
-    private int count;
+    private long count;
 }

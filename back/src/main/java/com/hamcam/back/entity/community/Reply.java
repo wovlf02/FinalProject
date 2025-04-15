@@ -5,14 +5,11 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 대댓글(Reply) 엔티티
- * <p>
- * 댓글(Comment)에 달리는 대댓글을 나타냅니다.
- * 대댓글도 작성자, 본문, 생성 시각 등의 정보를 포함하며,
- * 댓글과 게시글(Post)과 연관됩니다.
- * </p>
  */
 @Entity
 @Getter
@@ -64,7 +61,13 @@ public class Reply {
     private LocalDateTime updatedAt;
 
     /**
-     * 좋아요 수
+     * 좋아요 수 (계산용)
      */
     private int likeCount;
+
+    /**
+     * 좋아요 리스트 (User 기반)
+     */
+    @OneToMany(mappedBy = "reply", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Like> likes = new ArrayList<>();
 }

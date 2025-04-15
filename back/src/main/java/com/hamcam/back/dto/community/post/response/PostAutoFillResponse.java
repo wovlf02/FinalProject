@@ -1,5 +1,7 @@
 package com.hamcam.back.dto.community.post.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 /**
@@ -9,8 +11,17 @@ import lombok.Data;
  * </p>
  */
 @Data
+@Builder
+@AllArgsConstructor
 public class PostAutoFillResponse {
 
-    private String recommendedTitle;
-    private String recommendedContent;
+    /**
+     * 추천된 게시글 제목
+     */
+    private String title;
+
+    /**
+     * 추천된 게시글 내용
+     */
+    private String content;
 }

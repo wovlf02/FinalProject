@@ -8,8 +8,7 @@ import java.util.List;
 /**
  * 차단된 게시글 목록 응답 DTO
  * <p>
- * 사용자가 차단한 게시글들의 ID 목록을 반환합니다.
- * 프론트에서는 이 ID를 이용해 피드에서 숨김 처리할 수 있습니다.
+ * 사용자가 차단한 게시글 정보(게시글 ID와 타입)를 리스트로 제공합니다.
  * </p>
  */
 @Data
@@ -17,7 +16,7 @@ import java.util.List;
 public class BlockedPostListResponse {
 
     /**
-     * 차단된 게시글 ID 목록
+     * 차단된 게시글 상세 정보 리스트 (ID + 타입 포함)
      */
-    private List<Long> blockedPostIds;
+    private List<BlockedTargetResponse> blockedPosts;
 }

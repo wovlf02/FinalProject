@@ -8,8 +8,8 @@ import java.util.List;
 /**
  * 차단된 댓글 목록 응답 DTO
  * <p>
- * 사용자가 차단한 댓글의 ID 목록을 제공합니다.
- * 프론트에서는 댓글 목록 렌더링 시 해당 ID를 필터링하여 숨김 처리합니다.
+ * 사용자가 차단한 댓글(comment)의 상세 차단 정보를 제공합니다.
+ * 각 항목은 댓글 ID와 타입("COMMENT")을 포함합니다.
  * </p>
  */
 @Data
@@ -17,7 +17,7 @@ import java.util.List;
 public class BlockedCommentListResponse {
 
     /**
-     * 차단된 댓글 ID 목록
+     * 차단된 댓글 리스트
      */
-    private List<Long> blockedCommentIds;
+    private List<BlockedTargetResponse> blockedComments;
 }

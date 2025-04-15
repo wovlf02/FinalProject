@@ -18,5 +18,5 @@ public class AttachmentListResponse {
     /**
      * 첨부파일 응답 리스트
      */
-    private List<AttachmentDownloadResponse> attachments;
+    private List<AttachmentResponse> attachments;
 }
