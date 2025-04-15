@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 게시글 활동 랭킹 응답 DTO
@@ -16,6 +17,24 @@ import java.util.List;
 public class RankingResponse {
 
     private List<UserRanking> rankings;
+
+    /**
+     * JPQL 결과(Object[]) 리스트를 기반으로 응답 DTO 생성
+     *
+     * @param rows Object[] = {userId, nickname, profileImageUrl, score}
+     * @return RankingResponse
+     */
+    public static RankingResponse from(List<Object[]> rows) {
+        List<UserRanking> rankingList = rows.stream()
+                .map(row -> new UserRanking(
+                        ((Number) row[0]).longValue(),        // userId
+                        (String) row[1],                      // nickname
+                        (String) row[2],                      // profileImageUrl
+                        ((Number) row[3]).intValue()          // score
+                ))
+                .collect(Collectors.toList());
+        return new RankingResponse(rankingList);
+    }
 
     @Data
     @AllArgsConstructor

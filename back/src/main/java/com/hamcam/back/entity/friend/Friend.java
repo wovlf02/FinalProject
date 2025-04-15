@@ -18,7 +18,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @Table(
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user1_id", "user2_id"})
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "friend_id"})
 )
 public class Friend {
 
@@ -30,15 +30,15 @@ public class Friend {
      * 사용자 1 (친구 관계의 한쪽)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user1_id", nullable = false)
-    private User user1;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     /**
      * 사용자 2 (친구 관계의 다른 한쪽)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user2_id", nullable = false)
-    private User user2;
+    @JoinColumn(name = "friend_id", nullable = false)
+    private User friend;
 
     /**
      * 친구 관계 형성 시각

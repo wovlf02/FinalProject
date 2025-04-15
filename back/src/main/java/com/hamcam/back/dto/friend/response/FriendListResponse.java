@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.friend.response;
 
+import com.hamcam.back.entity.auth.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -7,9 +8,6 @@ import java.util.List;
 
 /**
  * 친구 목록 응답 DTO
- * <p>
- * 현재 로그인한 사용자의 친구 목록을 반환합니다.
- * </p>
  */
 @Data
 @AllArgsConstructor
@@ -23,5 +21,16 @@ public class FriendListResponse {
         private Long userId;
         private String nickname;
         private String profileImageUrl;
+
+        /**
+         * User 엔티티로부터 FriendDto 변환
+         */
+        public static FriendDto from(User user) {
+            return new FriendDto(
+                    user.getId(),
+                    user.getName(),
+                    user.getProfileImageUrl()
+            );
+        }
     }
 }

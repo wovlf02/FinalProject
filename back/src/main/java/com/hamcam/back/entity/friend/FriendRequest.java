@@ -14,35 +14,31 @@ import java.time.LocalDateTime;
  * </p>
  */
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(
-        uniqueConstraints = @UniqueConstraint(columnNames = {"sender_id", "receiver_id"})
-)
 public class FriendRequest {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * 친구 요청을 보낸 사용자
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    /**
-     * 친구 요청을 받은 사용자
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
 
-    /**
-     * 요청 보낸 시각
-     */
+    @Column(nullable = false)
     private LocalDateTime requestedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.requestedAt = LocalDateTime.now();
+    }
 }
+

@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.friend.response;
 
+import com.hamcam.back.entity.auth.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -22,5 +23,16 @@ public class FriendSearchResponse {
         private String profileImageUrl;
         private boolean alreadyFriend;
         private boolean alreadyRequested;
+
+        public static UserSearchResult from(User user) {
+            return new UserSearchResult(
+                    user.getId(),
+                    user.getNickname(),
+                    user.getProfileImageUrl(),
+                    false,
+                    false
+            );
+        }
     }
 }
+

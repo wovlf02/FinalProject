@@ -1,9 +1,11 @@
 package com.hamcam.back.dto.community.post.response;
 
+import com.hamcam.back.entity.community.Post;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 인기 게시글 목록 응답 DTO
@@ -16,4 +18,17 @@ import java.util.List;
 public class PopularPostListResponse {
 
     private List<PostSimpleResponse> posts;
+
+    /**
+     * Post 리스트를 기반으로 PopularPostListResponse 생성
+     *
+     * @param posts 인기 게시글 엔티티 리스트
+     * @return 응답 DTO
+     */
+    public static PopularPostListResponse from(List<Post> posts) {
+        List<PostSimpleResponse> converted = posts.stream()
+                .map(PostSimpleResponse::from)
+                .collect(Collectors.toList());
+        return new PopularPostListResponse(converted);
+    }
 }

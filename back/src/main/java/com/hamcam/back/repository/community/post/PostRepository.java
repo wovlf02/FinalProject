@@ -2,6 +2,8 @@ package com.hamcam.back.repository.community.post;
 
 import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.entity.auth.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -23,7 +25,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /**
      * 카테고리 기준 게시글 조회
      */
-    List<Post> findByCategory(String category);
+    Page<Post> findByCategory(String category, Pageable pageable);
 
     /**
      * 제목 + 본문 키워드 검색 (간단 검색용)
