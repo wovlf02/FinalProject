@@ -20,51 +20,60 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Table(
-        uniqueConstraints = @UniqueConstraint(columnNames = {"reporter_id", "post_id", "comment_id", "reply_id", "target_user_id"})
+        name = "report",
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {"reporter_id", "post_id", "comment_id", "reply_id", "target_user_id"}
+        )
 )
 public class Report {
 
+    /**
+     * 신고 고유 ID (PK)
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * 신고한 사용자 (신고자)
+     * 신고자 (User)
+     * 실제 FK는 생성되지 않도록 설정 (제약 오류 방지)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reporter_id", nullable = false)
+    @JoinColumn(name = "reporter_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private User reporter;
 
     /**
      * 신고 대상 게시글 (nullable)
+     * 외래키 제약 없음
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
+    @JoinColumn(name = "post_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Post post;
 
     /**
-     * 신고 대상 댓글
+     * 신고 대상 댓글 (nullable)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "comment_id")
+    @JoinColumn(name = "comment_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Comment comment;
 
     /**
-     * 신고 대상 대댓글
+     * 신고 대상 대댓글 (nullable)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reply_id")
+    @JoinColumn(name = "reply_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Reply reply;
 
     /**
-     * 신고 대상 사용자 (User)
+     * 신고 대상 사용자 (nullable)
+     * 외래키 제약 없음 → users.id가 PK/UNIQUE가 아니더라도 오류 없이 생성 가능
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_user_id")
+    @JoinColumn(name = "target_user_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private User targetUser;
 
     /**
-     * 신고 사유
+     * 신고 사유 (필수)
      */
     @Column(nullable = false)
     private String reason;
@@ -72,10 +81,19 @@ public class Report {
     /**
      * 신고 상태 (예: PENDING, RESOLVED)
      */
+    @Column(length = 20)
     private String status;
 
     /**
-     * 신고 시각
+     * 신고 접수 시간
      */
     private LocalDateTime reportedAt;
+
+    /**
+     * 신고 시간 자동 세팅
+     */
+    @PrePersist
+    protected void onReport() {
+        this.reportedAt = LocalDateTime.now();
+    }
 }

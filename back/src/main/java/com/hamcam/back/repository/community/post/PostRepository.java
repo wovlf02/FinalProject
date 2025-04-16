@@ -63,8 +63,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("""
         SELECT p FROM Post p
         WHERE (:category IS NULL OR p.category = :category)
-          AND (:keyword IS NULL OR p.title LIKE %:keyword% OR p.content LIKE %:keyword%)
-          AND p.likeCount >= :minLikes
+        AND (:keyword IS NULL OR p.title LIKE %:keyword% OR p.content LIKE %:keyword%)
+        AND p.likeCount >= :minLikes
     """)
     Page<Post> searchFilteredPosts(
             @Param("category") String category,
@@ -72,4 +72,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("minLikes") int minLikes,
             Pageable pageable
     );
+
 }

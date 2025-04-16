@@ -90,10 +90,16 @@ public class PostService {
 
     // 조건별 필터링
     public PostListResponse filterPosts(String category, String sort, int minLikes, String keyword) {
-        Pageable pageable = PageRequest.of(0, 20);
-        Page<Post> result = postRepository.searchFilteredPosts(category, keyword, minLikes, sort, pageable);
+        Sort sortOption = "popular".equals(sort)
+                ? Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"))
+                : Sort.by(Sort.Order.desc("createdAt"));
+
+        Pageable pageable = PageRequest.of(0, 20, sortOption);
+        Page<Post> result = postRepository.searchFilteredPosts(category, keyword, minLikes, pageable);
+
         return PostListResponse.from(result);
     }
+
 
     // 인기 게시글 조회
     public PopularPostListResponse getPopularPosts() {
