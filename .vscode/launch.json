@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-BackApplication<back>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.studymate.back.BackApplication",
+            "projectName": "back",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
