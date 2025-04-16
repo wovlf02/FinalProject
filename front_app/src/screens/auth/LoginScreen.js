@@ -9,29 +9,34 @@ const LoginScreen = ({ navigation }) => {
     const [passwordVisible, setPasswordVisible] = useState(false);
 
     // 일반 로그인 처리
+    // 일반 로그인 처리 (서버 요청 없이 바로 Main 이동)
     const handleLogin = async () => {
         try {
-            const response = await api.post('/auth/login', { username, password });
+            // 예시 사용자 정보 (실제 검증 없이 바로 사용)
+            const dummyUser = {
+                username: 'testuser',
+                email: 'testuser@example.com',
+                name: '홍길동',
+                accessToken: 'dummy-access-token',
+                refreshToken: 'dummy-refresh-token',
+            };
 
-            if (response.status === 200) {
-                const { accessToken, refreshToken, username, email, name } = response.data;
+            // 🔒 보안 저장소에 Refresh Token 저장
+            await EncryptedStorage.setItem('refreshToken', dummyUser.refreshToken);
 
-                // 🔒 보안 저장소에 Refresh Token 저장
-                await EncryptedStorage.setItem('refreshToken', refreshToken);
-
-                // 🔄 홈 화면으로 이동하며 사용자 데이터 전달
-                navigation.replace('Main', {
-                    username: username,
-                    email: email,
-                    name: name,
-                    accessToken: accessToken,
-                });
-            }
+            // 🔄 홈 화면으로 이동하며 사용자 데이터 전달
+            navigation.replace('Main', {
+                username: dummyUser.username,
+                email: dummyUser.email,
+                name: dummyUser.name,
+                accessToken: dummyUser.accessToken,
+            });
         } catch (error) {
             console.error(error);
-            Alert.alert('로그인 실패', '아이디 또는 비밀번호를 확인하세요.');
+            Alert.alert('오류', '로그인 처리 중 문제가 발생했습니다.');
         }
     };
+
 
     // 소셜 로그인 처리
     const handleSocialLogin = async (platform) => {
