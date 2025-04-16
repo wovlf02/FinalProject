@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
  * 채팅 메시지 엔티티
  * <p>
  * 채팅방에서 사용자가 전송한 텍스트, 이미지, 파일 메시지를 저장합니다.
+ * 파일 메시지의 경우 실제 서버에 저장된 파일명을 함께 보관합니다.
  * </p>
  */
 @Entity
@@ -52,4 +53,10 @@ public class ChatMessage {
      * 전송 시각
      */
     private LocalDateTime sentAt;
+
+    /**
+     * 저장된 첨부파일 이름 (type이 FILE인 경우 사용)
+     */
+    @Column(name = "stored_file_name")
+    private String storedFileName;
 }

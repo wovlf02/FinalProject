@@ -15,6 +15,11 @@ import lombok.Data;
 public class ChatRoomCreateRequest {
 
     /**
+     * 채팅방 이름
+     */
+    private String roomName;
+
+    /**
      * 채팅방 타입 (예: POST, GROUP, STUDY, DIRECT 등)
      */
     private String roomType;

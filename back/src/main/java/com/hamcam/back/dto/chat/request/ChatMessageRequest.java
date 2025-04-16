@@ -25,5 +25,10 @@ public class ChatMessageRequest {
     /**
      * 메시지 유형 (TEXT, IMAGE, FILE 등)
      */
-    private String messageType;
+    private String type;  // 수정: messageType → type 으로 명칭 통일
+
+    /**
+     * 서버에 저장된 파일명 (파일 메시지일 경우만 사용)
+     */
+    private String storedFileName;
 }

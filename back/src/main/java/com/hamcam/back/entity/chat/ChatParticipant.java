@@ -4,6 +4,8 @@ import com.hamcam.back.entity.auth.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 /**
  * 채팅방 참여자 엔티티
  * <p>
@@ -36,4 +38,9 @@ public class ChatParticipant {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    /**
+     * 입장 시각
+     */
+    private LocalDateTime joinedAt;
 }

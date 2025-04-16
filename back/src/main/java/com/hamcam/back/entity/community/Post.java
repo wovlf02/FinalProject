@@ -66,6 +66,11 @@ public class Post {
     private int likeCount;
 
     /**
+     * 조회 수
+     */
+    private int viewCount;
+
+    /**
      * 댓글 수
      */
     private int commentCount;

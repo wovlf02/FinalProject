@@ -28,7 +28,7 @@ public class FriendListResponse {
         public static FriendDto from(User user) {
             return new FriendDto(
                     user.getId(),
-                    user.getName(),
+                    user.getNickname(),
                     user.getProfileImageUrl()
             );
         }

@@ -1,7 +1,7 @@
 package com.hamcam.back.repository.community.post;
 
-import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.entity.community.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
@@ -40,7 +40,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     /**
      * 인기 게시글 조회 (좋아요 + 조회수 기반 정렬)
-     * likeCount + viewCount 기준 내림차순 정렬
      */
     @Query("SELECT p FROM Post p ORDER BY (p.likeCount + p.viewCount) DESC")
     Page<Post> findPopularPosts(Pageable pageable);
@@ -50,7 +49,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * 활동 점수 = 작성 게시글 수 + 좋아요 합
      */
     @Query("""
-        SELECT p.writer.id, p.writer.name, p.writer.profileImageUrl, COUNT(p), SUM(p.likeCount)
+        SELECT p.writer.id, p.writer.nickname, p.writer.profileImageUrl, COUNT(p), SUM(p.likeCount)
         FROM Post p
         GROUP BY p.writer
         ORDER BY SUM(p.likeCount) DESC
@@ -58,22 +57,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Object[]> getUserPostRanking(Pageable pageable);
 
     /**
-     * 복합 조건: 카테고리, 키워드, 좋아요 수 필터링 + 정렬
+     * 복합 조건: 카테고리, 키워드, 좋아요 수 필터링
+     * 정렬은 Pageable에서 처리
      */
     @Query("""
         SELECT p FROM Post p
         WHERE (:category IS NULL OR p.category = :category)
           AND (:keyword IS NULL OR p.title LIKE %:keyword% OR p.content LIKE %:keyword%)
           AND p.likeCount >= :minLikes
-        ORDER BY
-            CASE WHEN :sort = 'popular' THEN p.likeCount + p.viewCount
-                 ELSE p.createdAt END DESC
     """)
     Page<Post> searchFilteredPosts(
             @Param("category") String category,
             @Param("keyword") String keyword,
             @Param("minLikes") int minLikes,
-            @Param("sort") String sort,
             Pageable pageable
     );
 }

@@ -1,13 +1,14 @@
 package com.hamcam.back.controller.friend;
 
 import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.dto.friend.request.FriendRequest;
+
 import com.hamcam.back.dto.friend.request.FriendAcceptRequest;
 import com.hamcam.back.dto.friend.request.FriendRejectRequest;
 import com.hamcam.back.dto.friend.response.FriendListResponse;
 import com.hamcam.back.dto.friend.response.FriendRequestListResponse;
 import com.hamcam.back.dto.friend.response.FriendSearchResponse;
 import com.hamcam.back.dto.friend.response.BlockedFriendListResponse;
+import com.hamcam.back.entity.friend.FriendRequest;
 import com.hamcam.back.service.friend.FriendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

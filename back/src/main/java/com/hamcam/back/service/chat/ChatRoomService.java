@@ -38,8 +38,8 @@ public class ChatRoomService {
      */
     public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request) {
         ChatRoom room = ChatRoom.builder()
-                .name(request.getName())
-                .type(request.getType())
+                .name(request.getRoomName())
+                .type(request.getRoomType())
                 .referenceId(request.getReferenceId())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -133,8 +133,8 @@ public class ChatRoomService {
     private ChatRoomResponse toResponse(ChatRoom room) {
         return ChatRoomResponse.builder()
                 .roomId(room.getId())
-                .name(room.getName())
-                .type(room.getType())
+                .roomName(room.getName())
+                .roomType(room.getType())
                 .referenceId(room.getReferenceId())
                 .createdAt(room.getCreatedAt())
                 .build();
@@ -143,8 +143,8 @@ public class ChatRoomService {
     private ChatRoomListResponse toListResponse(ChatRoom room) {
         return ChatRoomListResponse.builder()
                 .roomId(room.getId())
-                .name(room.getName())
-                .type(room.getType())
+                .roomName(room.getName())
+                .roomType(room.getType())
                 .participantCount(
                         chatParticipantRepository.findByChatRoom(room).size()
                 )

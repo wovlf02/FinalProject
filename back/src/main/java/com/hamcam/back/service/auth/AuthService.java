@@ -80,7 +80,7 @@ public class AuthService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setName(request.getName());
+        user.setNickname(request.getName());
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
         userRepository.save(user);
@@ -117,7 +117,7 @@ public class AuthService {
         userRepository.save(user);
 
         // 로그인 성공 시 Access Token, Refresh Token, 사용자 정보 반환
-        return new LoginResponse(accessToken, refreshToken, user.getUsername(), user.getEmail(), user.getName());
+        return new LoginResponse(accessToken, refreshToken, user.getUsername(), user.getEmail(), user.getNickname());
     }
 
     /**

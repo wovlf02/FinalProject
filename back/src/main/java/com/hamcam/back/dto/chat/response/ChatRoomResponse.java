@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.chat.response;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -7,8 +8,13 @@ import java.util.List;
 
 /**
  * 단일 채팅방 상세 정보 응답 DTO
+ * <p>
+ * 채팅방 상세 정보를 반환할 때 사용되며,
+ * 참여자 목록, 생성 시간, 채팅방의 타입 및 외부 연동 정보 등을 포함합니다.
+ * </p>
  */
 @Data
+@Builder
 public class ChatRoomResponse {
 
     /**
@@ -19,10 +25,10 @@ public class ChatRoomResponse {
     /**
      * 채팅방 이름 또는 제목
      */
-    private String name;
+    private String roomName;
 
     /**
-     * 채팅방 타입 (POST, GROUP, STUDY 등)
+     * 채팅방 타입 (예: POST, GROUP, STUDY 등)
      */
     private String roomType;
 
@@ -32,12 +38,12 @@ public class ChatRoomResponse {
     private Long referenceId;
 
     /**
-     * 채팅방 생성 시간
+     * 채팅방 생성 시각
      */
     private LocalDateTime createdAt;
 
     /**
-     * 참여자 목록
+     * 채팅방에 참여 중인 사용자 목록
      */
     private List<ChatParticipantDto> participants;
 }

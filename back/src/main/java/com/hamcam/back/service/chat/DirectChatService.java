@@ -89,8 +89,8 @@ public class DirectChatService {
                 .filter(room -> "DIRECT".equals(room.getType()))
                 .map(room -> ChatRoomListResponse.builder()
                         .roomId(room.getId())
-                        .name(room.getName())
-                        .type(room.getType())
+                        .roomName(room.getName())
+                        .roomType(room.getType())
                         .participantCount(
                                 chatParticipantRepository.findByChatRoom(room).size()
                         )
@@ -128,8 +128,8 @@ public class DirectChatService {
     private ChatRoomResponse toResponse(ChatRoom room) {
         return ChatRoomResponse.builder()
                 .roomId(room.getId())
-                .name(room.getName())
-                .type(room.getType())
+                .roomName(room.getName())
+                .roomType(room.getType())
                 .referenceId(room.getReferenceId())
                 .createdAt(room.getCreatedAt())
                 .build();

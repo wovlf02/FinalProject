@@ -1,6 +1,7 @@
 package com.hamcam.back.dto.chat.response;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
  * 채팅 메시지 응답 DTO
  */
 @Data
+@Builder
 @AllArgsConstructor
 public class ChatMessageResponse {
 
@@ -35,7 +37,12 @@ public class ChatMessageResponse {
     /**
      * 메시지 타입 (TEXT, IMAGE, FILE 등)
      */
-    private String messageType;
+    private String type;
+
+    /**
+     * 서버에 저장된 파일명 (파일/이미지 메시지 전용)
+     */
+    private String storedFileName;
 
     /**
      * 메시지 전송 시각
