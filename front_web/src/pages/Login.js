@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../css/Login.css';
 
-const Login = () => {
+const Login = ({ setName }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
@@ -20,6 +20,7 @@ const Login = () => {
 
       console.log('로그인 성공:', response.data);
       alert(`로그인 성공: ${response.data.name}님 환영합니다!`);
+      setName(response.data.name); // props로 받은 setName 사용
       navigate('/dashboard');
     } catch (error) {
       if (error.response) {
