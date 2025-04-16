@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:back/src/main/java/com/hamcam/back/auth/util/EmailUtil.java
-package com.hamcam.back.auth.util;
-========
 package com.hamcam.back.utils.auth;
->>>>>>>> wovlf:back/src/main/java/com/hamcam/back/utils/auth/EmailUtil.java
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -24,44 +20,43 @@ public class EmailUtil {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.username}") // 발신자 이메일을 yml에서 가져오기
     private String fromEmail;
 
-    @Value("${spring.mail.sender-name:HamCam}")
+    @Value("${spring.mail.sender-name:StudyMate}") // 발신자 이름 (기본값: StudyMate)
     private String senderName;
 
     /**
-     * 6자리 랜덤 인증번호 생성
-     * @return 6자리 인증번호 (000000 ~ 999999)
+     * 인증번호 생성 메서드
+     * @return 6자리 인증번호
      */
     public String generateVerificationCode() {
         Random random = new Random();
-        return String.format("%06d", random.nextInt(1000000));
+        return String.format("%06d", random.nextInt(1000000)); // 000000 ~ 999999 범위
     }
 
     /**
-     * 인증번호가 포함된 이메일 전송
-     * @param receipientEmail 수신자 이메일
-     * @param verificationCode 인증번호
-     * @throws MessagingException 이메일 전송 실패 시
-     * @throws UnsupportedEncodingException 발신자 이름 인코딩 실패 시
+     * 이메일 전송 메서드 -> 네이버 SMTP를 사용하여 인증번호 포함 이메일 전송
+     * @param recipientEmail 수신자 이메일 주소
+     * @param verificationCode 이메일 인증번호
+     * @throws MessagingException 이메일 전송 실패 시 예외 발생
      */
-    public void sendVerificationEmail(String receipientEmail, String verificationCode) throws MessagingException, UnsupportedEncodingException {
+    public void sendVerificationEmail(String recipientEmail, String verificationCode) throws MessagingException, UnsupportedEncodingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
 
-        helper.setTo(receipientEmail);
-        helper.setFrom(fromEmail, senderName);
-        helper.setSubject("함캠 이메일 인증번호입니다.");
+        helper.setTo(recipientEmail);
+        helper.setFrom(fromEmail, senderName); // yml에서 가져온 발신자 이메일과 이름 설정
+        helper.setSubject("StudyMate 이메일 인증번호입니다.");
         helper.setText(buildEmailContent(verificationCode), true);
 
         mailSender.send(message);
     }
 
     /**
-     * 이메일 본문 HTML 구성
-     * @param verificationCode 인증번호
-     * @return HTML 형식 본문
+     * 이메일 본문 생성 메서드
+     * @param verificationCode 이메일 인증번호
+     * @return 이메일 본문 HTML
      */
     private String buildEmailContent(String verificationCode) {
         return "<div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;'>"

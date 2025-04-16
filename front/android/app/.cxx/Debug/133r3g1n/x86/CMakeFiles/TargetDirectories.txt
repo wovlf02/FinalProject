@@ -1,3 +1,0 @@
-C:/FinalProject/front/android/app/.cxx/Debug/133r3g1n/x86/CMakeFiles/appmodules.dir
-C:/FinalProject/front/android/app/.cxx/Debug/133r3g1n/x86/CMakeFiles/edit_cache.dir
-C:/FinalProject/front/android/app/.cxx/Debug/133r3g1n/x86/CMakeFiles/rebuild_cache.dir
