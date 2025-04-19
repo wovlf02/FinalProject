@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:back/src/main/java/com/studymate/back/utils/EmailUtil.java
-package com.studymate.back.utils;
-========
 package com.hamcam.back.utils.auth;
->>>>>>>> 60f33946366a4695315273c444a7cf8162cc73bf:back/src/main/java/com/hamcam/back/utils/auth/EmailUtil.java
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

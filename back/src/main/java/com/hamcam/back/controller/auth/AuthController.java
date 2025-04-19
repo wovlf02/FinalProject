@@ -1,14 +1,4 @@
-<<<<<<<< HEAD:back/src/main/java/com/studymate/back/controller/AuthController.java
-package com.studymate.back.controller;
 
-import com.studymate.back.dto.*;
-import com.studymate.back.service.AuthService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.*;
-========
 package com.hamcam.back.controller.auth;
 
 import com.hamcam.back.dto.auth.*;
@@ -16,7 +6,6 @@ import com.hamcam.back.service.auth.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
->>>>>>>> 60f33946366a4695315273c444a7cf8162cc73bf:back/src/main/java/com/hamcam/back/controller/auth/AuthController.java
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

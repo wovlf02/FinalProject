@@ -1,12 +1,6 @@
-<<<<<<<< HEAD:back/src/main/java/com/hamcam/back/config/socket/SecurityConfig.java
-package com.studymate.back.config;
-
-import com.studymate.back.security.JwtAuthenticationFilter;
-========
 package com.hamcam.back.config.auth;
 
 import com.hamcam.back.security.auth.JwtAuthenticationFilter;
->>>>>>>> 60f33946366a4695315273c444a7cf8162cc73bf:back/src/main/java/com/hamcam/back/config/auth/SecurityConfig.java
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
