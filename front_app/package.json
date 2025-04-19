@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-community/checkbox": "^0.5.17",
     "@react-native-community/masked-view": "^0.1.11",
     "@react-native-picker/picker": "^2.11.0",
     "@react-native-seoul/kakao-login": "^5.4.1",
@@ -19,6 +20,8 @@
     "axios": "^1.7.9",
     "react": "18.3.1",
     "react-native": "0.76.6",
+    "react-native-bouncy-checkbox": "^4.1.2",
+    "react-native-calendars": "^1.1311.0",
     "react-native-encrypted-storage": "^4.0.3",
     "react-native-gesture-handler": "^2.22.0",
     "react-native-reanimated": "^3.16.7",
