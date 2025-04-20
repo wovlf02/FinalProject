@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const GroupStudyMainScreen = () => {
+const UnitTestScreen = () => {
     return (
         <View style={styles.container}>
-            <Text style={styles.text}>그룹 학습 페이지입니다</Text>
+            <Text style={styles.text}>단원평가 페이지입니다</Text>
         </View>
     );
 };
@@ -14,13 +14,13 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#fff',
     },
     text: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        fontSize: 18,
+        marginBottom: 10,
         color: '#333',
     },
 });
 
-export default GroupStudyMainScreen;
+export default UnitTestScreen;
