@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const GroupStudyMainScreen = () => {
+const TeamStudyScreen = () => {
     return (
         <View style={styles.container}>
-            <Text style={styles.text}>그룹 학습 페이지입니다</Text>
+            <Text style={styles.text}>팀 공부 페이지</Text>
         </View>
     );
 };
@@ -23,4 +23,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default GroupStudyMainScreen;
+export default TeamStudyScreen;

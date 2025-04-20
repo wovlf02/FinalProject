@@ -18,6 +18,8 @@
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.1",
     "axios": "^1.7.9",
+    "expo-camera": "^16.0.18",
+    "expo-modules-core": "^2.2.3",
     "react": "18.3.1",
     "react-native": "0.76.6",
     "react-native-bouncy-checkbox": "^4.1.2",
@@ -28,6 +30,8 @@
     "react-native-safe-area-context": "^5.1.0",
     "react-native-screens": "^4.5.0",
     "react-native-tab-view": "^4.0.5",
+    "react-native-vector-icons": "^10.2.0",
+    "react-native-vision-camera": "^4.6.4",
     "react-navigation": "^5.0.0"
   },
   "devDependencies": {
