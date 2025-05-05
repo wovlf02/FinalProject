@@ -14,7 +14,7 @@ const VideoRoom = () => {
 
     useEffect(() => {
         // WebSocket 연결 설정
-        socket.current = io('http://localhost:8080'); // Signaling 서버 URL
+        socket.current = io('http://localhost:8081'); // Signaling 서버 URL
         const userId = `${roomId}-${Math.random().toString(36).substr(2, 9)}`; // 고유 사용자 ID 생성
         socket.current.emit('join-room', { roomId, userId }); // 사용자 ID 포함
 

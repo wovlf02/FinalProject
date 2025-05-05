@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../css/Login.css';
 
-const Login = ({ setName }) => {
+const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
@@ -19,8 +19,15 @@ const Login = ({ setName }) => {
       });
 
       console.log('로그인 성공:', response.data);
+
+      // ✅ accessToken, refreshToken, username 등을 localStorage에 저장
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+      localStorage.setItem('username', response.data.username);
+      localStorage.setItem('email', response.data.email);
+      localStorage.setItem('name', response.data.name);
+
       alert(`로그인 성공: ${response.data.name}님 환영합니다!`);
-      setName(response.data.name); // props로 받은 setName 사용
       navigate('/dashboard');
     } catch (error) {
       if (error.response) {

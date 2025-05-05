@@ -2,6 +2,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "BackApplication",
+            "request": "launch",
+            "mainClass": "com.hamcam.back.BackApplication",
+            "projectName": "back"
+        },
+        {
+            "type": "java",
             "name": "Spring Boot-BackApplication<back>",
             "request": "launch",
             "cwd": "${workspaceFolder}",
