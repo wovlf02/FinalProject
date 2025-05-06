@@ -14,9 +14,27 @@ const TeamStudy = () => {
     const [filteredRooms, setFilteredRooms] = useState([]);
     const navigate = useNavigate();
 
+    // ✅ 페이지가 처음 로드될 때 학습방 목록을 서버에서 불러옴
     useEffect(() => {
-        setFilteredRooms(studyRooms);
-    }, [studyRooms]);
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert('로그인이 필요합니다.');
+            return;
+        }
+
+        axios.get('http://localhost:8080/api/study/team/rooms', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        .then((response) => {
+            setStudyRooms(response.data);
+            setFilteredRooms(response.data);
+        })
+        .catch((error) => {
+            console.error('학습방 목록 불러오기 실패:', error);
+        });
+    }, []);
 
     const handleSearch = () => {
         const filtered = studyRooms.filter((room) =>
@@ -54,8 +72,13 @@ const TeamStudy = () => {
             );
 
             alert('학습방이 생성되었습니다!');
-            setStudyRooms([...studyRooms, response.data]);
+            setStudyRooms(prev => [...prev, response.data]);
+            setFilteredRooms(prev => [...prev, response.data]); // 리스트 갱신
             setShowModal(false);
+            setNewRoomTitle('');
+            setRoomType('QUIZ');
+            setMaxParticipants(10);
+            setPassword('');
         } catch (error) {
             console.error('학습방 생성 중 오류 발생:', error);
             alert('학습방 생성에 실패했습니다.');

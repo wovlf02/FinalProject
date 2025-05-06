@@ -1,0 +1,21 @@
+.video-box {
+    position: relative;
+    width: 45%;
+  }
+  
+  .video {
+    width: 100%;
+    border-radius: 10px;
+  }
+  
+  .name-tag {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+  

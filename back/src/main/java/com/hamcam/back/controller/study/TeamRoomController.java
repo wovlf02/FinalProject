@@ -5,6 +5,7 @@ import com.hamcam.back.dto.study.TeamRoomResponse;
 import com.hamcam.back.service.study.TeamRoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/study/team/rooms")
@@ -22,5 +23,9 @@ public class TeamRoomController {
     public TeamRoomResponse getById(@PathVariable Long id) {
         return teamRoomService.getTeamRoomById(id);
     }
-}
 
+    @GetMapping // 🔥 새로 추가!
+    public List<TeamRoomResponse> getAllRooms() {
+        return teamRoomService.getAllTeamRooms();
+    }
+}

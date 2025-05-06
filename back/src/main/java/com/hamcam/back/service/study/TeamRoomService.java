@@ -7,6 +7,9 @@ import com.hamcam.back.repository.study.TeamRoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class TeamRoomService {
 
@@ -14,34 +17,27 @@ public class TeamRoomService {
     private TeamRoomRepository teamRoomRepository;
 
     public TeamRoomResponse createTeamRoom(TeamRoomCreateRequest request) {
-        TeamRoom teamRoom = TeamRoom.builder()
-                .title(request.getTitle())
-                .roomType(request.getRoomType())
-                .maxParticipants(request.getMaxParticipants())
-                .password(request.getPassword())
-                .build();
+        TeamRoom room = new TeamRoom();
+        room.setTitle(request.getTitle());
+        room.setRoomType(request.getRoomType());
+        room.setMaxParticipants(request.getMaxParticipants());
+        room.setPassword(request.getPassword());
 
-        TeamRoom saved = teamRoomRepository.save(teamRoom);
-
-        return new TeamRoomResponse(
-                saved.getId(),
-                saved.getTitle(),
-                saved.getRoomType(),
-                saved.getMaxParticipants(),
-                saved.getPassword()
-        );
+        TeamRoom saved = teamRoomRepository.save(room);
+        return TeamRoomResponse.from(saved);
     }
 
     public TeamRoomResponse getTeamRoomById(Long id) {
         TeamRoom room = teamRoomRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("TeamRoom not found"));
+                .orElseThrow(() -> new RuntimeException("해당 학습방을 찾을 수 없습니다."));
+        return TeamRoomResponse.from(room);
+    }
 
-        return new TeamRoomResponse(
-                room.getId(),
-                room.getTitle(),
-                room.getRoomType(),
-                room.getMaxParticipants(),
-                room.getPassword()
-        );
+    // ✅ 전체 학습방 목록 반환
+    public List<TeamRoomResponse> getAllTeamRooms() {
+        List<TeamRoom> rooms = teamRoomRepository.findAll();
+        return rooms.stream()
+                .map(TeamRoomResponse::from)
+                .collect(Collectors.toList());
     }
 }
