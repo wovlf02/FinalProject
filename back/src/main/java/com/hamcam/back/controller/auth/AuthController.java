@@ -1,23 +1,45 @@
 package com.hamcam.back.controller.auth;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hamcam.back.dto.auth.request.*;
 import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.dto.auth.response.TokenResponse;
+import com.hamcam.back.dto.common.MessageResponse;
+import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.response.ApiResponse;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * 인증 및 회원 관련 API를 제공하는 컨트롤러입니다.
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * 아이디 중복 확인
@@ -68,13 +90,50 @@ public class AuthController {
         return ApiResponse.ok();
     }
 
-    /**
-     * 최종 회원가입 (학습 정보, 프로필 포함)
-     */
-    @PostMapping("/register")
-    public ApiResponse<Void> register(@RequestBody @Valid RegisterRequest request) {
-        authService.register(request);
-        return ApiResponse.ok();
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MessageResponse> register(
+            @RequestPart("username") String username,
+            @RequestPart("password") String rawPassword,
+            @RequestPart("email") String email,
+            @RequestPart("nickname") String nickname,
+            @RequestPart("grade") String gradeStr,  // ← String으로 받음
+            @RequestPart("subjects") String subjectsJson,
+            @RequestPart("studyHabit") String studyHabit,
+            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
+    ) {
+        try {
+            Integer grade = Integer.parseInt(gradeStr);  // ← 여기서 변환
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<String> subjects = objectMapper.readValue(subjectsJson, new TypeReference<>() {});
+
+            String profileImageUrl = null;
+            if (profileImage != null && !profileImage.isEmpty()) {
+                String storedName = UUID.randomUUID() + "_" + profileImage.getOriginalFilename();
+                Path uploadDir = Paths.get("uploads/profile");
+                Files.createDirectories(uploadDir);
+                Path targetPath = uploadDir.resolve(storedName);
+                Files.copy(profileImage.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                profileImageUrl = "/uploads/profile/" + storedName;
+            }
+
+            RegisterRequest request = new RegisterRequest();
+            FieldUtils.writeField(request, "username", username, true);
+            FieldUtils.writeField(request, "password", rawPassword, true);
+            FieldUtils.writeField(request, "email", email, true);
+            FieldUtils.writeField(request, "nickname", nickname, true);
+            FieldUtils.writeField(request, "grade", grade, true);
+            FieldUtils.writeField(request, "subjects", subjects, true);
+            FieldUtils.writeField(request, "studyHabit", studyHabit, true);
+            FieldUtils.writeField(request, "profileImageUrl", profileImageUrl, true);
+
+            authService.register(request);
+            return ResponseEntity.ok(new MessageResponse("회원가입이 완료되었습니다."));
+
+        } catch (Exception e) {
+            log.error("회원가입 중 예외 발생", e);
+            throw new CustomException("회원가입 처리 중 오류가 발생했습니다.");
+        }
     }
 
     /**

@@ -3,6 +3,7 @@ package com.hamcam.back.service.community.attachment;
 import com.hamcam.back.dto.community.attachment.response.AttachmentListResponse;
 import com.hamcam.back.dto.community.attachment.response.AttachmentResponse;
 import com.hamcam.back.entity.community.*;
+import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.repository.community.attachment.AttachmentRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
@@ -13,6 +14,7 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.Arrays;
