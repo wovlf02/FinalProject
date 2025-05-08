@@ -8,9 +8,12 @@ import com.hamcam.back.entity.community.PostFavorite;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.repository.community.post.PostFavoriteRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
+import com.hamcam.back.security.auth.CustomUserDetails;
 import com.hamcam.back.service.community.attachment.AttachmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,15 +30,25 @@ public class PostService {
     private final PostFavoriteRepository postFavoriteRepository;
     private final AttachmentService attachmentService;
 
-    // 현재 로그인한 사용자 ID 조회 (임시 하드코딩)
     private Long getCurrentUserId() {
-        return 1L;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new CustomException("로그인 정보가 없습니다.");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
+
+        throw new CustomException("사용자 정보를 불러올 수 없습니다.");
     }
 
-    // 현재 로그인한 사용자 객체 반환 (임시 구현)
     private User getCurrentUser() {
         return User.builder().id(getCurrentUserId()).build();
     }
+
 
     /**
      * 게시글 생성

@@ -4,6 +4,7 @@ import com.hamcam.back.dto.community.comment.request.CommentCreateRequest;
 import com.hamcam.back.dto.community.comment.request.CommentUpdateRequest;
 import com.hamcam.back.dto.community.comment.response.CommentListResponse;
 import com.hamcam.back.dto.community.comment.response.CommentResponse;
+import com.hamcam.back.dto.community.reply.request.ReplyCreateRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.*;
 import com.hamcam.back.repository.community.attachment.AttachmentRepository;
@@ -20,6 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.hamcam.back.global.security.SecurityUtil.getCurrentUser;
 
 /**
  * 댓글(Comment) 및 대댓글(Reply) 서비스
@@ -61,13 +64,16 @@ public class CommentService {
         // (첨부파일 저장 로직은 AttachmentService 활용 or 추후 확장)
     }
 
-    public void createReply(Long commentId, CommentCreateRequest request, MultipartFile[] files) {
-        Comment parent = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("상위 댓글이 존재하지 않습니다."));
+    public void createReply(Long commentId, ReplyCreateRequest request, MultipartFile[] files) {
+        Comment parentComment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("부모 댓글이 존재하지 않습니다."));
+
+        User writer = getCurrentUser();
 
         Reply reply = Reply.builder()
-                .comment(parent)
-                .writer(User.builder().id(getCurrentUserId()).build())
+                .comment(parentComment)
+                .writer(writer)
+                .post(parentComment.getPost())  // 🟢 여기 반드시 있어야 함
                 .content(request.getContent())
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -75,29 +81,37 @@ public class CommentService {
         replyRepository.save(reply);
     }
 
+
     // ===== 댓글/대댓글 수정 =====
 
     public void updateComment(Long commentId, CommentUpdateRequest request, MultipartFile[] files) {
         Optional<Comment> commentOpt = commentRepository.findById(commentId);
         if (commentOpt.isPresent()) {
-            Comment comment = commentOpt.get();
-            comment.setContent(request.getContent());
-            comment.setUpdatedAt(LocalDateTime.now());
-            commentRepository.save(comment);
+            updateContentAndSave(commentOpt.get(), request.getContent());
             return;
         }
 
         Optional<Reply> replyOpt = replyRepository.findById(commentId);
         if (replyOpt.isPresent()) {
-            Reply reply = replyOpt.get();
-            reply.setContent(request.getContent());
-            reply.setUpdatedAt(LocalDateTime.now());
-            replyRepository.save(reply);
+            updateContentAndSave(replyOpt.get(), request.getContent());
             return;
         }
 
         throw new IllegalArgumentException("댓글 또는 대댓글이 존재하지 않습니다.");
     }
+
+    private void updateContentAndSave(Comment comment, String content) {
+        comment.setContent(content);
+        comment.setUpdatedAt(LocalDateTime.now());
+        commentRepository.save(comment);
+    }
+
+    private void updateContentAndSave(Reply reply, String content) {
+        reply.setContent(content);
+        reply.setUpdatedAt(LocalDateTime.now());
+        replyRepository.save(reply);
+    }
+
 
     // ===== 삭제 =====
 

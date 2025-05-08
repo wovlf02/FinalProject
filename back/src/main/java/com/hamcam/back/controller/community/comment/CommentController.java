@@ -4,6 +4,7 @@ import com.hamcam.back.dto.community.comment.request.CommentCreateRequest;
 import com.hamcam.back.dto.community.comment.request.CommentUpdateRequest;
 import com.hamcam.back.dto.community.comment.response.CommentListResponse;
 import com.hamcam.back.dto.common.MessageResponse;
+import com.hamcam.back.dto.community.reply.request.ReplyCreateRequest;
 import com.hamcam.back.service.community.comment.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -32,12 +33,13 @@ public class CommentController {
     @PostMapping("/comments/{commentId}/replies")
     public ResponseEntity<MessageResponse> createReply(
             @PathVariable Long commentId,
-            @ModelAttribute CommentCreateRequest request,
+            @ModelAttribute ReplyCreateRequest request, // ✅ 여기를 수정
             @RequestParam(value = "files", required = false) MultipartFile[] files
     ) {
         commentService.createReply(commentId, request, files);
         return ResponseEntity.ok(new MessageResponse("대댓글이 등록되었습니다."));
     }
+
 
     /** 댓글 or 대댓글 수정 */
     @PutMapping("/comments/{commentId}/update")

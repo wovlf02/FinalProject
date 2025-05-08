@@ -1,128 +1,162 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Image,
+    Dimensions,
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 const IntroScreen = ({ navigation }) => {
     return (
-        <View style={styles.container}>
-            {/* 로고 및 앱 이름 */}
+        <LinearGradient
+            colors={['#E3F2FD', '#FFFFFF']}
+            style={styles.background}
+        >
+            {/* 로고 및 앱명 */}
             <View style={styles.logoContainer}>
-                <Image source={require('../assets/intro.png')} style={styles.logo} />
-                <Text style={styles.appName}>StudyMate</Text>
+                <Image
+                    source={require('../assets/intro.png')}
+                    style={styles.logo}
+                    resizeMode="contain"
+                />
+                <Text style={styles.appName}>함캠</Text>
+                <Text style={styles.slogan}>함께해요, 캠스터디</Text>
             </View>
 
-            {/* 간략한 설명 */}
-            <Text style={styles.mainDescription}>학습 관리의 모든 것</Text>
-
-            {/* 주요 기능 아이콘 */}
-            <View style={styles.iconSection}>
-                <View style={styles.iconCard}>
+            {/* 주요 기능 카드 */}
+            <View style={styles.featureContainer}>
+                <View style={styles.featureCard}>
                     <Image source={require('../assets/community.png')} style={styles.icon} />
                     <Text style={styles.iconLabel}>커뮤니티</Text>
                 </View>
-                <View style={styles.iconCard}>
+                <View style={styles.featureCard}>
                     <Image source={require('../assets/personal.png')} style={styles.icon} />
-                    <Text style={styles.iconLabel}>개인 학습 관리</Text>
+                    <Text style={styles.iconLabel}>개인 학습</Text>
                 </View>
-                <View style={styles.iconCard}>
+                <View style={styles.featureCard}>
                     <Image source={require('../assets/group.png')} style={styles.icon} />
-                    <Text style={styles.iconLabel}>그룹 학습 관리</Text>
+                    <Text style={styles.iconLabel}>그룹 학습</Text>
                 </View>
             </View>
 
-            {/* 버튼 섹션 */}
+            {/* 버튼 */}
             <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    style={styles.loginButton}
-                    onPress={() => navigation.navigate('Login')}
-                >
-                    <Text style={styles.buttonText}>로그인</Text>
-                </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.signUpButton}
                     onPress={() => navigation.navigate('Register')}
                 >
-                    <Text style={styles.buttonText}>회원가입</Text>
+                    <Text style={styles.signUpText}>회원가입</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.loginButton}
+                    onPress={() => navigation.navigate('Login')}
+                >
+                    <Text style={styles.loginText}>로그인</Text>
                 </TouchableOpacity>
             </View>
-        </View>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    background: {
         flex: 1,
-        backgroundColor: '#E3F2FD',
         alignItems: 'center',
         justifyContent: 'center',
     },
     logoContainer: {
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 40,
     },
     logo: {
-        width: 80,
-        height: 80,
+        width: 100,
+        height: 100,
     },
     appName: {
-        fontSize: 32,
+        fontSize: 36,
         fontWeight: 'bold',
         color: '#007BFF',
         marginTop: 10,
     },
-    mainDescription: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#007BFF',
-        textAlign: 'center',
-        marginBottom: 30,
-    },
-    subDescription: {
+    slogan: {
         fontSize: 16,
         color: '#666',
-        textAlign: 'center',
-        marginBottom: 30,
+        marginTop: 4,
     },
-    iconSection: {
+    featureContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        width: '90%',
-        marginBottom: 20,
+        width: width * 0.85,
+        marginVertical: 30,
     },
-    iconCard: {
+    featureCard: {
         alignItems: 'center',
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        padding: 12,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        width: 90,
     },
     icon: {
-        width: 60,
-        height: 60,
-        marginBottom: 10,
+        width: 50,
+        height: 50,
+        marginBottom: 6,
     },
     iconLabel: {
         fontSize: 14,
-        color: '#555',
+        color: '#333',
+        fontWeight: '500',
     },
     buttonContainer: {
         flexDirection: 'row',
-        width: '80%',
         justifyContent: 'space-between',
-        marginTop: 30,
-    },
-    loginButton: {
-        backgroundColor: '#007BFF',
-        paddingVertical: 15,
-        flex: 1,
-        borderRadius: 25,
-        marginRight: 10,
+        width: '80%',
+        marginTop: 20,
     },
     signUpButton: {
-        backgroundColor: '#00C853',
-        paddingVertical: 15,
         flex: 1,
-        borderRadius: 25,
+        borderWidth: 2,
+        borderColor: '#007BFF',
+        backgroundColor: '#FFF',
+        borderRadius: 30,
+        paddingVertical: 14,
+        marginRight: 10,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 4,
     },
-    buttonText: {
+    loginButton: {
+        flex: 1,
+        backgroundColor: '#007BFF',
+        borderRadius: 30,
+        paddingVertical: 14,
+        alignItems: 'center',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+    },
+    signUpText: {
+        color: '#007BFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    loginText: {
         color: '#FFF',
         fontSize: 16,
-        textAlign: 'center',
         fontWeight: 'bold',
     },
 });
