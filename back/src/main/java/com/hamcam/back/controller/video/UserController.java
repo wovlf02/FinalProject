@@ -2,7 +2,6 @@ package com.hamcam.back.controller.video;
 
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.repository.auth.UserRepository;
-import com.hamcam.back.dto.auth.UserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

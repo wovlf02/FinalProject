@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -25,7 +26,7 @@ public class User {
     private String password;
 
     @Column(nullable = false, length = 100)
-    private String name; // ✅ 필수 추가
+    private String name;
 
     @Column(nullable = false, length = 100)
     private String nickname;
@@ -43,12 +44,25 @@ public class User {
     @Column(name = "refresh_token")
     private String refreshToken;
 
-    /**
-     * ✅ 프로필 이미지 URL
-     * 사용자 프로필 사진 경로 (선택적)
-     */
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
+
+    @Column(nullable = false)
+    private Integer grade; // ✅ 학년
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "user_subjects", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "subject")
+    private List<String> subjects; // ✅ 관심 과목
+
+    @Column(nullable = false, length = 50)
+    private String studyHabit; // ✅ 공부 습관
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isDeleted = false; // ✅ 소프트 삭제용
+
+    private LocalDateTime deletedAt;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -65,5 +79,20 @@ public class User {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 비밀번호 변경
+     */
+    public void updatePassword(String newPassword) {
+        this.password = newPassword;
+    }
+
+    /**
+     * 소프트 삭제 처리
+     */
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
     }
 }
