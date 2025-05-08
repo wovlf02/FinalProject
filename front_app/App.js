@@ -1,78 +1,186 @@
+// import React from 'react';
+// import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+// import { NavigationContainer } from '@react-navigation/native';
+// import { createStackNavigator } from '@react-navigation/stack';
+// import { Image } from 'react-native';
+
+// import HomeScreen from './src/screens/home/HomeScreen';
+// import CommunityScreen from './src/screens/community/CommunityMainScreen';
+// import PersonalStudyMainScreen from './src/screens/study/PersonalStudyMainScreen';
+// import PersonalStudyScreen from './src/screens/study/PersonalStudyScreen';  // 추가
+// import TeamStudyScreen from './src/screens/study/TeamStudyScreen';  // 추가
+// import UnitTestScreen from './src/screens/unitTest/UnitTestScreen';
+// import MyPageMainScreen from './src/screens/mypage/MyPageMainScreen';
+// import IntroScreen from './src/screens/IntroScreen';
+// import LoginScreen from './src/screens/auth/LoginScreen';
+// import RegisterScreen from './src/screens/auth/RegisterScreen';
+// import FindAccountScreen from "./src/screens/auth/FindAccountScreen";
+// import ResetPasswordScreen from "./src/screens/auth/ResetPasswordScreen";
+
+// const Tab = createBottomTabNavigator();
+// const Stack = createStackNavigator();
+
+// const screenOptions = ({ route }) => ({
+//     tabBarIcon: ({ focused, size }) => {
+//         let iconPath;
+
+//         switch (route.name) {
+//             case '공부시작':
+//                 iconPath = require('./src/assets/personal.png');
+//                 break;
+//             case '커뮤니티':
+//                 iconPath = require('./src/assets/community.png');
+//                 break;
+//             case '홈':
+//                 iconPath = require('./src/assets/home.png');
+//                 break;
+//             case '단원평가':
+//                 iconPath = require('./src/assets/unitTest.png');
+//                 break;
+//             case '마이페이지':
+//                 iconPath = require('./src/assets/mypage.png');
+//                 break;
+//         }
+
+//         return (
+//             <Image
+//                 source={iconPath}
+//                 style={{
+//                     width: size,
+//                     height: size,
+//                     tintColor: focused ? '#007AFF' : '#8E8E93'
+//                 }}
+//             />
+//         );
+//     },
+//     tabBarShowLabel: true,
+//     tabBarActiveTintColor: '#007AFF',
+//     tabBarInactiveTintColor: '#8E8E93',
+// });
+
+// // 탭 네비게이터 설정
+// const MainTabNavigator = () => (
+//     <Tab.Navigator initialRouteName="홈" screenOptions={screenOptions}>
+//         <Tab.Screen name="공부시작" component={PersonalStudyMainScreen} />
+//         <Tab.Screen name="커뮤니티" component={CommunityScreen} />
+//         <Tab.Screen name="홈" component={HomeScreen} />
+//         <Tab.Screen name="단원평가" component={UnitTestScreen} />
+//         <Tab.Screen name="마이페이지" component={MyPageMainScreen} />
+//     </Tab.Navigator>
+// );
+
+// const App = () => (
+//     <NavigationContainer>
+//         <Stack.Navigator initialRouteName="Intro" screenOptions={{ headerShown: false }}>
+//             <Stack.Screen name="Intro" component={IntroScreen} />
+//             <Stack.Screen name="Login" component={LoginScreen} />
+//             <Stack.Screen name="Register" component={RegisterScreen} />
+//             <Stack.Screen name="FindAccount" component={FindAccountScreen} />
+//             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+//             <Stack.Screen name="Main" component={MainTabNavigator} />
+//             {/* 추가된 개인 공부, 팀 공부 화면 */}
+//             <Stack.Screen name="PersonalStudyScreen" component={PersonalStudyScreen} />
+//             <Stack.Screen name="TeamStudyScreen" component={TeamStudyScreen} />
+//         </Stack.Navigator>
+//     </NavigationContainer>
+// );
+
+// export default App;
+
+
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Image } from 'react-native';
+
 import HomeScreen from './src/screens/home/HomeScreen';
-import CommunityScreen from './src/screens/community/CommunityMainScreen';
-import PersonalStudyMainScreen from './src/screens/personal/PersonalStudyMainScreen';
-import GroupStudyMainScreen from './src/screens/group/GroupStudyMainScreen';
+import CommunityMainScreen from './src/screens/community/CommunityMainScreen';
+import CommunityWriteScreen from './src/screens/community/CommunityWriteScreen';
+import CommunityPostScreen from './src/screens/community/CommunityPostScreen'; // 게시글 상세
+import PersonalStudyMainScreen from './src/screens/study/PersonalStudyMainScreen';
+import PersonalStudyScreen from './src/screens/study/PersonalStudyScreen';
+import TeamStudyScreen from './src/screens/study/TeamStudyScreen';
+import UnitTestScreen from './src/screens/unitTest/UnitTestScreen';
 import MyPageMainScreen from './src/screens/mypage/MyPageMainScreen';
 import IntroScreen from './src/screens/IntroScreen';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import RegisterScreen from './src/screens/auth/RegisterScreen';
-import FindAccountScreen from "./src/screens/auth/FindAccountScreen";
-import ResetPasswordScreen from "./src/screens/auth/ResetPasswordScreen";
+import FindAccountScreen from './src/screens/auth/FindAccountScreen';
+import ResetPasswordScreen from './src/screens/auth/ResetPasswordScreen';
+
+import { UserProvider } from './src/contexts/UserContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const screenOptions = ({ route }) => ({
-    tabBarIcon: ({ focused, size }) => {
-        let iconPath;
-        switch (route.name) {
-            case 'Home':
-                iconPath = require('./src/assets/home.png');
-                break;
-            case 'Community':
-                iconPath = require('./src/assets/community.png');
-                break;
-            case 'Personal Learning':
-                iconPath = require('./src/assets/personal.png');
-                break;
-            case 'Group Learning':
-                iconPath = require('./src/assets/group.png');
-                break;
-            case 'My Page':
-                iconPath = require('./src/assets/mypage.png');
-                break;
-        }
-        return <Image source={iconPath} style={{ width: size, height: size, tintColor: focused ? '#007AFF' : '#8E8E93' }} />;
-    },
-    tabBarShowLabel: true,
-    tabBarActiveTintColor: '#007AFF',
-    tabBarInactiveTintColor: '#8E8E93',
+  tabBarIcon: ({ focused, size }) => {
+    let iconPath;
+    switch (route.name) {
+      case '공부시작':
+        iconPath = require('./src/assets/personal.png');
+        break;
+      case '커뮤니티':
+        iconPath = require('./src/assets/community.png');
+        break;
+      case '홈':
+        iconPath = require('./src/assets/home.png');
+        break;
+      case '단원평가':
+        iconPath = require('./src/assets/unitTest.png');
+        break;
+      case '마이페이지':
+        iconPath = require('./src/assets/mypage.png');
+        break;
+    }
+    return (
+      <Image
+        source={iconPath}
+        style={{
+          width: size,
+          height: size,
+          tintColor: focused ? '#007AFF' : '#8E8E93',
+        }}
+      />
+    );
+  },
+  tabBarShowLabel: true,
+  tabBarActiveTintColor: '#007AFF',
+  tabBarInactiveTintColor: '#8E8E93',
 });
 
-const MainTabNavigator = ({ route }) => (
-    <Tab.Navigator screenOptions={screenOptions}>
-        <Tab.Screen
-            name="Home"
-            component={HomeScreen}
-            initialParams={route.params} // 🔹 로그인 후 전달받은 데이터를 HomeScreen으로 전달
-        />
-        <Tab.Screen name="Community" component={CommunityScreen} />
-        <Tab.Screen name="Personal Learning" component={PersonalStudyMainScreen} />
-        <Tab.Screen name="Group Learning" component={GroupStudyMainScreen} />
-        <Tab.Screen name="My Page" component={MyPageMainScreen} />
-    </Tab.Navigator>
+const MainTabNavigator = () => (
+  <Tab.Navigator initialRouteName="홈" screenOptions={screenOptions}>
+    <Tab.Screen name="공부시작" component={PersonalStudyMainScreen} />
+    <Tab.Screen name="커뮤니티" component={CommunityMainScreen} />
+    <Tab.Screen name="홈" component={HomeScreen} />
+    <Tab.Screen name="단원평가" component={UnitTestScreen} />
+    <Tab.Screen name="마이페이지" component={MyPageMainScreen} />
+  </Tab.Navigator>
 );
 
 const App = () => (
+  <UserProvider>
     <NavigationContainer>
-        <Stack.Navigator initialRouteName="Intro" screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Intro" component={IntroScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} />
-            <Stack.Screen name="FindAccount" component={FindAccountScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-            <Stack.Screen
-                name="Main"  // 🔹 기존의 "Home"을 "MainTabs"로 변경하여 네비게이션 충돌 방지
-                component={MainTabNavigator}
-                options={{ headerShown: false }}
-            />
-        </Stack.Navigator>
+      <Stack.Navigator initialRouteName="Intro" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Intro" component={IntroScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="FindAccount" component={FindAccountScreen} />
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        <Stack.Screen name="Main" component={MainTabNavigator} />
+        <Stack.Screen name="PersonalStudyScreen" component={PersonalStudyScreen} />
+        <Stack.Screen name="TeamStudyScreen" component={TeamStudyScreen} />
+        <Stack.Screen name="CommunityWrite" component={CommunityWriteScreen} />
+        <Stack.Screen
+          name="CommunityPost"
+          component={CommunityPostScreen}
+          options={{ headerShown: true, title: '게시글' }}
+        />
+      </Stack.Navigator>
     </NavigationContainer>
+  </UserProvider>
 );
 
 export default App;
