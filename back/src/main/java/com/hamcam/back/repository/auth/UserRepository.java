@@ -3,6 +3,7 @@ package com.hamcam.back.repository.auth;
 import com.hamcam.back.entity.auth.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -34,4 +35,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 이메일로 사용자 조회
      */
     Optional<User> findByEmail(String email);
+
+    /**
+     * 닉네임에 키워드가 포함된 사용자 목록 조회 (부분 검색)
+     *
+     * @param keyword 검색할 닉네임 키워드
+     * @return 닉네임에 해당 키워드가 포함된 사용자 목록
+     */
+    List<User> findByNicknameContaining(String keyword);
 }

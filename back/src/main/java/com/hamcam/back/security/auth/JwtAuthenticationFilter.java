@@ -1,6 +1,9 @@
 package com.hamcam.back.security.auth;
 
 import com.hamcam.back.config.auth.JwtProvider;
+import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.repository.auth.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -26,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     /**
      * JWT 인증 필터 로직
@@ -37,15 +41,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            // 요청 헤더에서 JWT 추출
             String token = getTokenFromRequest(request);
 
-            // JWT가 존재하고, 유효한 경우 사용자 인증 처리
-            if(token != null && jwtProvider.validateToken(token)) {
-                String username = jwtProvider.getUsernameFromToken(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (token != null && jwtProvider.validateToken(token)) {
+                Long userId = jwtProvider.getUserIdFromToken(token);
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                // DB에서 사용자 조회
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+
+                // Spring Security용 UserDetails 조회
+                UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -53,12 +62,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (ExpiredJwtException e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT 토큰이 만료되었습니다.");
             return;
-        } catch (JwtException e) {
+        } catch (JwtException | CustomException e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT 토큰이 유효하지 않습니다.");
             return;
         }
 
-        // 다음 필터 실행
         filterChain.doFilter(request, response);
     }
 
@@ -67,8 +75,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private String getTokenFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        if(bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // "Bearer " 이후의 토큰 부분만 추출
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
         }
         return null;
     }

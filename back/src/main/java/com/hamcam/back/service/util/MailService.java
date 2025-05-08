@@ -3,6 +3,7 @@ package com.hamcam.back.service.util;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -17,11 +18,13 @@ public class MailService {
 
     private final JavaMailSender mailSender;
 
-    private static final String FROM = "your_naver_id@naver.com"; // 보내는 주소 (application.yml의 username과 동일)
+    @Value("${spring.mail.username}")
+    private String fromAddress; // application.yml의 username을 주입받아 사용
 
     /**
      * 인증 코드가 담긴 이메일을 발송합니다.
-     * @param to 수신자 이메일
+     *
+     * @param to   수신자 이메일
      * @param code 인증 코드
      * @param type 요청 타입 (register, find-id, reset-pw 등)
      */
@@ -33,7 +36,7 @@ public class MailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(FROM);
+            helper.setFrom(fromAddress);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(content, true);
@@ -45,7 +48,7 @@ public class MailService {
     }
 
     /**
-     * 요청 타입별 제목
+     * 요청 타입별 제목 반환
      */
     private String getSubjectByType(String type) {
         return switch (type) {
@@ -57,7 +60,7 @@ public class MailService {
     }
 
     /**
-     * HTML 본문 구성
+     * 인증 이메일 HTML 본문 구성
      */
     private String buildEmailContent(String code, String type) {
         return """
@@ -71,7 +74,7 @@ public class MailService {
     }
 
     /**
-     * 타입을 한글로 변환
+     * 요청 타입을 한글로 변환
      */
     private String convertTypeToKorean(String type) {
         return switch (type) {
