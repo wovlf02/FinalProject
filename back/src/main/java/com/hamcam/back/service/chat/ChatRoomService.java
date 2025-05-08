@@ -2,6 +2,7 @@ package com.hamcam.back.service.chat;
 
 import com.hamcam.back.dto.chat.request.ChatJoinRequest;
 import com.hamcam.back.dto.chat.request.ChatRoomCreateRequest;
+import com.hamcam.back.dto.chat.response.ChatParticipantDto;
 import com.hamcam.back.dto.chat.response.ChatRoomListResponse;
 import com.hamcam.back.dto.chat.response.ChatRoomResponse;
 import com.hamcam.back.entity.auth.User;
@@ -131,14 +132,24 @@ public class ChatRoomService {
     // ===== DTO 변환 =====
 
     private ChatRoomResponse toResponse(ChatRoom room) {
+        List<ChatParticipantDto> participantDtos = chatParticipantRepository.findByChatRoom(room)
+                .stream()
+                .map(p -> new ChatParticipantDto(
+                        p.getUser().getId(),
+                        p.getUser().getNickname(),
+                        p.getUser().getProfileImageUrl()))
+                .toList();
+
         return ChatRoomResponse.builder()
                 .roomId(room.getId())
                 .roomName(room.getName())
                 .roomType(room.getType())
                 .referenceId(room.getReferenceId())
                 .createdAt(room.getCreatedAt())
+                .participants(participantDtos)
                 .build();
     }
+
 
     private ChatRoomListResponse toListResponse(ChatRoom room) {
         return ChatRoomListResponse.builder()

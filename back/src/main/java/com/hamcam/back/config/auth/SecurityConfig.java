@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * Spring Security 설정 클래스
- * JWT 인증 방식, CORS, Stateless 세션 등 설정 포함
+ * JWT 인증 방식, WebSocket 허용, CORS 및 Stateless 세션 등 포함
  */
 @Configuration
 @RequiredArgsConstructor
@@ -34,17 +34,11 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
 
-    /**
-     * 비밀번호 암호화에 사용할 BCryptPasswordEncoder 빈 등록
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * AuthenticationManager 구성
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -53,17 +47,15 @@ public class SecurityConfig {
         return new ProviderManager(provider);
     }
 
-    /**
-     * Spring Security FilterChain 구성
-     * JWT 인증 필터 추가 및 세션 Stateless 처리
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ cors 활성화
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()  // 로그인, 회원가입 등 인증 제외
+                        .requestMatchers("/ws/**", "/topic/**", "/app/**").permitAll() // ✅ WebSocket 및 STOMP 경로 허용
+                        .requestMatchers("/api/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -74,16 +66,13 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * CORS 설정 (Spring Security 6.1 이상에서 cors() 대체)
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*")); // 실제 운영 시 도메인 명시
+        config.setAllowedOrigins(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(false); // "*" 허용 시 credentials 불가
+        config.setAllowCredentials(false); // "*" 사용 시 false로 설정
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

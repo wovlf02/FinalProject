@@ -3,8 +3,13 @@ package com.hamcam.back.controller.chat;
 import com.hamcam.back.dto.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.chat.response.ChatMessageResponse;
 import com.hamcam.back.service.chat.ChatMessageService;
+import com.hamcam.back.service.chat.WebSocketChatService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,6 +20,9 @@ import java.util.List;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final WebSocketChatService chatService;
+
 
     /**
      * 채팅방 메시지 목록 조회 (무한 스크롤 페이징 기반)
@@ -48,5 +56,17 @@ public class ChatMessageController {
     ) {
         ChatMessageResponse response = chatMessageService.sendMessage(roomId, request);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 클라이언트 → 서버: 텍스트 메시지 수신
+     *
+     * @param request 채팅 메시지 DTO
+     */
+    @MessageMapping("/chat/message")
+    public void handleMessage(@Payload @Valid ChatMessageRequest request) {
+        ChatMessageResponse response = chatService.saveTextMessage(request);
+        String destination = "/topic/chat/" + response.getRoomId();
+        messagingTemplate.convertAndSend(destination, response);
     }
 }

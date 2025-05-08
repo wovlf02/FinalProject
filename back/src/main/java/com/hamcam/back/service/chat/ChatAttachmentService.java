@@ -1,17 +1,27 @@
 package com.hamcam.back.service.chat;
 
 import com.hamcam.back.dto.chat.response.ChatFilePreviewResponse;
+import com.hamcam.back.dto.chat.response.ChatMessageResponse;
+import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
+import com.hamcam.back.entity.chat.ChatRoom;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
+import com.hamcam.back.repository.chat.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.nio.file.Files;
+import java.util.UUID;
 
 /**
  * 채팅 첨부파일 처리 서비스
@@ -24,8 +34,9 @@ import java.nio.file.Files;
 public class ChatAttachmentService {
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
-    private final String UPLOAD_DIR = "uploads/chat/"; // 실제 파일 경로 (S3 사용 시 변경)
+    private static final String UPLOAD_DIR = "C:/upload"; // 실제 파일 경로 (S3 사용 시 변경)
 
     /**
      * 채팅 메시지의 첨부파일을 다운로드용으로 불러오기
@@ -96,5 +107,58 @@ public class ChatAttachmentService {
             case "png", "jpg", "jpeg", "gif", "bmp", "webp" -> true;
             default -> false;
         };
+    }
+
+    /**
+     * 파일을 저장하고 파일 메시지를 생성하여 반환합니다.
+     *
+     * @param roomId   채팅방 ID
+     * @param senderId 전송자 ID
+     * @param file     업로드할 파일
+     * @return 저장된 채팅 메시지 응답
+     */
+    public ChatMessageResponse saveFileMessage(Long roomId, Long senderId, MultipartFile file) {
+        // 채팅방 유효성 검사
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+
+        // 파일 저장 처리
+        String originalFilename = file.getOriginalFilename();
+        String storedFilename = UUID.randomUUID() + "_" + originalFilename;
+        File savePath = new File(UPLOAD_DIR, storedFilename);
+
+        try {
+            file.transferTo(savePath);
+        } catch (IOException e) {
+            throw new RuntimeException("파일 저장에 실패했습니다.", e);
+        }
+
+        // 메시지 저장
+        ChatMessage message = ChatMessage.builder()
+                .chatRoom(room)
+                .sender(User.builder().id(senderId).build())  // 인증 구현 시 교체
+                .type("FILE")
+                .content(originalFilename)
+                .storedFileName(storedFilename)
+                .sentAt(LocalDateTime.now())
+                .build();
+
+        chatMessageRepository.save(message);
+        return toResponse(message);
+    }
+
+    /**
+     * ChatMessage → ChatMessageResponse 변환
+     */
+    private ChatMessageResponse toResponse(ChatMessage message) {
+        return ChatMessageResponse.builder()
+                .messageId(message.getId())
+                .roomId(message.getChatRoom().getId())
+                .senderId(message.getSender().getId())
+                .content(message.getContent())
+                .type(message.getType())
+                .storedFileName(message.getStoredFileName())
+                .sentAt(message.getSentAt())
+                .build();
     }
 }
