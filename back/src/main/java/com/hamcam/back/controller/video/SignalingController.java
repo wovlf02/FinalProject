@@ -16,7 +16,6 @@ public class SignalingController extends TextWebSocketHandler {
 
     @Override
     public void handleTextMessage(WebSocketSession session, org.springframework.web.socket.TextMessage message) throws Exception {
-        // 메시지 처리 로직 (Offer, Answer, ICE Candidate 교환)
         String payload = message.getPayload();
         sessions.values().forEach(s -> {
             try {

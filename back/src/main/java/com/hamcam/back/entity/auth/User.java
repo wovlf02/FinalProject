@@ -25,6 +25,9 @@ public class User {
     private String password;
 
     @Column(nullable = false, length = 100)
+    private String name; // ✅ 필수 추가
+
+    @Column(nullable = false, length = 100)
     private String nickname;
 
     @Column(nullable = false, length = 15)
