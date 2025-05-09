@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../css/NavBar.css';
 
-const HeaderBar = ({ selectedTab, userName }) => {
+const HeaderBar = ({ selectedTab }) => {
   return (
     <div className="header-bar">
       <div className="header-bar-logo">로고</div>
       <div>{selectedTab}</div>
-      <div>{userName ? `${userName}님` : '로그인 정보'}</div> {/* 사용자 이름 표시 */}
+      <div>로그인 정보</div>
     </div>
   );
 };
@@ -31,7 +31,7 @@ const SideMenu = ({ menuItems, handleNavigation }) => {
   );
 };
 
-const NavBar = ({ userName }) => {
+const NavBar = () => {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('대시보드');
 
@@ -39,7 +39,7 @@ const NavBar = ({ userName }) => {
     { name: '대시보드', path: '/dashboard' },
     { name: '공부 시작', path: '/StudyStart' },
     { name: '단원 평가', path: '/evaluation' },
-    { name: '통계', path: '/evaluation' },
+    { name: '통계', path: '/statistics' },
     { name: '커뮤니티', path: '/community' },
     { name: '팀 학습', path: '/teamStudy' },
   ];
@@ -51,7 +51,7 @@ const NavBar = ({ userName }) => {
 
   return (
     <div>
-      <HeaderBar selectedTab={selectedTab} userName={userName} />
+      <HeaderBar selectedTab={selectedTab} />
       <div style={{ display: 'flex' }}>
         <SideMenu menuItems={menuItems} handleNavigation={handleNavigation} />
         <div style={{ flex: 1, padding: '20px' }}>

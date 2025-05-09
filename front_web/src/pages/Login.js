@@ -19,6 +19,14 @@ const Login = () => {
       });
 
       console.log('로그인 성공:', response.data);
+
+      // ✅ accessToken, refreshToken, username 등을 localStorage에 저장
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+      localStorage.setItem('username', response.data.username);
+      localStorage.setItem('email', response.data.email);
+      localStorage.setItem('name', response.data.name);
+
       alert(`로그인 성공: ${response.data.name}님 환영합니다!`);
       navigate('/dashboard');
     } catch (error) {
