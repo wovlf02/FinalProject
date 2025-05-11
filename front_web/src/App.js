@@ -14,6 +14,9 @@ import RoomFull from './pages/RoomFull';
 import BackendTest from './pages/BackendTest';
 import Register from './pages/Register';
 import RoomList from './pages/RoomList';
+import Evaluation from './pages/evaluation';
+import Community from './pages/Community/Community';
+import Statistics from './pages/Statistics';
 
 function App() {
   return (
@@ -22,9 +25,8 @@ function App() {
         <NavBar />
         <div style={{ flex: 1, marginTop: '60px', padding: '20px' }}>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" />} />
+            <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/login" element={<Login />} />
-            {/* ✅ 경로 및 컴포넌트 이름 변경 */}
             <Route path="/unit-evaluation" element={<UnitEvaluation />} />
             <Route path="/unit-evaluation/start" element={<UnitEvaluationStart />} />
             <Route path="/dashboard" element={<Dashboard />} />
@@ -37,7 +39,10 @@ function App() {
             <Route path="/backend-test" element={<BackendTest />} />
             <Route path="/register" element={<Register />} />
             <Route path="/rooms" element={<RoomList />} />
-            <Route path="*" element={<Navigate to="/login" />} />
+            <Route path="/evaluation" element={<Evaluation />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/statistics" element={<Statistics />} />
+            <Route path="*" element={<Navigate to="/dashboard" />} />
           </Routes>
         </div>
       </div>
