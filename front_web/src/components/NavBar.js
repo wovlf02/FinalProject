@@ -41,8 +41,8 @@ const NavBar = () => {
     { name: '단원 평가', path: '/evaluation' },
     { name: '통계', path: '/statistics' },
     { name: '커뮤니티', path: '/community' },
-    { name: '팀 학습', path: '/teamStudy' },
-    { name: '개인 학습', path: '/personalStudy' },  {/* 개인 학습 추가 */}
+    // { name: '팀 학습', path: '/teamStudy' },
+    // { name: '개인 학습', path: '/personalStudy' },  {/* 개인 학습 추가 */}
   ];
 
   const handleNavigation = (name, path) => {
