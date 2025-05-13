@@ -2,9 +2,9 @@ import React from 'react';
 import '../css/MyPage.css';
 
 const user = {
-  name: '홍길동',
-  email: 'honggildong@example.com',
-  joined: '2024-05-01',
+  name: '김종프',
+  email: 'jongproject@example.com',
+  joined: '2025-05-01',
 };
 
 const MyPage = () => {
