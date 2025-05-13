@@ -1,18 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../css/NavBar.css';
-
-const HeaderBar = ({ selectedTab }) => {
-  return (
-    <div className="header-bar">
-      <div className="header-bar-logo">로고</div>
-    </div>
-  );
-};
 
 const SideMenu = ({ menuItems, handleNavigation, selectedTab }) => {
   return (
     <div className="side-menu">
+      <div className="side-menu-logo">로고</div>
       <ul className="side-menu-list">
         {menuItems.map((item) => (
           <li
@@ -23,13 +15,21 @@ const SideMenu = ({ menuItems, handleNavigation, selectedTab }) => {
           >
             <button
               onClick={() => handleNavigation(item.name, item.path)}
-              className="side-menu-button"
+              className={`side-menu-button${selectedTab === item.name ? ' active' : ''}`}
             >
               {item.name}
             </button>
           </li>
         ))}
       </ul>
+      <div className="side-menu-bottom">
+        <button
+          className={`side-menu-button${selectedTab === '마이페이지' ? ' active' : ''}`}
+          onClick={() => handleNavigation('마이페이지', '/mypage')}
+        >
+          마이페이지
+        </button>
+      </div>
     </div>
   );
 };
@@ -53,13 +53,11 @@ const NavBar = () => {
 
   return (
     <div>
-      <HeaderBar selectedTab={selectedTab} />
       <SideMenu
         menuItems={menuItems}
         handleNavigation={handleNavigation}
         selectedTab={selectedTab}
       />
-      {/* 페이지 콘텐츠 */}
     </div>
   );
 };

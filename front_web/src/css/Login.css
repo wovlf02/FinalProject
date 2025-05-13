@@ -3,6 +3,7 @@
   min-height: 100vh;
   width: 100vw;
   background: #fff;
+  margin-left: 160px; 
 }
 
 .login-main-left {
