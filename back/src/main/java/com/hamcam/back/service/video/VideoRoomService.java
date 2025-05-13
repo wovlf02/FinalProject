@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,15 +25,40 @@ public class VideoRoomService {
         redisTemplate.opsForValue().increment(USER_COUNT_KEY + roomId);
     }
 
-    // Redis: 사용자 수 감소
+    // Redis: 사용자 수 감소 (0 이하로는 내려가지 않게)
     public void decreaseUserCount(Long roomId) {
-        redisTemplate.opsForValue().decrement(USER_COUNT_KEY + roomId);
+        String key = USER_COUNT_KEY + roomId;
+        Long current = getUserCount(roomId);
+        if (current > 0) {
+            redisTemplate.opsForValue().decrement(key);
+        }
     }
 
     // Redis: 사용자 수 조회
     public Long getUserCount(Long roomId) {
         Object count = redisTemplate.opsForValue().get(USER_COUNT_KEY + roomId);
         return count == null ? 0 : Long.parseLong(count.toString());
+    }
+
+    // ✅ Redis: 전체 방의 사용자 수 조회
+    public Map<Long, Long> getAllRoomUserCounts() {
+        Set<String> keys = redisTemplate.keys(USER_COUNT_KEY + "*");
+        if (keys == null || keys.isEmpty()) return Collections.emptyMap();
+
+        Map<Long, Long> result = new HashMap<>();
+        for (String key : keys) {
+            Object value = redisTemplate.opsForValue().get(key);
+            if (value != null) {
+                String idStr = key.replace(USER_COUNT_KEY, "");
+                try {
+                    Long roomId = Long.parseLong(idStr);
+                    result.put(roomId, Long.parseLong(value.toString()));
+                } catch (NumberFormatException e) {
+                    // 무시
+                }
+            }
+        }
+        return result;
     }
 
     // DB: 화상채팅방 생성

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from "../utils/axios";
 import { useNavigate } from 'react-router-dom';
 import '../css/TeamStudy.css';
 
@@ -12,9 +12,9 @@ const TeamStudy = () => {
     const [maxParticipants, setMaxParticipants] = useState(10);
     const [password, setPassword] = useState('');
     const [filteredRooms, setFilteredRooms] = useState([]);
+    const [userCounts, setUserCounts] = useState({});
     const navigate = useNavigate();
 
-    // ✅ 페이지가 처음 로드될 때 학습방 목록을 서버에서 불러옴
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
@@ -22,7 +22,7 @@ const TeamStudy = () => {
             return;
         }
 
-        axios.get('http://localhost:8080/api/study/team/rooms', {
+        api.get('/api/study/team/rooms', {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -34,6 +34,36 @@ const TeamStudy = () => {
         .catch((error) => {
             console.error('학습방 목록 불러오기 실패:', error);
         });
+
+        api.get('/api/video/room-user-counts', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        .then(res => {
+            setUserCounts(res.data);
+        })
+        .catch(err => {
+            console.error('접속자 수 불러오기 실패:', err);
+        });
+
+        // ✅ 사용자가 페이지 떠날 때 leaveRoom 호출
+        const handleBeforeUnload = () => {
+            const currentRoomId = sessionStorage.getItem('currentRoomId');
+            if (currentRoomId) {
+                api.post(`/api/video/leave/${currentRoomId}`, {}, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }).catch(() => {});
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            handleBeforeUnload();
+        };
     }, []);
 
     const handleSearch = () => {
@@ -44,7 +74,19 @@ const TeamStudy = () => {
     };
 
     const handleJoinRoom = (roomId) => {
-        navigate(`/video-room/${roomId}`);
+        const token = localStorage.getItem('accessToken');
+        sessionStorage.setItem('currentRoomId', roomId);
+
+        api.post(`/api/video/join/${roomId}`, {}, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }).then(() => {
+            navigate(`/video-room/${roomId}`);
+        }).catch(err => {
+            console.error('입장 처리 실패:', err);
+            alert('방 입장 중 문제가 발생했습니다.');
+        });
     };
 
     const handleCreateRoom = async () => {
@@ -55,8 +97,8 @@ const TeamStudy = () => {
                 return;
             }
 
-            const response = await axios.post(
-                'http://localhost:8080/api/study/team/rooms/create',
+            const response = await api.post(
+                '/api/study/team/rooms/create',
                 {
                     title: newRoomTitle,
                     roomType,
@@ -73,7 +115,7 @@ const TeamStudy = () => {
 
             alert('학습방이 생성되었습니다!');
             setStudyRooms(prev => [...prev, response.data]);
-            setFilteredRooms(prev => [...prev, response.data]); // 리스트 갱신
+            setFilteredRooms(prev => [...prev, response.data]);
             setShowModal(false);
             setNewRoomTitle('');
             setRoomType('QUIZ');
@@ -103,7 +145,7 @@ const TeamStudy = () => {
                     <li key={room.id} className="study-room-item">
                         <div className="room-info">
                             <h2>{room.title}</h2>
-                            <p>참여자: {room.maxParticipants}</p>
+                            <p>현재 접속자: {userCounts[room.id] || 0} / {room.maxParticipants}</p>
                         </div>
                         <button className="join-button" onClick={() => handleJoinRoom(room.id)}>참여하기</button>
                     </li>

@@ -30,11 +30,20 @@ public class WebConfig implements WebMvcConfigurer {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+<<<<<<< Updated upstream
                 registry.addMapping("/api/**")
                         .allowedOrigins("http://localhost:3000", "http://192.168.35.52:3000")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
+=======
+                registry.addMapping("/api/**") // /api/** 경로에 대해 CORS 허용
+                        .allowedOrigins("http://localhost:3000", // React 앱의 주소
+                                        "http://10.20.72.146:3000")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 허용할 HTTP 메서드
+                        .allowedHeaders("*") // 모든 헤더 허용
+                        .allowCredentials(true); // 인증 정보 허용
+>>>>>>> Stashed changes
             }
         };
     }

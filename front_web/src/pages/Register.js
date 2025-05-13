@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from "../utils/axios";
 import '../css/Register.css';
 
 const Register = () => {
@@ -24,7 +24,7 @@ const Register = () => {
     console.log('회원가입 요청 데이터:', data);
 
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/register', data);
+      const response = await api.post('/api/auth/register', data);
 
       if (response.status === 200) {
         alert('회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.');

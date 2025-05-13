@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from "../utils/axios";
 import '../css/Login.css';
 
 const Login = () => {
@@ -13,7 +13,7 @@ const Login = () => {
       console.log("입력된 아이디:", username);
       console.log("입력된 비밀번호:", password);
 
-      const response = await axios.post("http://localhost:8080/api/auth/login", {
+      const response = await api.post("/api/auth/login", {
         username,
         password,
       });
