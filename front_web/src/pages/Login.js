@@ -69,6 +69,7 @@
 // };
 
 // export default Login;
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import axios from 'axios'; // 실제 로그인 연동 시 사용
@@ -107,11 +108,17 @@ const Login = () => {
   return (
     <div className="login-main-root">
       <div className="login-main-left">
-        <div className="login-main-title">
-          <span className="login-main-title-bold">함께해요</span>
-          <br />
-          <span className="login-main-title-purple">캠</span>
-          <span className="login-main-title-bold">스터디</span>
+        <div className="login-title-art-special">
+          <div className="login-title-row">
+            <span className="login-title-ham">함</span>
+            <span className="login-title-rest">께</span>
+            <span className="login-title-rest">해요</span>
+          </div>
+          <div className="login-title-row login-title-camstudy-row">
+            <span className="login-title-placeholder">함께</span>
+            <span className="login-title-cam">캠</span>
+            <span className="login-title-study">스터디</span>
+          </div>
         </div>
         <form className="login-main-form" onSubmit={handleLogin}>
           <input
@@ -144,6 +151,13 @@ const Login = () => {
             관리자 모드
           </button>
         </div>
+        <button
+          className="login-main-register-btn"
+          type="button"
+          onClick={() => navigate('/register')}
+        >
+          회원가입
+        </button>
       </div>
       <div className="login-main-right">
         <div className="login-main-phone-group">
