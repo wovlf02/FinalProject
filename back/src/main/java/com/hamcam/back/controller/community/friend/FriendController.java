@@ -35,7 +35,7 @@ public class FriendController {
     /**
      * 친구 요청 수락
      */
-    @PostMapping("/request/accept")
+    @PostMapping("/request/{requestId}/accept")
     public ResponseEntity<MessageResponse> acceptFriendRequest(@RequestBody FriendAcceptRequest request) {
         friendService.acceptFriendRequest(request);
         return ResponseEntity.ok(new MessageResponse("친구 요청을 수락했습니다."));
@@ -44,7 +44,7 @@ public class FriendController {
     /**
      * 친구 요청 거절
      */
-    @PostMapping("/request/reject")
+    @PostMapping("/request/{requestId}/reject")
     public ResponseEntity<MessageResponse> rejectFriendRequest(@RequestBody FriendRejectRequest request) {
         friendService.rejectFriendRequest(request);
         return ResponseEntity.ok(new MessageResponse("친구 요청을 거절했습니다."));
