@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // useLocation 추가
 
 const SideMenu = ({ menuItems, handleNavigation, selectedTab }) => {
   return (
@@ -36,7 +36,19 @@ const SideMenu = ({ menuItems, handleNavigation, selectedTab }) => {
 
 const NavBar = () => {
   const navigate = useNavigate();
+  const location = useLocation(); // 현재 경로 확인
   const [selectedTab, setSelectedTab] = useState('대시보드');
+
+  // 사이드바를 숨길 경로 목록
+  const hideSidebarPaths = [
+    '/unit-evaluation/start', // 퀴즈 페이지 예시
+    // 다른 숨기고 싶은 경로 추가
+  ];
+
+  // 현재 경로가 숨김 목록에 있으면 사이드바 렌더링 X
+  if (hideSidebarPaths.includes(location.pathname)) {
+    return null;
+  }
 
   const menuItems = [
     { name: '대시보드', path: '/dashboard' },
