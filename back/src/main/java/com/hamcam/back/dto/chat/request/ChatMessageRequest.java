@@ -17,6 +17,8 @@ public class ChatMessageRequest {
      */
     private Long senderId;
 
+    private Long roomId;
+
     /**
      * 메시지 본문 내용 (텍스트 or 파일명)
      */

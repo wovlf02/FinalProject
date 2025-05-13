@@ -1,8 +1,8 @@
 package com.hamcam.back.controller.video;
 
+import com.hamcam.back.dto.auth.request.UserDto;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.repository.auth.UserRepository;
-import com.hamcam.back.dto.auth.UserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +21,6 @@ public class UserController {
         String username = userDetails.getUsername();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
-        return ResponseEntity.ok(new UserDto(user.getUsername(), user.getName()));
+        return ResponseEntity.ok(new UserDto(user.getUsername(), user.getNickname()));
     }
 }

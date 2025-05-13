@@ -19,6 +19,8 @@ public class ChatMessageResponse {
      */
     private Long messageId;
 
+    private Long roomId;
+
     /**
      * 메시지를 보낸 사용자 ID
      */

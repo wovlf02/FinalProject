@@ -2,7 +2,6 @@
   "name": "front_web",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:8080",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -10,13 +9,16 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.4",
     "cra-template": "1.3.0",
+    "face-api.js": "^0.22.2",
     "http-proxy-middleware": "^3.0.3",
     "react": "^19.1.0",
     "react-calendar": "^5.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.4.1",
     "react-scripts": "5.0.1",
+    "recharts": "^2.15.3",
     "socket.io-client": "^4.8.1",
+    "styled-components": "^6.1.18",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

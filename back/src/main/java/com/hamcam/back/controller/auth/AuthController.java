@@ -1,17 +1,16 @@
 package com.hamcam.back.controller.auth;
 
-import com.hamcam.back.dto.auth.*;
+import com.hamcam.back.dto.auth.request.*;
+import com.hamcam.back.dto.auth.response.LoginResponse;
+import com.hamcam.back.dto.auth.response.TokenResponse;
+import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.auth.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
- * 회원가입, 로그인, 이메일 인증 관련 API 제공
+ * 인증 및 회원 관련 API를 제공하는 컨트롤러입니다.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -20,79 +19,136 @@ public class AuthController {
 
     private final AuthService authService;
 
+    /**
+     * 아이디 중복 확인
+     */
     @PostMapping("/check-username")
-    public ResponseEntity<UsernameCheckResponse> checkUsername(@RequestBody UsernameCheckRequest request) {
-        boolean isAvailable = authService.checkUsername(request.getUsername());
-        return ResponseEntity.ok(new UsernameCheckResponse(isAvailable));
-    }
-
-    @PostMapping("/send-email-code")
-    public ResponseEntity<EmailVerificationResponse> sendVerificationEmail(@RequestBody EmailVerificationRequest request) {
-        authService.sendVerificationEmail(request.getEmail());
-        return ResponseEntity.ok(new EmailVerificationResponse("인증번호가 이메일로 전송되었습니다."));
-    }
-
-    @PostMapping("/verify-email-code")
-    public ResponseEntity<VerifyEmailResponse> verifyEmail(@RequestBody EmailVerificationRequest request) {
-        authService.verifyEmail(request);
-        return ResponseEntity.ok(new VerifyEmailResponse("이메일 인증이 완료되었습니다."));
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
-        authService.register(request);
-        return ResponseEntity.ok(new RegisterResponse("회원가입이 완료되었습니다."));
-    }
-
-    // @PostMapping("/login")
-    // public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-    //     return ResponseEntity.ok(authService.login(request));
-    // }
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        try {
-            // 요청 데이터 출력
-            System.out.println("로그인 요청 - username: " + loginRequest.getUsername());
-            System.out.println("로그인 요청 - password: " + loginRequest.getPassword());
-    
-            // 로그인 처리
-            LoginResponse response = authService.login(loginRequest);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            // 사용자 조회 실패 또는 비밀번호 불일치
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
-        } catch (Exception e) {
-            // 기타 서버 오류
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("로그인 처리 중 오류가 발생했습니다.");
-        }
+    public ApiResponse<Boolean> checkUsername(@RequestBody @Valid UsernameCheckRequest request) {
+        return ApiResponse.ok(authService.checkUsername(request));
     }
 
     /**
-     * 아이디 찾기 API
-     * @param request UsernameFindRequest (요청 DTO)
-     * @return UsernameFindResponse (응답 DTO)
+     * 닉네임 중복 확인
      */
-    @PostMapping("/find-username")
-    public ResponseEntity<UsernameFindResponse> findUsername(@RequestBody UsernameFindRequest request) {
-        try {
-            UsernameFindResponse response = authService.findUsername(request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new UsernameFindResponse(false, null, e.getMessage()));
-        }
+    @PostMapping("/check-nickname")
+    public ApiResponse<Boolean> checkNickname(@RequestBody @Valid NicknameCheckRequest request) {
+        return ApiResponse.ok(authService.checkNickname(request));
     }
 
-    @PostMapping("/reset-password")
-    public ResponseEntity<ResetPasswordResponse> resetPassword(@RequestBody ResetPasswordRequest request) {
-        try {
-            ResetPasswordResponse response = authService.resetPassword(request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            // 사용자 찾기 실패 또는 유효하지 않은 요청 관리
-            return ResponseEntity.badRequest().body(new ResetPasswordResponse(false, e.getMessage()));
-        } catch (Exception e) {
-            // 기타 서버 오류 처리
-            return ResponseEntity.status(500).body(new ResetPasswordResponse(false, "비밀번호 변경 중 오류가 발생했습니다."));
-        }
+    /**
+     * 이메일 중복 확인
+     */
+    @PostMapping("/check-email")
+    public ApiResponse<Boolean> checkEmail(@RequestBody @Valid EmailRequest request) {
+        return ApiResponse.ok(authService.checkEmail(request));
+    }
+
+    /**
+     * 이메일 인증코드 발송
+     */
+    @PostMapping("/send-code")
+    public ApiResponse<String> sendVerificationCode(@RequestBody @Valid EmailSendRequest request) {
+        return ApiResponse.ok(authService.sendVerificationCode(request));
+    }
+
+    /**
+     * 이메일 인증코드 검증
+     */
+    @PostMapping("/verify-code")
+    public ApiResponse<Boolean> verifyCode(@RequestBody @Valid EmailVerifyRequest request) {
+        return ApiResponse.ok(authService.verifyCode(request));
+    }
+
+    /**
+     * 회원가입 도중 임시 데이터 삭제 (Redis/DB)
+     */
+    @DeleteMapping("/temp")
+    public ApiResponse<Void> deleteTempData(@RequestBody @Valid EmailRequest request) {
+        authService.deleteTempData(request);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 최종 회원가입 (학습 정보, 프로필 포함)
+     */
+    @PostMapping("/register")
+    public ApiResponse<Void> register(@RequestBody @Valid RegisterRequest request) {
+        authService.register(request);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 로그인 요청 - JWT 발급
+     */
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
+        return ApiResponse.ok(authService.login(request));
+    }
+
+    /**
+     * 로그아웃 - refresh 제거 및 access 블랙리스트 처리
+     */
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@RequestBody @Valid TokenRequest request) {
+        authService.logout(request);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * access 토큰 재발급 (Sliding 방식)
+     */
+    @PostMapping("/reissue")
+    public ApiResponse<TokenResponse> reissue(@RequestBody @Valid TokenRequest request) {
+        return ApiResponse.ok(authService.reissue(request));
+    }
+
+    /**
+     * 아이디 찾기 - 인증 코드 발송
+     */
+    @PostMapping("/find-username/send-code")
+    public ApiResponse<String> sendFindUsernameCode(@RequestBody @Valid EmailRequest request) {
+        return ApiResponse.ok(authService.sendFindUsernameCode(request));
+    }
+
+    /**
+     * 아이디 찾기 - 인증코드 검증 및 반환
+     */
+    @PostMapping("/find-username/verify-code")
+    public ApiResponse<String> verifyFindUsernameCode(@RequestBody @Valid EmailVerifyRequest request) {
+        return ApiResponse.ok(authService.verifyFindUsernameCode(request));
+    }
+
+    /**
+     * 비밀번호 재설정 - 본인 확인 요청
+     */
+    @PostMapping("/password/request")
+    public ApiResponse<String> requestPasswordReset(@RequestBody @Valid PasswordResetRequest request) {
+        return ApiResponse.ok(authService.requestPasswordReset(request));
+    }
+
+    /**
+     * 비밀번호 재설정 - 인증 코드 검증
+     */
+    @PostMapping("/password/verify-code")
+    public ApiResponse<Boolean> verifyPasswordResetCode(@RequestBody @Valid EmailVerifyRequest request) {
+        return ApiResponse.ok(authService.verifyPasswordResetCode(request));
+    }
+
+    /**
+     * 비밀번호 재설정 - 새 비밀번호 저장
+     */
+    @PutMapping("/password/update")
+    public ApiResponse<Void> updatePassword(@RequestBody @Valid PasswordChangeRequest request) {
+        authService.updatePassword(request);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 회원 탈퇴 요청
+     */
+    @DeleteMapping("/withdraw")
+    public ApiResponse<Void> withdraw(@RequestBody @Valid PasswordConfirmRequest request) {
+        authService.withdraw(request);
+        return ApiResponse.ok();
     }
 }
