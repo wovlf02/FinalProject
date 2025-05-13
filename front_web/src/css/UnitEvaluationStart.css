@@ -1,0 +1,41 @@
+.unit-eval-start-container {
+  padding: 2rem;
+  text-align: center;
+  background: #f7fafd;
+  min-height: 100vh;
+  margin-left: 160px;
+}
+
+.unit-eval-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.unit-eval-divider {
+  margin: 2rem 0;
+  border: none;
+  border-top: 1.5px solid #e0e4ea;
+}
+
+.unit-eval-desc {
+  color: #666;
+  font-size: 1.1rem;
+  margin-bottom: 32px;
+}
+
+.unit-eval-main-btn {
+  padding: 10px 28px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.08rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.unit-eval-main-btn:hover {
+  background: #388e3c;
+}
