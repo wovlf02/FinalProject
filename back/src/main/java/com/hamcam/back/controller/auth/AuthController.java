@@ -16,12 +16,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 인증 및 회원 관련 API를 제공하는 컨트롤러입니다.
@@ -89,16 +92,26 @@ public class AuthController {
             @RequestPart("password") String rawPassword,
             @RequestPart("email") String email,
             @RequestPart("nickname") String nickname,
-            @RequestPart("grade") Integer grade,
-            @RequestPart("subjects") List<String> subjects,
+            @RequestPart("grade") String gradeStr,
+            @RequestPart("subjects") String subjectsStr, // <-- 수정됨
             @RequestPart("studyHabit") String studyHabit,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
     ) {
         try {
-            // 1. 프로필 이미지 처리
+            // grade 파싱
+            Integer grade = Integer.parseInt(gradeStr);
+
+            // subjects 파싱 (예: "수학,영어")
+            List<String> subjects = Arrays.stream(subjectsStr.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+
+            // 프로필 이미지 처리
             String profileImageUrl = null;
             if (profileImage != null && !profileImage.isEmpty()) {
-                String storedName = UUID.randomUUID() + "_" + profileImage.getOriginalFilename();
+                String originalFilename = profileImage.getOriginalFilename();
+                String storedName = UUID.randomUUID() + "_" + originalFilename;
                 Path uploadDir = Paths.get("uploads/profile");
                 Files.createDirectories(uploadDir);
                 Path targetPath = uploadDir.resolve(storedName);
@@ -106,27 +119,30 @@ public class AuthController {
                 profileImageUrl = "/uploads/profile/" + storedName;
             }
 
-            // 2. RegisterRequest DTO 생성 및 필드 주입
-            RegisterRequest request = new RegisterRequest();
-            FieldUtils.writeField(request, "username", username, true);
-            FieldUtils.writeField(request, "password", rawPassword, true);
-            FieldUtils.writeField(request, "email", email, true);
-            FieldUtils.writeField(request, "nickname", nickname, true);
-            FieldUtils.writeField(request, "grade", grade, true);
-            FieldUtils.writeField(request, "subjects", subjects, true);
-            FieldUtils.writeField(request, "studyHabit", studyHabit, true);
-            FieldUtils.writeField(request, "profileImageUrl", profileImageUrl, true);
+            // DTO 생성
+            RegisterRequest request = RegisterRequest.builder()
+                    .username(username)
+                    .password(rawPassword)
+                    .email(email)
+                    .nickname(nickname)
+                    .grade(grade)
+                    .subjects(subjects)
+                    .studyHabit(studyHabit)
+                    .profileImageUrl(profileImageUrl)
+                    .build();
 
-            // 3. 회원가입 처리
             authService.register(request);
             return ApiResponse.ok("회원가입이 완료되었습니다.");
 
+        } catch (NumberFormatException e) {
+            throw new CustomException("학년(grade)은 숫자여야 합니다.");
+        } catch (IOException e) {
+            throw new CustomException("프로필 이미지 업로드 중 오류가 발생했습니다.");
         } catch (Exception e) {
             log.error("회원가입 중 예외 발생", e);
             throw new CustomException("회원가입 처리 중 오류가 발생했습니다.");
         }
     }
-
 
     /**
      * 로그인 요청 - JWT 발급

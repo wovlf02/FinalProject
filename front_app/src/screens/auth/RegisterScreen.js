@@ -1,45 +1,100 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Image,
+    View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Dimensions
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { Picker } from '@react-native-picker/picker';
 import { launchImageLibrary } from 'react-native-image-picker';
+import api from '../../api/api';
 
-const RegisterScreen = () => {
+const { width, height } = Dimensions.get('window');
+
+const habits = ['새벽형', '야행성', '주말 집중형', '루틴형'];
+const allSubjects = ['국어', '수학', '영어', '과학', '사회', '기타'];
+
+const RegisterScreen = ({ navigation }) => {
+    const [step, setStep] = useState(1);
     const [username, setUsername] = useState('');
+    const [isUsernameValid, setIsUsernameValid] = useState(null);
     const [nickname, setNickname] = useState('');
+    const [isNicknameValid, setIsNicknameValid] = useState(null);
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
-    const [emailId, setEmailId] = useState('');
+    const [isPasswordMatch, setIsPasswordMatch] = useState(null);
+    const [email, setEmail] = useState('');
     const [emailDomain, setEmailDomain] = useState('');
     const [isCustomDomain, setIsCustomDomain] = useState(false);
     const [authCode, setAuthCode] = useState('');
-    const [timeLeft, setTimeLeft] = useState(300);
+    const [isAuthSent, setIsAuthSent] = useState(false);
+    const [authVerified, setAuthVerified] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(0);
+
     const [grade, setGrade] = useState(null);
     const [subjects, setSubjects] = useState([]);
+    const [newSubject, setNewSubject] = useState('');
     const [studyHabit, setStudyHabit] = useState('');
     const [profileImage, setProfileImage] = useState(null);
     const [isFormValid, setIsFormValid] = useState(false);
 
-    const allSubjects = ['국어', '수학', '영어', '과학', '사회'];
-    const habits = ['새벽형', '야행성', '주말 집중형', '루틴형'];
-
     useEffect(() => {
         setIsFormValid(
-            username && nickname && password && passwordConfirm &&
-            password === passwordConfirm &&
-            emailId && emailDomain && authCode &&
+            username && isUsernameValid && nickname && isNicknameValid &&
+            password && passwordConfirm && isPasswordMatch &&
+            email && emailDomain && authCode && authVerified &&
             grade && subjects.length > 0 && studyHabit
         );
-    }, [username, nickname, password, passwordConfirm, emailId, emailDomain, authCode, grade, subjects, studyHabit]);
+    }, [username, isUsernameValid, nickname, isNicknameValid, password, passwordConfirm, isPasswordMatch, email, emailDomain, authCode, authVerified, grade, subjects, studyHabit]);
 
     useEffect(() => {
         if (timeLeft > 0) {
-            const timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+            const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
             return () => clearTimeout(timer);
         }
     }, [timeLeft]);
+
+    const checkUsername = async () => {
+        try {
+            const res = await api.post('/auth/check-username', { username });
+            setIsUsernameValid(res.data.data);
+            Alert.alert('결과', res.data.data ? '사용 가능한 아이디입니다.' : '이미 사용 중입니다.');
+        } catch {
+            Alert.alert('오류', '아이디 확인 중 오류 발생');
+        }
+    };
+
+    const checkNickname = async () => {
+        try {
+            const res = await api.post('/auth/check-nickname', { nickname });
+            setIsNicknameValid(res.data.data);
+            Alert.alert('결과', res.data.data ? '사용 가능한 닉네임입니다.' : '이미 사용 중입니다.');
+        } catch {
+            Alert.alert('오류', '닉네임 확인 중 오류 발생');
+        }
+    };
+
+    const sendVerificationCode = async () => {
+        try {
+            const res = await api.post('/auth/send-code', { email: `${email}@${emailDomain}` });
+            setIsAuthSent(true);
+            setTimeLeft(300);
+            Alert.alert('성공', '인증번호가 발송되었습니다.');
+        } catch {
+            Alert.alert('오류', '이메일 인증 중 오류 발생');
+        }
+    };
+
+    const verifyCode = async () => {
+        try {
+            const res = await api.post('/auth/verify-code', { email: `${email}@${emailDomain}`, code: authCode });
+            setAuthVerified(res.data.data);
+            Alert.alert('결과', res.data.data ? '인증 성공' : '인증 실패');
+        } catch {
+            Alert.alert('오류', '코드 확인 중 오류 발생');
+        }
+    };
+
+    const toggleSubject = (subj) => {
+        setSubjects(prev => prev.includes(subj) ? prev.filter(s => s !== subj) : [...prev, subj]);
+    };
 
     const pickImage = () => {
         launchImageLibrary({ mediaType: 'photo' }, (res) => {
@@ -49,181 +104,144 @@ const RegisterScreen = () => {
         });
     };
 
-    const toggleSubject = (subj) => {
-        setSubjects(prev =>
-            prev.includes(subj) ? prev.filter(s => s !== subj) : [...prev, subj]
-        );
+    const handleRegister = async () => {
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+        formData.append('email', `${email}@${emailDomain}`);
+        formData.append('nickname', nickname);
+        formData.append('grade', grade);
+        subjects.forEach(s => formData.append('subjects', s));
+        formData.append('studyHabit', studyHabit);
+        if (profileImage) {
+            const name = profileImage.split('/').pop();
+            formData.append('profileImage', { uri: profileImage, name, type: 'image/jpeg' });
+        }
+
+        try {
+            await api.post('/auth/register', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            Alert.alert('회원가입 완료', '이제 로그인하세요.');
+            navigation.navigate('Login');
+        } catch {
+            Alert.alert('오류', '회원가입 중 문제가 발생했습니다.');
+        }
     };
 
     return (
-        <LinearGradient colors={['#E3F2FD', '#FFFFFF']} style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scroll}>
-                <Text style={styles.title}>회원가입</Text>
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.title}>회원가입</Text>
 
-                {/* 아이디 */}
-                <View style={styles.inputWrapper}>
-                    <Image source={require('../../assets/icon-id.png')} style={styles.inputIcon} />
-                    <TextInput style={styles.inputField} placeholder="아이디" value={username} onChangeText={setUsername} />
-                </View>
+            {step === 1 ? (
+                <>
+                    {/* 아이디, 닉네임, 비밀번호, 이메일 인증 */}
+                    <View style={styles.inputRow}>
+                        <TextInput style={styles.input} placeholder="아이디" value={username} onChangeText={setUsername} />
+                        <TouchableOpacity style={styles.checkButton} onPress={checkUsername}><Text>중복확인</Text></TouchableOpacity>
+                    </View>
 
-                {/* 비밀번호 */}
-                <View style={styles.inputWrapper}>
-                    <Image source={require('../../assets/icon-lock.png')} style={styles.inputIcon} />
-                    <TextInput style={styles.inputField} placeholder="비밀번호" secureTextEntry value={password} onChangeText={setPassword} />
-                </View>
-                <View style={styles.inputWrapper}>
-                    <Image source={require('../../assets/icon-lock.png')} style={styles.inputIcon} />
-                    <TextInput style={styles.inputField} placeholder="비밀번호 확인" secureTextEntry value={passwordConfirm} onChangeText={setPasswordConfirm} />
-                </View>
-                {passwordConfirm.length > 0 && (
-                    <Text style={styles.helper}>
-                        {password === passwordConfirm ? '✔ 비밀번호 일치' : '✘ 비밀번호 불일치'}
-                    </Text>
-                )}
+                    <View style={styles.inputRow}>
+                        <TextInput style={styles.input} placeholder="닉네임" value={nickname} onChangeText={setNickname} />
+                        <TouchableOpacity style={styles.checkButton} onPress={checkNickname}><Text>중복확인</Text></TouchableOpacity>
+                    </View>
 
-                {/* 닉네임 */}
-                <View style={styles.inputWrapper}>
-                    <Image source={require('../../assets/icon-user.png')} style={styles.inputIcon} />
-                    <TextInput style={styles.inputField} placeholder="닉네임" value={nickname} onChangeText={setNickname} />
-                </View>
+                    <TextInput style={styles.input} placeholder="비밀번호" secureTextEntry value={password} onChangeText={setPassword} />
+                    <TextInput style={styles.input} placeholder="비밀번호 확인" secureTextEntry value={passwordConfirm} onChangeText={text => { setPasswordConfirm(text); setIsPasswordMatch(text === password); }} />
 
-                {/* 이메일 */}
-                <View style={styles.row}>
-                    <TextInput style={[styles.input, { flex: 1.3 }]} placeholder="이메일 아이디" value={emailId} onChangeText={setEmailId} />
-                    <Text style={styles.at}>@</Text>
-                    {isCustomDomain ? (
-                        <TextInput style={[styles.input, { flex: 1.7 }]} placeholder="도메인 입력" value={emailDomain} onChangeText={setEmailDomain} />
-                    ) : (
-                        <View style={{ flex: 1.7, backgroundColor: '#fff', borderRadius: 10 }}>
+                    <View style={styles.inputRow}>
+                        <TextInput style={styles.input} placeholder="이메일 아이디" value={email} onChangeText={setEmail} />
+                        <Text>@</Text>
+                        {isCustomDomain ? (
+                            <TextInput style={styles.input} value={emailDomain} onChangeText={setEmailDomain} />
+                        ) : (
                             <Picker selectedValue={emailDomain} onValueChange={(val) => {
-                                if (val === 'custom') {
-                                    setIsCustomDomain(true);
-                                    setEmailDomain('');
-                                } else {
-                                    setEmailDomain(val);
-                                    setIsCustomDomain(false);
-                                }
-                            }}>
+                                if (val === 'custom') { setIsCustomDomain(true); setEmailDomain(''); }
+                                else { setIsCustomDomain(false); setEmailDomain(val); }
+                            }} style={{ flex: 1 }}>
                                 <Picker.Item label="도메인 선택" value="" />
                                 <Picker.Item label="gmail.com" value="gmail.com" />
                                 <Picker.Item label="naver.com" value="naver.com" />
-                                <Picker.Item label="직접 입력" value="custom" />
+                                <Picker.Item label="직접입력" value="custom" />
                             </Picker>
+                        )}
+                    </View>
+
+                    <TouchableOpacity style={styles.checkButton} onPress={sendVerificationCode}><Text>인증번호 발송</Text></TouchableOpacity>
+                    {isAuthSent && (
+                        <View style={styles.inputRow}>
+                            <TextInput style={styles.input} placeholder="인증번호" value={authCode} onChangeText={setAuthCode} />
+                            <TouchableOpacity style={styles.checkButton} onPress={verifyCode}><Text>확인</Text></TouchableOpacity>
+                            <Text style={{ color: 'red' }}>{Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}</Text>
                         </View>
                     )}
-                </View>
 
-                {/* 인증 */}
-                <TouchableOpacity style={styles.button} onPress={() => setTimeLeft(300)}>
-                    <Text style={styles.buttonText}>인증번호 발송</Text>
-                </TouchableOpacity>
-                <View style={styles.row}>
-                    <TextInput style={[styles.input, { flex: 2 }]} placeholder="인증번호" value={authCode} onChangeText={setAuthCode} />
-                    <Text style={styles.timer}>{Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}</Text>
-                    <TouchableOpacity style={styles.buttonMini}><Text style={styles.buttonText}>확인</Text></TouchableOpacity>
-                </View>
+                    <TouchableOpacity style={styles.nextButton} onPress={() => setStep(2)}>
+                        <Text style={styles.buttonText}>다음</Text>
+                    </TouchableOpacity>
+                </>
+            ) : (
+                <>
+                    <Text style={styles.sectionTitle}>학년</Text>
+                    <View style={styles.row}>
+                        {[1, 2, 3].map((g) => (
+                            <TouchableOpacity key={g} style={[styles.gradeButton, grade === g && styles.selected]} onPress={() => setGrade(g)}>
+                                <Text>{g}학년</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
-                {/* 학년 */}
-                <Text style={styles.sectionTitle}>학년</Text>
-                <View style={styles.row}>
-                    {[1, 2, 3].map((g) => (
-                        <TouchableOpacity key={g} style={[styles.radio, grade === g && styles.radioSelected]} onPress={() => setGrade(g)}>
-                            <Text style={{ color: grade === g ? '#fff' : '#007BFF' }}>{g}학년</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                    <Text style={styles.sectionTitle}>과목 선택</Text>
+                    <View style={styles.rowWrap}>
+                        {allSubjects.map(s => (
+                            <TouchableOpacity key={s} style={[styles.tag, subjects.includes(s) && styles.tagSelected]} onPress={() => toggleSubject(s)}>
+                                <Text>{s}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
-                {/* 과목 */}
-                <Text style={styles.sectionTitle}>과목 선택</Text>
-                <View style={styles.subjects}>
-                    {allSubjects.map((s) => (
-                        <TouchableOpacity key={s} style={[styles.tag, subjects.includes(s) && styles.tagSelected]} onPress={() => toggleSubject(s)}>
-                            <Text style={[styles.tagText, subjects.includes(s) && styles.tagTextSelected]}>{s}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                {/* 습관 */}
-                <Text style={styles.sectionTitle}>공부 습관</Text>
-                <View style={styles.pickerWrapper}>
-                    <Picker selectedValue={studyHabit} onValueChange={setStudyHabit} style={styles.picker}>
+                    <Text style={styles.sectionTitle}>공부 습관</Text>
+                    <Picker selectedValue={studyHabit} onValueChange={setStudyHabit}>
                         <Picker.Item label="선택" value="" />
                         {habits.map(h => <Picker.Item key={h} label={h} value={h} />)}
                     </Picker>
-                </View>
 
-                {/* 프로필 이미지 */}
-                <Text style={styles.sectionTitle}>프로필 이미지</Text>
-                <View style={styles.imageBox}>
-                    <Image source={profileImage ? { uri: profileImage } : require('../../assets/profile.jpg')} style={styles.profileImage} />
-                    <TouchableOpacity style={styles.imageOverlay} onPress={pickImage}>
-                        <Text style={styles.overlayText}>+</Text>
+                    <Text style={styles.sectionTitle}>프로필 이미지</Text>
+                    <TouchableOpacity onPress={pickImage}>
+                        <Image source={profileImage ? { uri: profileImage } : require('../../assets/profile.jpg')} style={styles.profileImage} />
                     </TouchableOpacity>
-                </View>
 
-                {/* 회원가입 */}
-                <TouchableOpacity style={[styles.button, !isFormValid && styles.buttonDisabled]} disabled={!isFormValid}>
-                    <Text style={styles.buttonText}>회원가입</Text>
-                </TouchableOpacity>
-            </ScrollView>
-        </LinearGradient>
+                    <TouchableOpacity
+                        style={[styles.submitButton, !isFormValid && styles.inactiveButton]}
+                        disabled={!isFormValid}
+                        onPress={handleRegister}
+                    >
+                        <Text style={styles.buttonText}>회원가입</Text>
+                    </TouchableOpacity>
+                </>
+            )}
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    scroll: { padding: 24, alignItems: 'center' },
-    title: { fontSize: 28, fontWeight: 'bold', color: '#007BFF', marginBottom: 20 },
-    inputWrapper: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12,
-        paddingHorizontal: 14, marginBottom: 16, elevation: 3,
-    },
-    inputIcon: { width: 20, height: 20, marginRight: 10 },
-    inputField: { flex: 1, height: 48 },
-    input: {
-        backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 14,
-        height: 48, marginBottom: 12, elevation: 2,
-    },
-    row: { flexDirection: 'row', alignItems: 'center', width: '100%', gap: 8, marginBottom: 12 },
-    at: { fontSize: 16, fontWeight: 'bold', color: '#555' },
-    button: {
-        width: '100%', height: 48, backgroundColor: '#007BFF', borderRadius: 25,
-        justifyContent: 'center', alignItems: 'center', marginVertical: 10,
-        elevation: 4,
-    },
-    buttonMini: {
-        height: 48, paddingHorizontal: 16, backgroundColor: '#007BFF',
-        borderRadius: 12, justifyContent: 'center', alignItems: 'center',
-    },
-    buttonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-    buttonDisabled: { backgroundColor: '#B0C4DE' },
-    timer: { color: '#FF3333', fontSize: 14 },
-    sectionTitle: {
-        alignSelf: 'flex-start', fontSize: 16, fontWeight: 'bold',
-        marginTop: 20, marginBottom: 8, color: '#007BFF'
-    },
-    radio: {
-        flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1,
-        borderColor: '#007BFF', justifyContent: 'center', alignItems: 'center',
-    },
-    radioSelected: { backgroundColor: '#007BFF' },
-    subjects: { flexDirection: 'row', flexWrap: 'wrap' },
-    tag: {
-        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-        backgroundColor: '#F1F5FB', marginRight: 10, marginBottom: 10,
-    },
+    container: { padding: 20, backgroundColor: '#E3F2FD', flexGrow: 1 },
+    title: { fontSize: 24, fontWeight: 'bold', color: '#007BFF', marginBottom: 20 },
+    input: { flex: 1, backgroundColor: '#fff', padding: 10, marginVertical: 8, borderRadius: 8 },
+    inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    checkButton: { backgroundColor: '#007BFF', padding: 10, borderRadius: 8 },
+    nextButton: { backgroundColor: '#007BFF', padding: 15, borderRadius: 8, marginTop: 20 },
+    submitButton: { backgroundColor: '#007BFF', padding: 15, borderRadius: 8, marginTop: 20 },
+    inactiveButton: { backgroundColor: '#999' },
+    buttonText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
+    sectionTitle: { marginTop: 20, fontWeight: 'bold' },
+    row: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 10 },
+    rowWrap: { flexDirection: 'row', flexWrap: 'wrap' },
+    gradeButton: { padding: 10, borderWidth: 1, borderRadius: 8 },
+    selected: { backgroundColor: '#007BFF', color: '#fff' },
+    tag: { padding: 8, margin: 5, backgroundColor: '#eee', borderRadius: 16 },
     tagSelected: { backgroundColor: '#007BFF' },
-    tagText: { fontSize: 14, color: '#444' },
-    tagTextSelected: { color: '#fff', fontWeight: 'bold' },
-    pickerWrapper: { width: '100%', backgroundColor: '#fff', borderRadius: 10, elevation: 2 },
-    picker: { height: 48, width: '100%' },
-    imageBox: { position: 'relative', marginBottom: 24 },
-    profileImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 2, borderColor: '#007BFF', backgroundColor: '#eee' },
-    imageOverlay: {
-        position: 'absolute', bottom: 0, right: 0, backgroundColor: '#007BFF',
-        width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center',
-    },
-    overlayText: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
+    profileImage: { width: 100, height: 100, borderRadius: 50, alignSelf: 'center', marginVertical: 10 },
 });
 
 export default RegisterScreen;

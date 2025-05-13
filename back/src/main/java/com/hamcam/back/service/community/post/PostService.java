@@ -110,6 +110,8 @@ public class PostService {
      */
     public PostResponse getPostDetail(Long postId) {
         Post post = getPostOrThrow(postId);
+        post.incrementViewCount();
+        postRepository.save(post);
         return PostResponse.from(post);
     }
 

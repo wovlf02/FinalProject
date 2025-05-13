@@ -7,11 +7,16 @@ import com.hamcam.back.entity.community.Comment;
 import com.hamcam.back.entity.community.Like;
 import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.entity.community.Reply;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.like.LikeRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
+import com.hamcam.back.security.auth.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,17 +27,26 @@ public class LikeService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
+    private final UserRepository userRepository;
 
     // ====================== USER MOCK ======================
 
     private Long getCurrentUserId() {
-        return 1L; // TODO: Spring Security 적용 후 SecurityContextHolder 사용
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) throw new CustomException("로그인 정보가 없습니다.");
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
+
+        throw new CustomException("사용자 정보를 불러올 수 없습니다.");
     }
 
     private User getCurrentUser() {
-        return User.builder().id(getCurrentUserId()).build();
+        return userRepository.findById(getCurrentUserId())
+                .orElseThrow(() -> new CustomException("사용자 정보를 불러올 수 없습니다."));
     }
-
     // ====================== POST ======================
 
     public void likePost(Long postId) {
@@ -41,6 +55,8 @@ public class LikeService {
 
         if (likeRepository.findByUserAndPost(user, post).isEmpty()) {
             likeRepository.save(Like.builder().user(user).post(post).build());
+            post.incrementLikeCount();
+            postRepository.save(post);
         }
     }
 
@@ -49,6 +65,8 @@ public class LikeService {
         User user = getCurrentUser();
 
         likeRepository.findByUserAndPost(user, post).ifPresent(likeRepository::delete);
+        post.decrementLikeCount();
+        postRepository.save(post);
     }
 
     public LikeCountResponse getPostLikeCount(Long postId) {
@@ -69,6 +87,8 @@ public class LikeService {
 
         if (likeRepository.findByUserAndComment(user, comment).isEmpty()) {
             likeRepository.save(Like.builder().user(user).comment(comment).build());
+            comment.increaseLikeCount();
+            commentRepository.save(comment);
         }
     }
 
@@ -77,6 +97,8 @@ public class LikeService {
         User user = getCurrentUser();
 
         likeRepository.findByUserAndComment(user, comment).ifPresent(likeRepository::delete);
+        comment.decreaseLikeCount();
+        commentRepository.save(comment);
     }
 
     public LikeCountResponse getCommentLikeCount(Long commentId) {
@@ -97,6 +119,8 @@ public class LikeService {
 
         if (likeRepository.findByUserAndReply(user, reply).isEmpty()) {
             likeRepository.save(Like.builder().user(user).reply(reply).build());
+            reply.increaseLikeCount();
+            replyRepository.save(reply);
         }
     }
 
@@ -105,6 +129,8 @@ public class LikeService {
         User user = getCurrentUser();
 
         likeRepository.findByUserAndReply(user, reply).ifPresent(likeRepository::delete);
+        reply.decreaseLikeCount();
+        replyRepository.save(reply);
     }
 
     public LikeCountResponse getReplyLikeCount(Long replyId) {
