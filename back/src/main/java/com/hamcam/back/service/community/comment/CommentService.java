@@ -1,12 +1,14 @@
 package com.hamcam.back.service.community.comment;
 
 import com.hamcam.back.dto.community.comment.request.CommentCreateRequest;
-import com.hamcam.back.dto.community.comment.request.CommentUpdateRequest;
 import com.hamcam.back.dto.community.comment.response.CommentListResponse;
 import com.hamcam.back.dto.community.comment.response.CommentResponse;
 import com.hamcam.back.dto.community.reply.request.ReplyCreateRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.*;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.attachment.AttachmentRepository;
 import com.hamcam.back.repository.community.block.BlockRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
@@ -16,20 +18,14 @@ import com.hamcam.back.repository.community.post.PostRepository;
 import com.hamcam.back.repository.community.report.ReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.hamcam.back.global.security.SecurityUtil.getCurrentUser;
+import static com.hamcam.back.global.security.SecurityUtil.getCurrentUserId;
 
-/**
- * 댓글(Comment) 및 대댓글(Reply) 서비스
- * <p>
- * 생성, 수정, 삭제, 계층형 조회, 좋아요, 신고, 차단 기능을 포함합니다.
- * </p>
- */
 @Service
 @RequiredArgsConstructor
 public class CommentService {
@@ -41,188 +37,206 @@ public class CommentService {
     private final BlockRepository blockRepository;
     private final ReportRepository reportRepository;
     private final AttachmentRepository attachmentRepository;
+    private final UserRepository userRepository;
 
-    // ===== 인증 사용자 ID (mock) =====
-    private Long getCurrentUserId() {
-        return 1L;
+    private User getCurrentUserEntity() {
+        return userRepository.findById(getCurrentUserId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
-    // ===== 댓글 등록 =====
-
-    public void createComment(Long postId, CommentCreateRequest request, MultipartFile[] files) {
+    /** 댓글 등록 */
+    public void createComment(Long postId, CommentCreateRequest request) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
         Comment comment = Comment.builder()
                 .post(post)
-                .writer(User.builder().id(getCurrentUserId()).build())
+                .writer(getCurrentUserEntity())
                 .content(request.getContent())
-                .createdAt(LocalDateTime.now())
                 .build();
 
         commentRepository.save(comment);
-        // (첨부파일 저장 로직은 AttachmentService 활용 or 추후 확장)
     }
 
-    public void createReply(Long commentId, ReplyCreateRequest request, MultipartFile[] files) {
-        Comment parentComment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("부모 댓글이 존재하지 않습니다."));
-
-        User writer = getCurrentUser();
+    /** 대댓글 등록 */
+    public void createReply(Long commentId, ReplyCreateRequest request) {
+        Comment parent = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
         Reply reply = Reply.builder()
-                .comment(parentComment)
-                .writer(writer)
-                .post(parentComment.getPost())  // 🟢 여기 반드시 있어야 함
+                .comment(parent)
+                .writer(getCurrentUserEntity())
+                .post(parent.getPost())
                 .content(request.getContent())
-                .createdAt(LocalDateTime.now())
                 .build();
 
         replyRepository.save(reply);
     }
 
-
-    // ===== 댓글/대댓글 수정 =====
-
-    public void updateComment(Long commentId, CommentUpdateRequest request, MultipartFile[] files) {
-        Optional<Comment> commentOpt = commentRepository.findById(commentId);
-        if (commentOpt.isPresent()) {
-            updateContentAndSave(commentOpt.get(), request.getContent());
-            return;
-        }
-
-        Optional<Reply> replyOpt = replyRepository.findById(commentId);
-        if (replyOpt.isPresent()) {
-            updateContentAndSave(replyOpt.get(), request.getContent());
-            return;
-        }
-
-        throw new IllegalArgumentException("댓글 또는 대댓글이 존재하지 않습니다.");
+    /** 댓글 수정 */
+    public void updateComment(Long commentId, String newContent) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        comment.updateContent(newContent);
     }
 
-    private void updateContentAndSave(Comment comment, String content) {
-        comment.setContent(content);
-        comment.setUpdatedAt(LocalDateTime.now());
-        commentRepository.save(comment);
+    /** 대댓글 수정 */
+    public void updateReply(Long replyId, String newContent) {
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
+        reply.updateContent(newContent);
     }
 
-    private void updateContentAndSave(Reply reply, String content) {
-        reply.setContent(content);
-        reply.setUpdatedAt(LocalDateTime.now());
-        replyRepository.save(reply);
-    }
-
-
-    // ===== 삭제 =====
-
+    /** 댓글 삭제 */
     public void deleteComment(Long commentId) {
-        if (commentRepository.existsById(commentId)) {
-            commentRepository.deleteById(commentId);
-        } else if (replyRepository.existsById(commentId)) {
-            replyRepository.deleteById(commentId);
-        } else {
-            throw new IllegalArgumentException("삭제할 댓글 또는 대댓글이 존재하지 않습니다.");
-        }
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        comment.softDelete();
     }
 
-    // ===== 계층형 조회 =====
+    /** 대댓글 삭제 */
+    public void deleteReply(Long replyId) {
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
+        reply.softDelete();
+    }
 
+    /** 게시글 기준 전체 댓글 및 대댓글 계층 조회 */
     public CommentListResponse getCommentsByPost(Long postId) {
-        List<Comment> comments = commentRepository.findByPostOrderByCreatedAtAsc(
-                postRepository.findById(postId)
-                        .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."))
-        );
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
-        Map<Long, List<Reply>> replyMap = replyRepository.findAll().stream()
+        Long userId = getCurrentUserId();
+
+        List<Comment> comments = commentRepository.findByPostAndIsDeletedFalseOrderByCreatedAtAsc(post);
+        Map<Long, List<Reply>> replyMap = replyRepository.findByPostAndIsDeletedFalse(post).stream()
                 .collect(Collectors.groupingBy(r -> r.getComment().getId()));
 
         List<CommentResponse> result = comments.stream()
-                .map(c -> CommentResponse.from(c, replyMap.getOrDefault(c.getId(), List.of())))
+                .map(c -> CommentResponse.from(c, replyMap.getOrDefault(c.getId(), List.of()), userId))
                 .collect(Collectors.toList());
 
         return new CommentListResponse(result);
     }
 
-    // ===== 좋아요 =====
-
+    /** 댓글 좋아요 */
     public void likeComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        User user = User.builder().id(getCurrentUserId()).build();
+        User user = getCurrentUserEntity();
 
         likeRepository.findByUserAndComment(user, comment)
-                .ifPresentOrElse(
-                        like -> {
-                            throw new IllegalArgumentException("이미 좋아요를 눌렀습니다.");
-                        },
-                        () -> likeRepository.save(Like.builder().user(user).comment(comment).build())
-                );
+                .ifPresent(l -> { throw new CustomException(ErrorCode.DUPLICATE_LIKE); });
+
+        comment.increaseLikeCount();
+        likeRepository.save(Like.builder().user(user).comment(comment).build());
     }
 
+    /** 댓글 좋아요 취소 */
     public void unlikeComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        User user = User.builder().id(getCurrentUserId()).build();
+        User user = getCurrentUserEntity();
 
         likeRepository.findByUserAndComment(user, comment)
-                .ifPresent(likeRepository::delete);
+                .ifPresent(like -> {
+                    comment.decreaseLikeCount();
+                    likeRepository.delete(like);
+                });
     }
 
-    // ===== 신고 =====
+    /** 대댓글 좋아요 */
+    public void likeReply(Long replyId) {
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
 
+        User user = getCurrentUserEntity();
+
+        likeRepository.findByUserAndReply(user, reply)
+                .ifPresent(l -> { throw new CustomException(ErrorCode.DUPLICATE_LIKE); });
+
+        reply.increaseLikeCount();
+        likeRepository.save(Like.builder().user(user).reply(reply).build());
+    }
+
+    /** 대댓글 좋아요 취소 */
+    public void unlikeReply(Long replyId) {
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
+
+        User user = getCurrentUserEntity();
+
+        likeRepository.findByUserAndReply(user, reply)
+                .ifPresent(like -> {
+                    reply.decreaseLikeCount();
+                    likeRepository.delete(like);
+                });
+    }
+
+    /** 댓글 신고 */
     public void reportComment(Long commentId, String reason) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        User user = User.builder().id(getCurrentUserId()).build();
+        User user = getCurrentUserEntity();
 
-        boolean alreadyReported = reportRepository.findByReporterAndComment(user, comment).isPresent();
-        if (alreadyReported) throw new IllegalArgumentException("이미 신고한 댓글입니다.");
+        reportRepository.findByReporterAndComment(user, comment)
+                .ifPresent(r -> { throw new CustomException(ErrorCode.DUPLICATE_REPORT); });
 
         reportRepository.save(Report.builder()
                 .reporter(user)
                 .comment(comment)
                 .reason(reason)
-                .status("PENDING")
+                .status(ReportStatus.PENDING)
                 .reportedAt(LocalDateTime.now())
                 .build());
     }
 
-    // ===== 차단/해제 =====
-
+    /** 댓글 차단 또는 차단 해제 */
     public void blockComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
-        User user = User.builder().id(getCurrentUserId()).build();
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+        User user = getCurrentUserEntity();
 
         blockRepository.findByUserAndComment(user, comment)
                 .ifPresentOrElse(
-                        b -> {
-                            throw new IllegalArgumentException("이미 차단한 댓글입니다.");
+                        block -> {
+                            block.restore(); // 차단 해제
+                            blockRepository.save(block);
                         },
                         () -> blockRepository.save(Block.builder().user(user).comment(comment).build())
                 );
     }
 
+    /** 댓글 차단 해제 (완전한 unblock) */
     public void unblockComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
-        User user = User.builder().id(getCurrentUserId()).build();
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+
+        User user = getCurrentUserEntity();
 
         blockRepository.findByUserAndComment(user, comment)
-                .ifPresent(blockRepository::delete);
+                .ifPresent(block -> {
+                    block.softDelete();
+                    blockRepository.save(block);
+                });
     }
 
-    // ===== 차단 목록 조회 =====
-
+    /** 차단한 댓글 목록 조회 */
     public List<CommentResponse> getBlockedComments() {
-        User user = User.builder().id(getCurrentUserId()).build();
-        List<Block> blocks = blockRepository.findByUserAndCommentIsNotNull(user);
+        User user = getCurrentUserEntity();
+
+        List<Block> blocks = blockRepository.findByUserAndCommentIsNotNullAndIsDeletedFalse(user);
 
         return blocks.stream()
-                .map(b -> CommentResponse.from(b.getComment(), replyRepository.findByCommentId(b.getComment().getId())))
+                .map(block -> {
+                    Comment comment = block.getComment();
+                    List<Reply> replies = replyRepository.findByCommentId(comment.getId());
+                    return CommentResponse.from(comment, replies, user.getId());
+                })
                 .collect(Collectors.toList());
     }
 }

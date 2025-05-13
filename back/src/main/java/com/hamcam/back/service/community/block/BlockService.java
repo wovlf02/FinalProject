@@ -1,28 +1,26 @@
 package com.hamcam.back.service.community.block;
 
-import com.hamcam.back.dto.community.block.response.BlockedCommentListResponse;
-import com.hamcam.back.dto.community.block.response.BlockedPostListResponse;
-import com.hamcam.back.dto.community.block.response.BlockedReplyListResponse;
-import com.hamcam.back.dto.community.block.response.BlockedTargetResponse;
+import com.hamcam.back.dto.community.block.response.*;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.*;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.block.BlockRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
+import com.hamcam.back.security.auth.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 차단(Block) 서비스
- * <p>
- * 사용자가 게시글, 댓글, 대댓글을 차단하거나 해제하며,
- * 본인이 차단한 콘텐츠 목록을 조회할 수 있도록 지원합니다.
- * </p>
- */
+import static com.hamcam.back.global.security.SecurityUtil.getCurrentUserId;
+
 @Service
 @RequiredArgsConstructor
 public class BlockService {
@@ -31,156 +29,125 @@ public class BlockService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
+    private final UserRepository userRepository;
 
-    /**
-     * 현재 로그인된 사용자 ID 반환 (Mock)
-     * @return 사용자 ID
-     */
     private Long getCurrentUserId() {
-        return 1L;
-    }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    // ================== 게시글 차단 ==================
-
-    /**
-     * 게시글 차단
-     * @param postId 차단할 게시글 ID
-     */
-    public void blockPost(Long postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
-        User user = User.builder().id(getCurrentUserId()).build();
-
-        boolean alreadyBlocked = blockRepository.findByUserAndPost(user, post).isPresent();
-        if (!alreadyBlocked) {
-            Block block = Block.builder().user(user).post(post).build();
-            blockRepository.save(block);
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new CustomException("로그인 정보가 없습니다.");
         }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
+
+        throw new CustomException("사용자 정보를 불러올 수 없습니다.");
     }
 
-    /**
-     * 게시글 차단 해제
-     * @param postId 차단 해제할 게시글 ID
-     */
-    public void unblockPost(Long postId) {
+    private User getCurrentUser() {
+        Long userId = getCurrentUserId();
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException("사용자 정보를 불러올 수 없습니다."));
+    }
+
+    // ================== 게시글 ==================
+    public void blockPost(Long postId) {
+        User user = getCurrentUser();
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
-        User user = User.builder().id(getCurrentUserId()).build();
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        Block block = blockRepository.findByUserAndPost(user, post)
+                .orElse(Block.builder().user(user).post(post).build());
+
+        block.restore();
+        blockRepository.save(block);
+    }
+
+    public void unblockPost(Long postId) {
+        User user = getCurrentUser();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
         blockRepository.findByUserAndPost(user, post)
-                .ifPresent(blockRepository::delete);
+                .ifPresent(block -> {
+                    block.softDelete();
+                    blockRepository.save(block);
+                });
     }
 
-    /**
-     * 차단한 게시글 목록 조회
-     * @return BlockedPostListResponse
-     */
     public BlockedPostListResponse getBlockedPosts() {
-        User user = User.builder().id(getCurrentUserId()).build();
-        List<Block> blocks = blockRepository.findByUserAndPostIsNotNull(user);
-        return new BlockedPostListResponse(
-                blocks.stream()
-                        .map(block -> BlockedTargetResponse.builder()
-                                .targetId(block.getPost().getId())
-                                .targetType("POST")
-                                .build())
-                        .collect(Collectors.toList())
-        );
+        User user = getCurrentUser();
+        List<Block> blocks = blockRepository.findByUserAndPostIsNotNullAndIsDeletedFalse(user);
+        return new BlockedPostListResponse(blocks.stream()
+                .map(block -> new BlockedTargetResponse(block.getPost().getId(), "POST"))
+                .collect(Collectors.toList()));
     }
 
-    // ================== 댓글 차단 ==================
-
-    /**
-     * 댓글 차단
-     * @param commentId 차단할 댓글 ID
-     */
+    // ================== 댓글 ==================
     public void blockComment(Long commentId) {
+        User user = getCurrentUser();
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
-        User user = User.builder().id(getCurrentUserId()).build();
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        boolean alreadyBlocked = blockRepository.findByUserAndComment(user, comment).isPresent();
-        if (!alreadyBlocked) {
-            Block block = Block.builder().user(user).comment(comment).build();
-            blockRepository.save(block);
-        }
+        Block block = blockRepository.findByUserAndComment(user, comment)
+                .orElse(Block.builder().user(user).comment(comment).build());
+
+        block.restore();
+        blockRepository.save(block);
     }
 
-    /**
-     * 댓글 차단 해제
-     * @param commentId 차단 해제할 댓글 ID
-     */
     public void unblockComment(Long commentId) {
+        User user = getCurrentUser();
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
-        User user = User.builder().id(getCurrentUserId()).build();
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
         blockRepository.findByUserAndComment(user, comment)
-                .ifPresent(blockRepository::delete);
+                .ifPresent(block -> {
+                    block.softDelete();
+                    blockRepository.save(block);
+                });
     }
 
-    /**
-     * 차단한 댓글 목록 조회
-     * @return BlockedCommentListResponse
-     */
     public BlockedCommentListResponse getBlockedComments() {
-        User user = User.builder().id(getCurrentUserId()).build();
-        List<Block> blocks = blockRepository.findByUserAndCommentIsNotNull(user);
-        return new BlockedCommentListResponse(
-                blocks.stream()
-                        .map(block -> BlockedTargetResponse.builder()
-                                .targetId(block.getComment().getId())
-                                .targetType("COMMENT")
-                                .build())
-                        .collect(Collectors.toList())
-        );
+        User user = getCurrentUser();
+        List<Block> blocks = blockRepository.findByUserAndCommentIsNotNullAndIsDeletedFalse(user);
+        return new BlockedCommentListResponse(blocks.stream()
+                .map(block -> new BlockedTargetResponse(block.getComment().getId(), "COMMENT"))
+                .collect(Collectors.toList()));
     }
 
-    // ================== 대댓글 차단 ==================
-
-    /**
-     * 대댓글 차단
-     * @param replyId 차단할 대댓글 ID
-     */
+    // ================== 대댓글 ==================
     public void blockReply(Long replyId) {
+        User user = getCurrentUser();
         Reply reply = replyRepository.findById(replyId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 대댓글이 존재하지 않습니다."));
-        User user = User.builder().id(getCurrentUserId()).build();
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
 
-        boolean alreadyBlocked = blockRepository.findByUserAndReply(user, reply).isPresent();
-        if (!alreadyBlocked) {
-            Block block = Block.builder().user(user).reply(reply).build();
-            blockRepository.save(block);
-        }
+        Block block = blockRepository.findByUserAndReply(user, reply)
+                .orElse(Block.builder().user(user).reply(reply).build());
+
+        block.restore();
+        blockRepository.save(block);
     }
 
-    /**
-     * 대댓글 차단 해제
-     * @param replyId 차단 해제할 대댓글 ID
-     */
     public void unblockReply(Long replyId) {
+        User user = getCurrentUser();
         Reply reply = replyRepository.findById(replyId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 대댓글이 존재하지 않습니다."));
-        User user = User.builder().id(getCurrentUserId()).build();
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
 
         blockRepository.findByUserAndReply(user, reply)
-                .ifPresent(blockRepository::delete);
+                .ifPresent(block -> {
+                    block.softDelete();
+                    blockRepository.save(block);
+                });
     }
 
-    /**
-     * 차단한 대댓글 목록 조회
-     * @return BlockedReplyListResponse
-     */
     public BlockedReplyListResponse getBlockedReplies() {
-        User user = User.builder().id(getCurrentUserId()).build();
-        List<Block> blocks = blockRepository.findByUserAndReplyIsNotNull(user);
-        return new BlockedReplyListResponse(
-                blocks.stream()
-                        .map(block -> BlockedTargetResponse.builder()
-                                .targetId(block.getReply().getId())
-                                .targetType("REPLY")
-                                .build())
-                        .collect(Collectors.toList())
-        );
+        User user = getCurrentUser();
+        List<Block> blocks = blockRepository.findByUserAndReplyIsNotNullAndIsDeletedFalse(user);
+        return new BlockedReplyListResponse(blocks.stream()
+                .map(block -> new BlockedTargetResponse(block.getReply().getId(), "REPLY"))
+                .collect(Collectors.toList()));
     }
 }

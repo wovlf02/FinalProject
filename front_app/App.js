@@ -95,9 +95,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Image } from 'react-native';
 
 import HomeScreen from './src/screens/home/HomeScreen';
-import CommunityMainScreen from './src/screens/community/CommunityMainScreen';
-import CommunityWriteScreen from './src/screens/community/CommunityWriteScreen';
-import CommunityPostScreen from './src/screens/community/CommunityPostScreen'; // 게시글 상세
+
 import PersonalStudyMainScreen from './src/screens/study/PersonalStudyMainScreen';
 import PersonalStudyScreen from './src/screens/study/PersonalStudyScreen';
 import TeamStudyScreen from './src/screens/study/TeamStudyScreen';
@@ -110,6 +108,16 @@ import FindAccountScreen from './src/screens/auth/FindAccountScreen';
 import ResetPasswordScreen from './src/screens/auth/ResetPasswordScreen';
 
 import { UserProvider } from './src/contexts/UserContext';
+import PostListScreen from './src/screens/community/PostListScreen';
+import FriendBlockListScreen from './src/screens/community/FriendBlockListScreen';
+import FriendRequestScreen from './src/screens/community/FriendRequestScreen';
+import FriendSearchScreen from './src/screens/community/FriendSearchScreen';
+import FriendListScreen from './src/screens/community/FriendListScreen';
+import ChatRoomListScreen from './src/screens/community/ChatRoomListScreen';
+import ChatRoomScreen from './src/screens/community/ChatRoomScreen';
+import PostEditScreen from './src/screens/community/PostEditScreen';
+import PostDetailScreen from './src/screens/community/PostDetailScreen';
+import CreatePostScreen from './src/screens/community/CreatePostScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -153,7 +161,7 @@ const screenOptions = ({ route }) => ({
 const MainTabNavigator = () => (
   <Tab.Navigator initialRouteName="홈" screenOptions={screenOptions}>
     <Tab.Screen name="공부시작" component={PersonalStudyMainScreen} />
-    <Tab.Screen name="커뮤니티" component={CommunityMainScreen} />
+    <Tab.Screen name="커뮤니티" component={PostListScreen} />
     <Tab.Screen name="홈" component={HomeScreen} />
     <Tab.Screen name="단원평가" component={UnitTestScreen} />
     <Tab.Screen name="마이페이지" component={MyPageMainScreen} />
@@ -172,12 +180,20 @@ const App = () => (
         <Stack.Screen name="Main" component={MainTabNavigator} />
         <Stack.Screen name="PersonalStudyScreen" component={PersonalStudyScreen} />
         <Stack.Screen name="TeamStudyScreen" component={TeamStudyScreen} />
-        <Stack.Screen name="CommunityWrite" component={CommunityWriteScreen} />
-        <Stack.Screen
-          name="CommunityPost"
-          component={CommunityPostScreen}
-          options={{ headerShown: true, title: '게시글' }}
-        />
+          {/* 커뮤니티: 게시판 */}
+          <Stack.Screen name="CreatePost" component={CreatePostScreen} />
+          <Stack.Screen name="PostDetail" component={PostDetailScreen} />
+          <Stack.Screen name="PostEdit" component={PostEditScreen} />
+
+          {/* 커뮤니티: 채팅 */}
+          <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
+          <Stack.Screen name="ChatRoomList" component={ChatRoomListScreen} />
+
+          {/* 커뮤니티: 친구 */}
+          <Stack.Screen name="FriendList" component={FriendListScreen}/>
+          <Stack.Screen name="FriendSearch" component={FriendSearchScreen} />
+          <Stack.Screen name="FriendRequest" component={FriendRequestScreen} />
+          <Stack.Screen name="FriendBlockList" component={FriendBlockListScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   </UserProvider>

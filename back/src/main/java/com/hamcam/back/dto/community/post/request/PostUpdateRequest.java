@@ -22,11 +22,11 @@ public class PostUpdateRequest {
      * 수정할 본문
      */
     private String content;
-
-    /**
-     * 수정할 카테고리
-     */
-    private String category;
+//
+//    /**
+//     * 수정할 카테고리
+//     */
+//    private String category;
 
     private List<Long> deleteFileIds;
 }

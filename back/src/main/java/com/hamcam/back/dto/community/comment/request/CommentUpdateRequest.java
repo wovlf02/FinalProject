@@ -19,8 +19,4 @@ public class CommentUpdateRequest {
      */
     private String content;
 
-    /**
-     * 작성자 사용자 ID
-     */
-    private Long writerId;
 }

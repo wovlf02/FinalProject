@@ -1,8 +1,11 @@
 package com.hamcam.back.repository.community.comment;
 
 import com.hamcam.back.entity.community.Comment;
+import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.entity.community.Reply;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -31,4 +34,6 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
      * 특정 댓글에 대한 대댓글 개수 조회
      */
     long countByCommentId(Long commentId);
+    @Query("SELECT r FROM Reply r WHERE r.post = :post AND r.isDeleted = false")
+    List<Reply> findByPostAndIsDeletedFalse(@Param("post") Post post);
 }

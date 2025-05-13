@@ -28,6 +28,9 @@ public class PostResponse {
     private int likeCount;
     private boolean liked;
     private boolean favorite;
+    private int viewCount;
+    private int attachmentCount;
+    private int commentCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -44,21 +47,24 @@ public class PostResponse {
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .category(post.getCategory())
                 .writerId(post.getWriter().getId())
                 .writerNickname(post.getWriter().getNickname())
                 .profileImageUrl(post.getWriter().getProfileImageUrl())
                 .likeCount(post.getLikes().size())
-                .liked(false) // 로그인 사용자 기준으로 이후 처리 필요
-                .favorite(false) // 로그인 사용자 기준으로 이후 처리 필요
+                .liked(false)
+                .favorite(false)
+                .viewCount(post.getViewCount())
+                .attachmentCount(post.getAttachments() != null ? post.getAttachments().size() : 0)
+                .commentCount(post.getComments() != null ? post.getComments().size() : 0)
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .attachmentUrls(post.getAttachments() != null
                         ? post.getAttachments().stream()
-                        .map(Attachment::getFileUrl) // 또는 getOriginalName(), getPath() 등 원하는 필드
+                        .map(att -> "/uploads/community/" + att.getStoredFileName())
                         .collect(Collectors.toList())
                         : List.of()
                 )
                 .build();
     }
+
 }

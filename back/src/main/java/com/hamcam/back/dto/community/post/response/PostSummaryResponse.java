@@ -30,11 +30,11 @@ public class PostSummaryResponse {
      * 게시글 작성자 닉네임
      */
     private String writer;
-
-    /**
-     * 게시글 카테고리
-     */
-    private String category;
+//
+//    /**
+//     * 게시글 카테고리
+//     */
+//    private String category;
 
     /**
      * 좋아요 수
@@ -45,6 +45,7 @@ public class PostSummaryResponse {
      * 조회수
      */
     private int viewCount;
+    private int attachmentCount;
 
     /**
      * 작성일시
@@ -59,9 +60,9 @@ public class PostSummaryResponse {
                 .postId(post.getId())
                 .title(post.getTitle())
                 .writer(post.getWriter().getNickname())
-                .category(post.getCategory())
                 .likeCount(post.getLikeCount())
                 .viewCount(post.getViewCount())
+                .attachmentCount(post.getAttachments() != null ? post.getAttachments().size() : 0)
                 .createdAt(post.getCreatedAt())
                 .build();
     }

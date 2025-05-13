@@ -1,10 +1,13 @@
 package com.hamcam.back.global.security;
 
-import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.security.auth.CustomUserDetails;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+/**
+ * 인증된 사용자 정보를 가져오는 유틸리티 클래스
+ */
 public class SecurityUtil {
 
     /**
@@ -18,17 +21,17 @@ public class SecurityUtil {
         }
 
         Object principal = authentication.getPrincipal();
-        if (principal instanceof User user) {
-            return user.getId();
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getUserId();
         }
 
         throw new CustomException("사용자 정보가 유효하지 않습니다.");
     }
 
     /**
-     * 현재 인증된 사용자 객체 반환
+     * 현재 인증된 사용자 정보(CustomUserDetails) 반환
      */
-    public static User getCurrentUser() {
+    public static CustomUserDetails getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -36,8 +39,8 @@ public class SecurityUtil {
         }
 
         Object principal = authentication.getPrincipal();
-        if (principal instanceof User user) {
-            return user;
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails;
         }
 
         throw new CustomException("사용자 정보가 유효하지 않습니다.");

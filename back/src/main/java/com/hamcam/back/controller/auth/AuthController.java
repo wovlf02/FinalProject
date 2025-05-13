@@ -1,12 +1,8 @@
 package com.hamcam.back.controller.auth;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hamcam.back.dto.auth.request.*;
 import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.dto.auth.response.TokenResponse;
-import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.repository.auth.UserRepository;
@@ -16,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,8 +33,6 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
     /**
      * 아이디 중복 확인
@@ -91,22 +84,18 @@ public class AuthController {
     }
 
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MessageResponse> register(
+    public ApiResponse<String> register(
             @RequestPart("username") String username,
             @RequestPart("password") String rawPassword,
             @RequestPart("email") String email,
             @RequestPart("nickname") String nickname,
-            @RequestPart("grade") String gradeStr,  // ← String으로 받음
-            @RequestPart("subjects") String subjectsJson,
+            @RequestPart("grade") Integer grade,
+            @RequestPart("subjects") List<String> subjects,
             @RequestPart("studyHabit") String studyHabit,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
     ) {
         try {
-            Integer grade = Integer.parseInt(gradeStr);  // ← 여기서 변환
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<String> subjects = objectMapper.readValue(subjectsJson, new TypeReference<>() {});
-
+            // 1. 프로필 이미지 처리
             String profileImageUrl = null;
             if (profileImage != null && !profileImage.isEmpty()) {
                 String storedName = UUID.randomUUID() + "_" + profileImage.getOriginalFilename();
@@ -117,6 +106,7 @@ public class AuthController {
                 profileImageUrl = "/uploads/profile/" + storedName;
             }
 
+            // 2. RegisterRequest DTO 생성 및 필드 주입
             RegisterRequest request = new RegisterRequest();
             FieldUtils.writeField(request, "username", username, true);
             FieldUtils.writeField(request, "password", rawPassword, true);
@@ -127,14 +117,16 @@ public class AuthController {
             FieldUtils.writeField(request, "studyHabit", studyHabit, true);
             FieldUtils.writeField(request, "profileImageUrl", profileImageUrl, true);
 
+            // 3. 회원가입 처리
             authService.register(request);
-            return ResponseEntity.ok(new MessageResponse("회원가입이 완료되었습니다."));
+            return ApiResponse.ok("회원가입이 완료되었습니다.");
 
         } catch (Exception e) {
             log.error("회원가입 중 예외 발생", e);
             throw new CustomException("회원가입 처리 중 오류가 발생했습니다.");
         }
     }
+
 
     /**
      * 로그인 요청 - JWT 발급

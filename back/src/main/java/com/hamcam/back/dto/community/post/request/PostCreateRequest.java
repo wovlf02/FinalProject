@@ -1,15 +1,17 @@
 package com.hamcam.back.dto.community.post.request;
 
-import lombok.Data;
+import lombok.*;
 
 /**
  * 게시글 작성 요청 DTO
  */
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class PostCreateRequest {
 
     private String title;
     private String content;
     private Long writerId;
-    private String category;
 }

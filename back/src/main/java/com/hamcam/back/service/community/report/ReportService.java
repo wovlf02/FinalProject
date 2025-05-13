@@ -3,6 +3,8 @@ package com.hamcam.back.service.community.report;
 import com.hamcam.back.dto.community.report.request.ReportRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.*;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
@@ -11,13 +13,11 @@ import com.hamcam.back.repository.community.report.ReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
- * 신고 처리 서비스
- * <p>
- * 게시글, 댓글, 대댓글, 사용자를 대상으로 신고를 생성하고 중복을 방지합니다.
- * </p>
+ * 커뮤니티 리소스 신고 서비스
+ * - 게시글, 댓글, 대댓글, 사용자 신고 처리 및 중복 방지
  */
 @Service
 @RequiredArgsConstructor
@@ -30,93 +30,94 @@ public class ReportService {
     private final UserRepository userRepository;
 
     /**
-     * 현재 로그인된 사용자 ID (mock)
+     * 현재 인증된 사용자 엔티티 반환
      */
-    private Long getCurrentUserId() {
-        return 1L;
-    }
-
     private User getCurrentUser() {
-        return User.builder().id(getCurrentUserId()).build();
+        Long userId = SecurityUtil.getCurrentUserId();
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException("사용자 인증 정보가 유효하지 않습니다."));
     }
 
-    // 게시글 신고
+    /**
+     * 게시글 신고
+     */
     public void reportPost(Long postId, ReportRequest request) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException("해당 게시글이 존재하지 않습니다."));
         User reporter = getCurrentUser();
 
-        reportRepository.findByReporterAndPost(reporter, post)
-                .ifPresent(r -> { throw new IllegalStateException("이미 신고한 게시글입니다."); });
+        if (reportRepository.findByReporterAndPost(reporter, post).isPresent()) {
+            throw new CustomException("이미 이 게시글을 신고했습니다.");
+        }
 
-        Report report = Report.builder()
-                .reporter(reporter)
-                .post(post)
-                .reason(request.getReason())
-                .reportedAt(LocalDateTime.now())
-                .status("PENDING")
-                .build();
-        reportRepository.save(report);
+        createReport(reporter, request.getReason(), post, null, null, null);
     }
 
-    // 댓글 신고
+    /**
+     * 댓글 신고
+     */
     public void reportComment(Long commentId, ReportRequest request) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException("해당 댓글이 존재하지 않습니다."));
         User reporter = getCurrentUser();
 
-        reportRepository.findByReporterAndComment(reporter, comment)
-                .ifPresent(r -> { throw new IllegalStateException("이미 신고한 댓글입니다."); });
+        if (reportRepository.findByReporterAndComment(reporter, comment).isPresent()) {
+            throw new CustomException("이미 이 댓글을 신고했습니다.");
+        }
 
-        Report report = Report.builder()
-                .reporter(reporter)
-                .comment(comment)
-                .reason(request.getReason())
-                .reportedAt(LocalDateTime.now())
-                .status("PENDING")
-                .build();
-        reportRepository.save(report);
+        createReport(reporter, request.getReason(), null, comment, null, null);
     }
 
-    // 대댓글 신고
+    /**
+     * 대댓글 신고
+     */
     public void reportReply(Long replyId, ReportRequest request) {
         Reply reply = replyRepository.findById(replyId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 대댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException("해당 대댓글이 존재하지 않습니다."));
         User reporter = getCurrentUser();
 
-        reportRepository.findByReporterAndReply(reporter, reply)
-                .ifPresent(r -> { throw new IllegalStateException("이미 신고한 대댓글입니다."); });
+        if (reportRepository.findByReporterAndReply(reporter, reply).isPresent()) {
+            throw new CustomException("이미 이 대댓글을 신고했습니다.");
+        }
 
-        Report report = Report.builder()
-                .reporter(reporter)
-                .reply(reply)
-                .reason(request.getReason())
-                .reportedAt(LocalDateTime.now())
-                .status("PENDING")
-                .build();
-        reportRepository.save(report);
+        createReport(reporter, request.getReason(), null, null, reply, null);
     }
 
-    // 사용자 신고
+    /**
+     * 사용자 신고
+     */
     public void reportUser(Long userId, ReportRequest request) {
         User target = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자가 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException("신고 대상 사용자가 존재하지 않습니다."));
         User reporter = getCurrentUser();
 
         if (reporter.getId().equals(userId)) {
-            throw new IllegalArgumentException("자기 자신을 신고할 수 없습니다.");
+            throw new CustomException("자기 자신은 신고할 수 없습니다.");
         }
 
-        reportRepository.findByReporterAndTargetUser(reporter, target)
-                .ifPresent(r -> { throw new IllegalStateException("이미 신고한 사용자입니다."); });
+        if (reportRepository.findByReporterAndTargetUser(reporter, target).isPresent()) {
+            throw new CustomException("이미 이 사용자를 신고했습니다.");
+        }
+
+        createReport(reporter, request.getReason(), null, null, null, target);
+    }
+
+    /**
+     * 신고 생성 공통 메서드
+     */
+    private void createReport(User reporter, String reason,
+                              Post post, Comment comment, Reply reply, User targetUser) {
 
         Report report = Report.builder()
                 .reporter(reporter)
-                .targetUser(target)
-                .reason(request.getReason())
-                .reportedAt(LocalDateTime.now())
-                .status("PENDING")
+                .reason(reason)
+                .status(ReportStatus.PENDING)
+                .post(post)
+                .comment(comment)
+                .reply(reply)
+                .targetUser(targetUser)
                 .build();
+
         reportRepository.save(report);
     }
 }

@@ -9,60 +9,71 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 댓글(Comment) 엔티티
- * - 게시글(Post)에 작성된 댓글을 나타냅니다.
- * - 사용자(User)에 의해 작성되며, 첨부파일 및 대댓글과 연관됩니다.
+ * 게시글 댓글 엔티티 (MySQL 기반)
  */
 @Entity
+@Table(name = "comments", // ✅ 소문자 테이블명
+        indexes = {
+                @Index(name = "idx_comment_post", columnList = "post_id"),
+                @Index(name = "idx_comment_writer", columnList = "writer_id")
+        }
+)
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Comment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
     private Long id;
 
-    /**
-     * -- SETTER --
-     *  댓글 본문 내용 수정
-     *
-     * @param content 수정할 본문
-     */
-    @Setter
-    @Column(columnDefinition = "TEXT", nullable = false)
+    /** 댓글 내용 */
+    @Column(name = "content", nullable = false, length = 1000)
     private String content;
 
+    /** 댓글 작성자 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "writer_id", nullable = false)
     private User writer;
 
+    /** 게시글 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
+    /** 생성일 */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * -- SETTER --
-     *  댓글 수정 시각 수동 설정
-     *
-     * @param updatedAt 수정 시간
-     */
-    @Setter
+    /** 수정일 */
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    private int likeCount;
+    /** 좋아요 수 */
+    @Builder.Default
+    @Column(name = "like_count", nullable = false)
+    private int likeCount = 0;
 
+    /** 좋아요 목록 */
+    @Builder.Default
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Like> likes = new ArrayList<>();
 
+    /** 대댓글 목록 */
+    @Builder.Default
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reply> replies = new ArrayList<>();
 
-    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Attachment> attachments = new ArrayList<>();
+    /** 삭제 여부 (소프트 삭제) */
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    /** 삭제 시각 */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @PrePersist
     protected void onCreate() {
@@ -75,4 +86,28 @@ public class Comment {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // ===== 비즈니스 메서드 =====
+
+    public void updateContent(String newContent) {
+        this.content = newContent;
+    }
+
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+    }
+
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return !isDeleted;
+    }
 }
