@@ -17,6 +17,7 @@ import RoomList from './pages/RoomList';
 import Evaluation from './pages/evaluation';
 import Community from './pages/Community/Community';
 import Statistics from './pages/Statistics';
+import './css/style.css';
 
 function App() {
   return (

@@ -1,0 +1,250 @@
+:root {
+  --brand-color: #006a79;
+  --bg-light: #f6f8fa;
+  --card-bg: #fff;
+  --card-radius: 16px;
+  --card-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  --side-width: 200px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
+  background: var(--bg-light);
+  color: #222;
+}
+/* 레이아웃 */
+.main-layout {
+  display: flex;
+  height: 100vh; /* 화면 전체 높이로 맞춤 */
+}
+/* 사이드 메뉴 */
+.side-menu {
+  width: var(--side-width);
+  background: #fff;
+  border-right: 1px solid #e0e4ea;
+  padding: 32px 0;
+  height: 100vh; /* 사이드바도 전체 높이 */
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.side-menu ul {
+  list-style: none;
+  padding: 0 0 0 24px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.side-menu li {
+  font-size: 1.07rem;
+  color: #444;
+  padding: 10px 12px;
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background .2s, color .2s;
+}
+.side-menu li.active,
+.side-menu li:hover {
+  background: var(--brand-color);
+  color: #fff;
+  font-weight: 600;
+}
+/* 메인 컨텐츠 */
+.dashboard-main {
+  flex: 1;
+  padding: 48px 40px 40px 40px;
+  min-width: 0;
+  background: var(--bg-light);
+  min-height: 100vh; /* 메인도 전체 높이 */
+}
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 36px;
+}
+.dashboard-header h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 0;
+  letter-spacing: -1px;
+}
+.dashboard-dday {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #eaf3f5;
+  border-radius: 16px;
+  padding: 8px 18px;
+  font-size: 1.07rem;
+}
+.dashboard-dday .dday-value {
+  font-weight: 700;
+  color: var(--brand-color);
+  font-size: 1.15rem;
+  margin-left: 2px;
+}
+.dashboard-dday button {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #888;
+  margin-left: 6px;
+  transition: color .2s;
+}
+.dashboard-dday button:hover {
+  color: var(--brand-color);
+}
+/* 카드형 위젯 */
+.dashboard-widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 28px;
+}
+.dashboard-card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: 28px 24px 24px 24px;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dashboard-card .card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--brand-color);
+  margin-bottom: 6px;
+}
+/* 캘린더(예시) */
+.calendar-box {
+  width: 100%;
+  height: 120px;
+  background: #f2f8fa;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+/* 할 일 */
+.todo-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  list-style: disc;
+  color: #444;
+  font-size: 1.03rem;
+}
+.todo-list li.done {
+  text-decoration: line-through;
+  color: #aaa;
+}
+.todo-input-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.todo-input-wrap input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #cdd6e0;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+.todo-input-wrap button {
+  background: var(--brand-color);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background .2s;
+}
+.todo-input-wrap button:hover {
+  background: #00525d;
+}
+/* 성장률 바 */
+.growth-bar-bg {
+  background: #eaf3f5;
+  border-radius: 8px;
+  height: 16px;
+  width: 100%;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.growth-bar {
+  background: var(--brand-color);
+  height: 100%;
+  border-radius: 8px;
+  transition: width .5s;
+}
+/* 공지사항 */
+.notice-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 1.02rem;
+}
+.notice-list li {
+  margin-bottom: 6px;
+  color: #555;
+}
+/* 반응형 */
+@media (max-width: 900px) {
+  .main-layout {
+    flex-direction: column;
+    height: auto;
+  }
+  .side-menu {
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid #e0e4ea;
+    padding: 0;
+    min-height: unset;
+    height: auto;
+    position: static;
+  }
+  .side-menu ul {
+    flex-direction: row;
+    padding: 0 16px;
+    gap: 2px;
+  }
+  .side-menu li {
+    border-radius: 0 0 8px 8px;
+    padding: 10px 18px;
+  }
+  .dashboard-main {
+    padding: 32px 8vw 24px 8vw;
+    min-height: 60vh;
+  }
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .dashboard-widgets {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-main {
+    padding: 20px 4vw 16px 4vw;
+  }
+  .dashboard-header h2 {
+    font-size: 1.3rem;
+  }
+}

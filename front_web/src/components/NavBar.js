@@ -6,18 +6,21 @@ const HeaderBar = ({ selectedTab }) => {
   return (
     <div className="header-bar">
       <div className="header-bar-logo">로고</div>
-      <div>{selectedTab}</div>
-      <div>로그인 정보</div>
     </div>
   );
 };
 
-const SideMenu = ({ menuItems, handleNavigation }) => {
+const SideMenu = ({ menuItems, handleNavigation, selectedTab }) => {
   return (
     <div className="side-menu">
       <ul className="side-menu-list">
         {menuItems.map((item) => (
-          <li key={item.name} className="side-menu-list-item">
+          <li
+            key={item.name}
+            className={`side-menu-list-item ${
+              selectedTab === item.name ? 'active' : ''
+            }`}
+          >
             <button
               onClick={() => handleNavigation(item.name, item.path)}
               className="side-menu-button"
@@ -41,8 +44,6 @@ const NavBar = () => {
     { name: '단원 평가', path: '/evaluation' },
     { name: '통계', path: '/statistics' },
     { name: '커뮤니티', path: '/community' },
-    // { name: '팀 학습', path: '/teamStudy' },
-    // { name: '개인 학습', path: '/personalStudy' },  {/* 개인 학습 추가 */}
   ];
 
   const handleNavigation = (name, path) => {
@@ -53,12 +54,12 @@ const NavBar = () => {
   return (
     <div>
       <HeaderBar selectedTab={selectedTab} />
-      <div style={{ display: 'flex' }}>
-        <SideMenu menuItems={menuItems} handleNavigation={handleNavigation} />
-        <div style={{ flex: 1, padding: '20px' }}>
-          {/* 페이지 콘텐츠 */}
-        </div>
-      </div>
+      <SideMenu
+        menuItems={menuItems}
+        handleNavigation={handleNavigation}
+        selectedTab={selectedTab}
+      />
+      {/* 페이지 콘텐츠 */}
     </div>
   );
 };
