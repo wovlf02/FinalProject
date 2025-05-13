@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, Image,
-    ScrollView, StyleSheet, Alert
+    ScrollView, StyleSheet, Alert,
 } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import api from '../../api/api';

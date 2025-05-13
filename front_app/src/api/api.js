@@ -17,7 +17,7 @@ const api = axios.create({
 // api.js 수정 (선택적)
 api.interceptors.request.use(
     async (config) => {
-        if (!config.url.includes('/auth') && !config.url.includes('/universities/search')) {
+        if (!config.url.includes('/auth')) {
             const token = await EncryptedStorage.getItem('accessToken');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;

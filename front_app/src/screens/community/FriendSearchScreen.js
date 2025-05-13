@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
-    Image, Alert, ActivityIndicator, Dimensions
+    Image, Alert, ActivityIndicator, Dimensions,
 } from 'react-native';
 import api from '../../api/api';
 import FastImage from 'react-native-fast-image';
@@ -80,7 +80,7 @@ const FriendSearchScreen = () => {
                     style={styles.searchInput}
                 />
                 <TouchableOpacity onPress={handleSearch}>
-                    <Image source={require('../../../../../FinalProject_backup/front/src/assets/board_search.png')} style={styles.searchIcon} />
+                    <Image source={require('../../assets/board_search.png')} style={styles.searchIcon} />
                 </TouchableOpacity>
             </View>
 

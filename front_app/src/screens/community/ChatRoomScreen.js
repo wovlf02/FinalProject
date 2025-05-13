@@ -10,9 +10,9 @@ import SockJS from 'sockjs-client';
 import { CompatClient, Stomp } from '@stomp/stompjs';
 import axios from 'axios';
 import DocumentPicker from 'react-native-document-picker';
-import EncryptedStorage from "react-native-encrypted-storage";
-import {jwtDecode} from "jwt-decode";
-import api from "../../api/api";
+import EncryptedStorage from 'react-native-encrypted-storage';
+import {jwtDecode} from 'jwt-decode';
+import api from '../../api/api';
 
 const BASE_URL = 'http://192.168.0.2:8080'; // Spring 서버 주소
 
@@ -187,11 +187,11 @@ const ChatRoomScreen = () => {
             {/* 상단 헤더 */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Image source={require('../../../../../FinalProject_backup/front/src/assets/back.png')} style={styles.backIcon} />
+                    <Image source={require('../../assets/back.png')} style={styles.backIcon} />
                 </TouchableOpacity>
                 <Text style={styles.title}>{otherUserNickname}</Text>
                 <TouchableOpacity>
-                    <Image source={require('../../../../../FinalProject_backup/front/src/assets/search.png')} style={styles.searchIcon} />
+                    <Image source={require('../../assets/search.png')} style={styles.searchIcon} />
                 </TouchableOpacity>
             </View>
 

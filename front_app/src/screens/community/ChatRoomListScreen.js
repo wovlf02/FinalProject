@@ -138,7 +138,7 @@ const ChatRoomListScreen = () => {
                 )}
                 <TouchableOpacity>
                     <Image
-                        source={require('../../../../../FinalProject_backup/front/src/assets/bell_off.png')}
+                        source={require('../../assets/bell_off.png')}
                         style={{ width: 18, height: 18, marginTop: 4 }}
                     />
                 </TouchableOpacity>

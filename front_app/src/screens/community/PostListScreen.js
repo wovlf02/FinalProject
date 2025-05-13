@@ -9,9 +9,6 @@ import { jwtDecode } from 'jwt-decode';
 import moment from 'moment';
 import api from '../../api/api';
 
-const { width } = Dimensions.get('window');
-
-const BASE_URL = 'http://192.168.0.2:8080';
 
 const PostListScreen = () => {
     const navigation = useNavigation();
@@ -200,7 +197,7 @@ const PostListScreen = () => {
                     style={styles.searchInput}
                 />
                 <TouchableOpacity onPress={handleSearch}>
-                    <Image source={require('../../../../../FinalProject_backup/front/src/assets/board_search.png')} style={styles.searchIcon} />
+                    <Image source={require('../../assets/board_search.png')} style={styles.searchIcon} />
                 </TouchableOpacity>
             </View>
 
@@ -230,7 +227,7 @@ const PostListScreen = () => {
                     navigation.navigate('CreatePost', { writerId });
                 }}
             >
-                <Image source={require('../../../../../FinalProject_backup/front/src/assets/add.png')} style={styles.addIcon} />
+                <Image source={require('../../assets/add.png')} style={styles.addIcon} />
             </TouchableOpacity>
         </View>
     );

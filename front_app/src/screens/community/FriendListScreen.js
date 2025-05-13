@@ -163,7 +163,7 @@ const FriendListScreen = () => {
                     style={styles.searchInput}
                 />
                 <TouchableOpacity onPress={handleSearch}>
-                    <Image source={require('../../../../../FinalProject_backup/front/src/assets/board_search.png')} style={styles.searchIcon} />
+                    <Image source={require('../../assets/board_search.png')} style={styles.searchIcon} />
                 </TouchableOpacity>
             </View>
 

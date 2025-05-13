@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, FlatList,
-    TouchableOpacity, Alert, ActivityIndicator
+    TouchableOpacity, Alert, ActivityIndicator,
 } from 'react-native';
 import api from '../../api/api';
 import FastImage from 'react-native-fast-image';

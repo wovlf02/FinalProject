@@ -40,7 +40,7 @@ const FriendRequestScreen = () => {
 
     const handleReject = async (requestId) => {
         try {
-            await api.post('/api/friends/reject', { requestId });
+            await api.post('/friends/reject', { requestId });
             Alert.alert('거절 완료', '친구 요청을 거절했습니다.');
             fetchRequests();
         } catch (err) {

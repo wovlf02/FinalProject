@@ -52,17 +52,13 @@ const CreatePostScreen = () => {
         }
 
         try {
-            const writerId = route?.params?.writerId;
-            if (!writerId) {
-                Alert.alert('오류', '작성자 정보가 없습니다.');
-                return;
-            }
-
-            const postData = { title, content, writerId };
+            const postData = { title, content };
 
             if (attachments.length === 0) {
+                // 텍스트만 있는 경우
                 await api.post('/community/posts', postData);
             } else {
+                // 첨부파일이 있는 경우
                 const formData = new FormData();
                 formData.append('post', JSON.stringify(postData));
 
@@ -89,13 +85,12 @@ const CreatePostScreen = () => {
         }
     };
 
-
     return (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={styles.container}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Image source={require('../../../../../FinalProject_backup/front/src/assets/back.png')} style={styles.backIcon} />
+                        <Image source={require('../../assets/back.png')} style={styles.backIcon} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>게시글 작성</Text>
                 </View>
