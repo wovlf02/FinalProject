@@ -5,6 +5,7 @@ import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
 import com.hamcam.back.entity.chat.ChatRoom;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,9 +30,11 @@ public class ChatAttachmentService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final SecurityUtil securityUtil;
 
-    private static final String UPLOAD_DIR = "C:/upload/chat";       // 실제 저장 위치
-    private static final String BASE_FILE_URL = "/uploads/chat";     // 클라이언트 노출 URL prefix
+    private static final String UPLOAD_DIR = "C:/FinalProject/uploads/chat";
+    private static final String BASE_FILE_URL = "/uploads/chat";
+
 
     /**
      * 파일 다운로드 리소스 반환
@@ -88,15 +91,12 @@ public class ChatAttachmentService {
 
     /**
      * 파일 메시지 업로드 및 메시지 저장
-     *
-     * @param roomId 채팅방 ID
-     * @param senderId 발신자 ID (인증 연동 시 제거 가능)
-     * @param file Multipart 파일
-     * @return 저장된 메시지 응답
      */
-    public ChatMessageResponse saveFileMessage(Long roomId, Long senderId, MultipartFile file) {
+    public ChatMessageResponse saveFileMessage(Long roomId, MultipartFile file) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+
+        User sender = securityUtil.getCurrentUser(); // ✅ 현재 로그인 사용자
 
         String originalFilename = file.getOriginalFilename();
         String storedFilename = UUID.randomUUID() + "_" + originalFilename;
@@ -114,7 +114,7 @@ public class ChatAttachmentService {
 
         ChatMessage message = ChatMessage.builder()
                 .chatRoom(room)
-                .sender(User.builder().id(senderId).build()) // TODO: JWT 인증 시 제거
+                .sender(sender) // ✅ 인증된 사용자로 설정
                 .type("FILE")
                 .content(originalFilename)
                 .storedFileName(storedFilename)

@@ -26,6 +26,7 @@ public enum ErrorCode {
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "E4001", "잘못된 요청입니다."),
     MISSING_PARAMETER(HttpStatus.BAD_REQUEST, "E4002", "필수 파라미터가 누락되었습니다."),
     FILE_UPLOAD_FAILED(HttpStatus.BAD_REQUEST, "E4003", "파일 업로드에 실패했습니다."),
+    INVALID_CHATROOM_INVITEE(HttpStatus.BAD_REQUEST, "E4004", "초대할 친구를 1명 이상 선택해야 합니다."),
 
     // 401 Unauthorized
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "E4011", "인증이 필요합니다."),

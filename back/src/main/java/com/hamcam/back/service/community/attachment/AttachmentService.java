@@ -4,6 +4,9 @@ import com.hamcam.back.dto.community.attachment.response.AttachmentListResponse;
 import com.hamcam.back.dto.community.attachment.response.AttachmentResponse;
 import com.hamcam.back.entity.community.Attachment;
 import com.hamcam.back.entity.community.Post;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.community.attachment.AttachmentRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ public class AttachmentService {
 
     private final AttachmentRepository attachmentRepository;
     private final PostRepository postRepository;
+    private final SecurityUtil securityUtil;
 
     // ===== 첨부파일 업로드 =====
 
@@ -81,6 +85,13 @@ public class AttachmentService {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new IllegalArgumentException("삭제할 첨부파일이 존재하지 않습니다."));
 
+        Long currentUserId = securityUtil.getCurrentUserId();
+        Long ownerId = attachment.getPost().getWriter().getId();
+
+        if (!ownerId.equals(currentUserId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED); // 권한 없음
+        }
+
         Path filePath = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()).normalize();
         try {
             Files.deleteIfExists(filePath);
@@ -90,6 +101,7 @@ public class AttachmentService {
 
         attachmentRepository.delete(attachment);
     }
+
 
     // ===== 내부 유틸 =====
 

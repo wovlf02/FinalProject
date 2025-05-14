@@ -7,6 +7,7 @@ import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
+    private final SecurityUtil securityUtil;
 
     public Boolean checkUsername(UsernameCheckRequest request) {
         return !userRepository.existsByUsername(request.getUsername());
@@ -63,9 +65,6 @@ public class AuthService {
 
     /**
      * 회원가입
-     */
-    /**
-     * 회원가입 (대학교 정보 제외)
      */
     public void register(RegisterRequest request) {
         // 아이디/이메일 중복 체크
@@ -109,8 +108,9 @@ public class AuthService {
 
 
     public void logout(TokenRequest request) {
-        Long userId = jwtProvider.getUserIdFromToken(request.getAccessToken());
+        Long userId = securityUtil.getCurrentUserId(); // ✅ 변경
         redisTemplate.delete("RT:" + userId);
+
         long expiration = jwtProvider.getExpiration(request.getAccessToken());
         redisTemplate.opsForValue().set("BL:" + request.getAccessToken(), "logout", Duration.ofMillis(expiration));
     }
@@ -170,14 +170,21 @@ public class AuthService {
     }
 
     public void updatePassword(PasswordChangeRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+        User user = securityUtil.getCurrentUser(); // ✅ 현재 로그인한 사용자
+
+        if (!user.getUsername().equals(request.getUsername())) {
+            throw new CustomException("로그인된 사용자 정보와 일치하지 않습니다.");
+        }
+
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
     }
 
     public void withdraw(PasswordConfirmRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+        User user = securityUtil.getCurrentUser(); // ✅ 현재 로그인한 사용자
+
+        if (!user.getUsername().equals(request.getUsername())) {
+            throw new CustomException("로그인된 사용자 정보와 일치하지 않습니다.");
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException("비밀번호가 일치하지 않습니다.");

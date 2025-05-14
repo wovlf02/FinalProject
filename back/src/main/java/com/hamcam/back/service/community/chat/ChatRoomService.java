@@ -9,16 +9,26 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
 import com.hamcam.back.entity.chat.ChatParticipant;
 import com.hamcam.back.entity.chat.ChatRoom;
+import com.hamcam.back.entity.chat.ChatRoomType;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatParticipantRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
+import com.hamcam.back.security.auth.CustomUserDetails;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.hamcam.back.global.security.SecurityUtil.getCurrentUser;
 
 /**
  * 채팅방 서비스
@@ -31,6 +41,24 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final UserRepository userRepository;
+
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) throw new CustomException("로그인 정보가 없습니다.");
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
+
+        throw new CustomException("사용자 정보를 불러올 수 없습니다.");
+    }
+
+    private User getCurrentUser() {
+        return userRepository.findById(getCurrentUserId())
+                .orElseThrow(() -> new CustomException("사용자 정보를 불러올 수 없습니다."));
+    }
 
     /**
      * 채팅방 생성
@@ -39,16 +67,44 @@ public class ChatRoomService {
      * @return 생성된 채팅방 정보
      */
     public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request) {
+        User creator = getCurrentUser(); // 현재 로그인 사용자
+        List<Long> inviteeIds = request.getInvitedUserIds();
+
+        if (inviteeIds == null || inviteeIds.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_CHATROOM_INVITEE);
+        }
+
+        ChatRoomType type = (inviteeIds.size() == 1) ? ChatRoomType.DIRECT : ChatRoomType.GROUP;
+
         ChatRoom room = ChatRoom.builder()
                 .name(request.getRoomName())
-                .type(request.getRoomType())
+                .type(type)
                 .referenceId(request.getReferenceId())
                 .createdAt(LocalDateTime.now())
                 .build();
 
         chatRoomRepository.save(room);
+
+        // 채팅방 멤버 등록 (자기 자신 포함)
+        List<User> members = userRepository.findAllById(
+                Stream.concat(Stream.of(creator.getId()), inviteeIds.stream())
+                        .distinct()
+                        .toList()
+        );
+
+        List<ChatParticipant> chatMembers = members.stream()
+                .map(user -> ChatParticipant.builder()
+                        .chatRoom(room)
+                        .user(user)
+                        .joinedAt(LocalDateTime.now())
+                        .build())
+                .toList();
+
+        chatParticipantRepository.saveAll(chatMembers);
+
         return toResponse(room);
     }
+
 
     /**
      * 사용자가 참여 중인 채팅방 목록 조회
