@@ -4,27 +4,19 @@ import com.hamcam.back.dto.community.comment.request.CommentCreateRequest;
 import com.hamcam.back.dto.community.comment.response.CommentListResponse;
 import com.hamcam.back.dto.community.comment.response.CommentResponse;
 import com.hamcam.back.dto.community.reply.request.ReplyCreateRequest;
-import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.*;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.repository.auth.UserRepository;
-import com.hamcam.back.repository.community.attachment.AttachmentRepository;
-import com.hamcam.back.repository.community.block.BlockRepository;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
-import com.hamcam.back.repository.community.like.LikeRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
-import com.hamcam.back.repository.community.report.ReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static com.hamcam.back.global.security.SecurityUtil.getCurrentUserId;
 
 @Service
 @RequiredArgsConstructor
@@ -33,16 +25,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
     private final PostRepository postRepository;
-    private final LikeRepository likeRepository;
-    private final BlockRepository blockRepository;
-    private final ReportRepository reportRepository;
-    private final AttachmentRepository attachmentRepository;
-    private final UserRepository userRepository;
-
-    private User getCurrentUserEntity() {
-        return userRepository.findById(getCurrentUserId())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
+    private final SecurityUtil securityUtil; // ✅ 추가
 
     /** 댓글 등록 */
     public void createComment(Long postId, CommentCreateRequest request) {
@@ -51,7 +34,7 @@ public class CommentService {
 
         Comment comment = Comment.builder()
                 .post(post)
-                .writer(getCurrentUserEntity())
+                .writer(securityUtil.getCurrentUser()) // ✅ 변경
                 .content(request.getContent())
                 .build();
 
@@ -67,7 +50,7 @@ public class CommentService {
 
         Reply reply = Reply.builder()
                 .comment(parent)
-                .writer(getCurrentUserEntity())
+                .writer(securityUtil.getCurrentUser()) // ✅ 변경
                 .post(parent.getPost())
                 .content(request.getContent())
                 .build();
@@ -122,7 +105,7 @@ public class CommentService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
-        Long userId = getCurrentUserId();
+        Long userId = securityUtil.getCurrentUserId(); // ✅ 변경
 
         List<Comment> comments = commentRepository.findByPostAndIsDeletedFalseOrderByCreatedAtAsc(post);
         Map<Long, List<Reply>> replyMap = replyRepository.findByPostAndIsDeletedFalse(post).stream()

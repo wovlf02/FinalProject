@@ -1,9 +1,9 @@
 package com.hamcam.back.service.auth;
 
 import com.hamcam.back.dto.auth.request.*;
-import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.dto.auth.response.TokenResponse;
+import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.global.exception.ErrorCode;
@@ -18,10 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 
-/**
- * 인증 및 회원가입 관련 로직을 담당하는 AuthService 구현 클래스입니다.
- * 인터페이스 없이 단일 구현체로 사용됩니다.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -47,7 +43,7 @@ public class AuthService {
     }
 
     public String sendVerificationCode(EmailSendRequest request) {
-        String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6자리 랜덤 코드
+        String code = String.valueOf((int) (Math.random() * 900000) + 100000);
         redisTemplate.opsForValue().set("EMAIL:CODE:" + request.getEmail(), code, Duration.ofMinutes(3));
         mailService.sendVerificationCode(request.getEmail(), code, request.getType());
         return "인증코드가 이메일로 발송되었습니다.";
@@ -63,11 +59,7 @@ public class AuthService {
         redisTemplate.delete("EMAIL:CODE:" + request.getEmail());
     }
 
-    /**
-     * 회원가입
-     */
     public void register(RegisterRequest request) {
-        // 아이디/이메일 중복 체크
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new CustomException("이미 존재하는 아이디입니다.");
         }
@@ -75,7 +67,6 @@ public class AuthService {
             throw new CustomException("이미 존재하는 이메일입니다.");
         }
 
-        // User 엔티티 빌드
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -89,8 +80,6 @@ public class AuthService {
 
         userRepository.save(user);
     }
-
-
 
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
@@ -106,9 +95,8 @@ public class AuthService {
         return new LoginResponse(accessToken, refreshToken);
     }
 
-
     public void logout(TokenRequest request) {
-        Long userId = securityUtil.getCurrentUserId(); // ✅ 변경
+        Long userId = securityUtil.getCurrentUserId();
         redisTemplate.delete("RT:" + userId);
 
         long expiration = jwtProvider.getExpiration(request.getAccessToken());
@@ -170,21 +158,12 @@ public class AuthService {
     }
 
     public void updatePassword(PasswordChangeRequest request) {
-        User user = securityUtil.getCurrentUser(); // ✅ 현재 로그인한 사용자
-
-        if (!user.getUsername().equals(request.getUsername())) {
-            throw new CustomException("로그인된 사용자 정보와 일치하지 않습니다.");
-        }
-
+        User user = securityUtil.getCurrentUser();
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
     }
 
     public void withdraw(PasswordConfirmRequest request) {
-        User user = securityUtil.getCurrentUser(); // ✅ 현재 로그인한 사용자
-
-        if (!user.getUsername().equals(request.getUsername())) {
-            throw new CustomException("로그인된 사용자 정보와 일치하지 않습니다.");
-        }
+        User user = securityUtil.getCurrentUser();
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException("비밀번호가 일치하지 않습니다.");

@@ -54,16 +54,14 @@ public class ChatAttachmentController {
      *
      * @param roomId 채팅방 ID
      * @param file 업로드할 파일 (multipart/form-data)
-     * @param senderId 파일 전송 사용자 ID
      * @return 저장된 채팅 메시지 정보
      */
     @PostMapping("/{roomId}/upload")
     public ResponseEntity<ChatMessageResponse> uploadFileMessage(
             @PathVariable Long roomId,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("senderId") Long senderId // ✅ JWT 인증 연동 시 제거 예정
+            @RequestParam("file") MultipartFile file
     ) {
-        ChatMessageResponse response = chatAttachmentService.saveFileMessage(roomId, senderId, file);
+        ChatMessageResponse response = chatAttachmentService.saveFileMessage(roomId, file);
         return ResponseEntity.ok(response);
     }
 }

@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.hamcam.back.global.security.SecurityUtil.getCurrentUser;
-
 /**
  * 채팅방 서비스
  * - 생성, 입장, 퇴장, 목록 및 상세 조회 등 전체 채팅방 흐름 처리

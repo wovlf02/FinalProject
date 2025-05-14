@@ -5,6 +5,7 @@ import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
 import com.hamcam.back.entity.chat.ChatRoom;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
@@ -27,7 +28,7 @@ public class ChatMessageService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final UserRepository userRepository;
+    private final SecurityUtil securityUtil;
 
     /**
      * 채팅 메시지 저장 (WebSocket / REST 공통)
@@ -40,20 +41,20 @@ public class ChatMessageService {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
 
-        // TODO: senderId → SecurityContext에서 추출로 변경 예정
-        User sender = userRepository.findById(request.getSenderId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+        // ✅ SecurityContext에서 인증된 사용자 조회
+        User sender = securityUtil.getCurrentUser();
 
         ChatMessage message = createChatMessage(room, sender, request);
         chatMessageRepository.save(message);
 
-        // 채팅방 마지막 메시지 갱신
+        // ✅ 채팅방 마지막 메시지 갱신
         room.setLastMessage(request.getContent());
         room.setLastMessageAt(message.getSentAt());
-        chatRoomRepository.save(room); // dirty checking으로도 가능하지만 명시적 저장
+        chatRoomRepository.save(room);
 
         return toResponse(message);
     }
+
 
     /**
      * 채팅 메시지 목록 조회 (오래된 순)
