@@ -74,4 +74,14 @@ public class PostListResponse {
                 content
         );
     }
+
+    private PostListResponse(List<PostSimpleResponse> posts, int currentPage, int totalPages) {
+        this.posts = posts;
+        this.currentPage = currentPage;
+        this.totalPages = totalPages;
+    }
+
+    public static PostListResponse of(Page<PostSimpleResponse> page) {
+        return new PostListResponse(page.getContent(), page.getNumber(), page.getTotalPages());
+    }
 }

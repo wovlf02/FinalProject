@@ -9,6 +9,7 @@ import { jwtDecode } from 'jwt-decode';
 import moment from 'moment';
 import api from '../../api/api';
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const PostListScreen = () => {
     const navigation = useNavigation();
@@ -72,7 +73,7 @@ const PostListScreen = () => {
 
     const handleMenuSelect = (screen) => {
         setMenuVisible(false);
-        if (screen === 'Chat') navigation.navigate('ChatList');
+        if (screen === 'Chat') navigation.navigate('ChatRoomList');
         if (screen === 'Friend') navigation.navigate('FriendList');
     };
 
@@ -99,7 +100,6 @@ const PostListScreen = () => {
             setLoading(false);
         }
     };
-
 
     const handleLoadMore = () => {
         if (!searchMode && hasMore && !loading) {
@@ -130,23 +130,19 @@ const PostListScreen = () => {
             </Text>
 
             <Text style={styles.postContent} numberOfLines={2}>
-                {item.content?.trim() ? item.content : ' '}
+                {item.content?.trim() || ' '}
             </Text>
 
             <View style={styles.infoRow}>
                 <Text style={styles.infoText}>
-                    📎 {item.attachmentCount ?? 0}개
+                    📎 {item.attachmentCount ?? item.attachments?.length ?? 0}개
                 </Text>
                 <View style={styles.rightInfo}>
                     <Text style={[styles.infoText, item.liked && styles.liked]}>
                         ❤️ {item.likeCount}
                     </Text>
-                    <Text style={styles.infoText}>
-                        💬 {item.commentCount}
-                    </Text>
-                    <Text style={styles.infoText}>
-                        👁️ {item.viewCount}
-                    </Text>
+                    <Text style={styles.infoText}>💬 {item.commentCount}</Text>
+                    <Text style={styles.infoText}>👁️ {item.viewCount}</Text>
                 </View>
             </View>
 
@@ -160,20 +156,14 @@ const PostListScreen = () => {
 
     return (
         <View style={styles.container}>
-            {/* 헤더 영역 */}
+            {/* 상단 헤더 */}
             <View style={styles.header}>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={styles.headerTitle}>게시판</Text>
-                </View>
-                <TouchableOpacity style={styles.menuButton} onPress={() => setMenuVisible(prev => !prev)}>
+                <Text style={styles.headerTitle}>게시판</Text>
+                <TouchableOpacity style={styles.menuButton} onPress={() => setMenuVisible(!menuVisible)}>
                     <Text style={styles.menuIcon}>☰</Text>
                 </TouchableOpacity>
-
                 {menuVisible && (
                     <View style={styles.dropdownMenu}>
-                        <TouchableOpacity onPress={() => setMenuVisible(false)}>
-                            <Text style={styles.dropdownItem}>게시판</Text>
-                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleMenuSelect('Chat')}>
                             <Text style={styles.dropdownItem}>채팅</Text>
                         </TouchableOpacity>
@@ -203,7 +193,7 @@ const PostListScreen = () => {
 
             {/* 게시글 목록 */}
             {loading && postsData.length === 0 ? (
-                <ActivityIndicator size="large" color="#A3775C" style={{ marginTop: 40 }} />
+                <ActivityIndicator size="large" color="#A3775C" style={{ marginTop: screenHeight * 0.04 }} />
             ) : (
                 <FlatList
                     data={postsData}
@@ -211,7 +201,7 @@ const PostListScreen = () => {
                     renderItem={renderPost}
                     onEndReached={handleLoadMore}
                     onEndReachedThreshold={0.4}
-                    contentContainerStyle={{ paddingBottom: 100 }}
+                    contentContainerStyle={{ paddingBottom: screenHeight * 0.12 }}
                     ListEmptyComponent={<Text style={styles.emptyText}>검색 결과가 없습니다.</Text>}
                 />
             )}
@@ -227,7 +217,7 @@ const PostListScreen = () => {
                     navigation.navigate('CreatePost', { writerId });
                 }}
             >
-                <Image source={require('../../assets/add.png')} style={styles.addIcon} />
+                <Image source={require('../../assets/pencil.png')} style={styles.addIcon} />
             </TouchableOpacity>
         </View>
     );
@@ -238,54 +228,55 @@ export default PostListScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F4F1EC',
+        backgroundColor: '#F4F8FF',
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 20,
-        paddingBottom: 10,
-        backgroundColor: '#F4F1EC',
+        justifyContent: 'center',
+        paddingTop: screenHeight * 0.025,
+        paddingBottom: screenHeight * 0.015,
+        position: 'relative',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: screenWidth * 0.05,
         fontWeight: 'bold',
         color: '#382F2D',
     },
+    menuButton: {
+        position: 'absolute',
+        right: screenWidth * 0.06,
+        top: screenHeight * 0.025,
+    },
     menuIcon: {
-        fontSize: 22,
-        color: '#9A8E84',
+        fontSize: screenWidth * 0.055,
+        color: '#000', // 검정색으로 변경
     },
     dropdownMenu: {
         position: 'absolute',
-        top: 70,
-        right: 20,
-        backgroundColor: '#FFFDF9',
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        top: screenHeight * 0.08,
+        right: screenWidth * 0.04,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
         elevation: 6,
         zIndex: 1000,
     },
     dropdownItem: {
-        paddingVertical: 8,
-        fontSize: 15,
-        color: '#5C504A',
+        fontSize: 14,
+        color: '#444',
+        paddingVertical: 6,
     },
     searchBar: {
         flexDirection: 'row',
-        backgroundColor: '#FFFDF9',
-        borderRadius: 12,
-        padding: 10,
-        margin: 16,
-        elevation: 3,
         alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        paddingVertical: screenHeight * 0.015,
+        paddingHorizontal: screenWidth * 0.04,
+        margin: screenWidth * 0.04,
+        elevation: 3,
     },
     searchInput: {
         flex: 1,
@@ -294,19 +285,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
     },
     searchIcon: {
-        width: 22,
-        height: 22,
-        tintColor: '#A3775C',
+        width: screenWidth * 0.06,
+        height: screenWidth * 0.06,
     },
     postCard: {
-        backgroundColor: '#FFFDF9',
-        marginHorizontal: 16,
-        marginBottom: 18,
-        padding: 16,
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: screenWidth * 0.04,
+        marginBottom: screenHeight * 0.02,
+        padding: screenWidth * 0.04,
         borderRadius: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.06,
         shadowRadius: 4,
         elevation: 3,
     },
@@ -330,7 +320,7 @@ const styles = StyleSheet.create({
     },
     postMeta: {
         fontSize: 12,
-        color: '#9A8E84',
+        color: '#999', // 회색으로 변경
         marginBottom: 6,
     },
     postContent: {
@@ -365,10 +355,6 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         elevation: 10,
         zIndex: 999,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 5,
     },
     popupText: {
         fontSize: 14,
@@ -377,20 +363,19 @@ const styles = StyleSheet.create({
     },
     floatingButton: {
         position: 'absolute',
-        right: 20,
-        bottom: 20,
-        backgroundColor: '#A3775C',
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        right: screenWidth * 0.06,
+        bottom: screenHeight * 0.04,
+        backgroundColor: '#333', // ✅ 회색 계열
+        width: screenWidth * 0.15,
+        height: screenWidth * 0.15,
+        borderRadius: screenWidth * 0.075,
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 10,
     },
     addIcon: {
-        width: 30,
-        height: 30,
-        tintColor: '#FFF',
+        width: screenWidth * 0.08,
+        height: screenWidth * 0.08,
     },
     emptyText: {
         textAlign: 'center',
@@ -398,11 +383,4 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginTop: 40,
     },
-    menuButton: {
-        position: 'absolute',
-        right: 20,
-        top: 20,
-    },
-
 });
-

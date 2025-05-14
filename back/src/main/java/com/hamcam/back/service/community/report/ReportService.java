@@ -4,16 +4,14 @@ import com.hamcam.back.dto.community.report.request.ReportRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.*;
 import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.security.SecurityUtil;
-import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
 import com.hamcam.back.repository.community.report.ReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 /**
  * 커뮤니티 리소스 신고 서비스
@@ -27,27 +25,18 @@ public class ReportService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
-    private final UserRepository userRepository;
-
-    /**
-     * 현재 인증된 사용자 엔티티 반환
-     */
-    private User getCurrentUser() {
-        Long userId = SecurityUtil.getCurrentUserId();
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException("사용자 인증 정보가 유효하지 않습니다."));
-    }
+    private final SecurityUtil securityUtil;
 
     /**
      * 게시글 신고
      */
     public void reportPost(Long postId, ReportRequest request) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new CustomException("해당 게시글이 존재하지 않습니다."));
-        User reporter = getCurrentUser();
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        User reporter = securityUtil.getCurrentUser();
 
         if (reportRepository.findByReporterAndPost(reporter, post).isPresent()) {
-            throw new CustomException("이미 이 게시글을 신고했습니다.");
+            throw new CustomException(ErrorCode.ALREADY_REPORTED);
         }
 
         createReport(reporter, request.getReason(), post, null, null, null);
@@ -58,11 +47,11 @@ public class ReportService {
      */
     public void reportComment(Long commentId, ReportRequest request) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException("해당 댓글이 존재하지 않습니다."));
-        User reporter = getCurrentUser();
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        User reporter = securityUtil.getCurrentUser();
 
         if (reportRepository.findByReporterAndComment(reporter, comment).isPresent()) {
-            throw new CustomException("이미 이 댓글을 신고했습니다.");
+            throw new CustomException(ErrorCode.ALREADY_REPORTED);
         }
 
         createReport(reporter, request.getReason(), null, comment, null, null);
@@ -73,11 +62,11 @@ public class ReportService {
      */
     public void reportReply(Long replyId, ReportRequest request) {
         Reply reply = replyRepository.findById(replyId)
-                .orElseThrow(() -> new CustomException("해당 대댓글이 존재하지 않습니다."));
-        User reporter = getCurrentUser();
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
+        User reporter = securityUtil.getCurrentUser();
 
         if (reportRepository.findByReporterAndReply(reporter, reply).isPresent()) {
-            throw new CustomException("이미 이 대댓글을 신고했습니다.");
+            throw new CustomException(ErrorCode.ALREADY_REPORTED);
         }
 
         createReport(reporter, request.getReason(), null, null, reply, null);
@@ -87,16 +76,15 @@ public class ReportService {
      * 사용자 신고
      */
     public void reportUser(Long userId, ReportRequest request) {
-        User target = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException("신고 대상 사용자가 존재하지 않습니다."));
-        User reporter = getCurrentUser();
+        User target = securityUtil.getUserById(userId);
+        User reporter = securityUtil.getCurrentUser();
 
         if (reporter.getId().equals(userId)) {
-            throw new CustomException("자기 자신은 신고할 수 없습니다.");
+            throw new CustomException(ErrorCode.REPORT_SELF_NOT_ALLOWED);
         }
 
         if (reportRepository.findByReporterAndTargetUser(reporter, target).isPresent()) {
-            throw new CustomException("이미 이 사용자를 신고했습니다.");
+            throw new CustomException(ErrorCode.ALREADY_REPORTED);
         }
 
         createReport(reporter, request.getReason(), null, null, null, target);

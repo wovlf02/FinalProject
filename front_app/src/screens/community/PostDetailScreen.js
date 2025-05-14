@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TextInput,
-    TouchableOpacity, Image, Alert, Platform, FlatList, Pressable, TouchableWithoutFeedback, Keyboard
+    TouchableOpacity, Image, Alert, Platform, FlatList, TouchableWithoutFeedback, Keyboard, Dimensions
 } from 'react-native';
 import moment from 'moment';
 import 'moment/locale/ko';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { jwtDecode } from 'jwt-decode';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import ImageViewing from 'react-native-image-viewing';
 import RNFS from 'react-native-fs';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
@@ -15,9 +15,10 @@ import FastImage from 'react-native-fast-image';
 import api from '../../api/api';
 
 const BASE_URL = 'http://192.168.0.2:8080';
-
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const PostDetailScreen = () => {
     const { postId } = useRoute().params;
+    const navigation = useNavigation();
 
     const [post, setPost] = useState(null);
     const [writerProfileImageUrl, setWriterProfileImageUrl] = useState('');
@@ -41,13 +42,14 @@ const PostDetailScreen = () => {
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [editContent, setEditContent] = useState('');
     const [editTarget, setEditTarget] = useState({ type: '', id: null });
+    const [popupVisible, setPopupVisible] = useState(false);
 
 
     useEffect(() => {
         fetchUser();
         increaseViewCount();
         fetchPost();
-    }, []);
+    }, [fetchPost, increaseViewCount]);
 
     const openReportModal = (type, id) => {
         setReportTarget({ type, id });
@@ -116,15 +118,15 @@ const PostDetailScreen = () => {
     };
 
 
-    const increaseViewCount = async () => {
+    const increaseViewCount = useCallback(async () => {
         try {
             await api.post(`/community/posts/${postId}/view`);
         } catch (err) {
             console.warn('조회수 증가 실패', err);
         }
-    };
+    }, [postId]);
 
-    const fetchPost = async () => {
+    const fetchPost = useCallback(async () => {
         try {
             const res = await api.get(`/community/posts/${postId}`);
             setPost(res.data);
@@ -147,7 +149,7 @@ const PostDetailScreen = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [postId]);
 
 
     const handleDownloadImage = async (url) => {
@@ -267,7 +269,7 @@ const PostDetailScreen = () => {
                     try {
                         await api.delete(`/community/posts/${postId}`);
                         Alert.alert('삭제 완료', '게시글이 삭제되었습니다.');
-                        // TODO: 뒤로 가기 또는 목록 이동 필요
+                        navigation.goBack(); // 뒤로가기 추가
                     } catch (err) {
                         Alert.alert('오류', '게시글 삭제 실패');
                     }
@@ -316,12 +318,13 @@ const PostDetailScreen = () => {
 
     const handleReportComment = () => {
         Alert.alert('신고 완료', `댓글이 신고되었습니다.`);
-        setMenuVisibleCommentId(null);
+        setMenuVisible(null);
     };
 
     const handleReportReply = () => {
         Alert.alert('신고 완료', `대댓글이 신고되었습니다.`);
-        setMenuVisibleReplyId(null);
+        setMenuVisible(null);
+
     };
 
     const handleReport = () => {
@@ -383,21 +386,25 @@ const PostDetailScreen = () => {
 
 
     const handleSubmitComment = async () => {
-        if (!commentInput.trim()) return;
+      if (!commentInput.trim()) return;
 
-        try {
-            if (replyToCommentId) {
-                await api.post(`/community/comments/${replyToCommentId}/replies`, { content: commentInput });
-            } else {
-                await api.post(`/community/posts/${postId}/comments`, { content: commentInput });
-            }
-
-            setCommentInput('');
-            setReplyToCommentId(null);
-            fetchPost();
-        } catch (err) {
-            Alert.alert('오류', '댓글 또는 대댓글 등록 실패');
+      try {
+        if (replyToCommentId) {
+          await api.post(`/community/comments/${replyToCommentId}/replies`, {
+            content: commentInput,
+          });
+        } else {
+          await api.post(`/community/posts/${postId}/comments`, {
+            content: commentInput,
+          });
         }
+
+        setCommentInput('');
+        setReplyToCommentId(null);
+        fetchPost();
+      } catch (err) {
+        Alert.alert('오류', '댓글 또는 대댓글 등록 실패');
+      }
     };
 
 
@@ -412,7 +419,7 @@ const PostDetailScreen = () => {
             Keyboard.dismiss();
         }}>
             <View style={{ flex: 1, backgroundColor: '#F4F1EC' }}>
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView contentContainerStyle={{...styles.scrollContent, minHeight: screenHeight * 1.2}}>
                     {/* ===== 게시글 카드 ===== */}
                     <View style={styles.postCard}>
                         <View style={styles.header}>
@@ -428,7 +435,7 @@ const PostDetailScreen = () => {
                                 <View style={[styles.popupBox, { zIndex: 1000 }]}>
                                     <TouchableOpacity onPress={() => {
                                         setMenuVisible(null); // 팝업 닫기
-                                        navigation.navigate('PostEditScreen', { postId: post.id });
+                                        navigation.navigate('PostEdit', { postId: post.id });
                                     }}>
                                         <Text style={styles.popupText}>수정</Text>
                                     </TouchableOpacity>
@@ -517,7 +524,7 @@ const PostDetailScreen = () => {
 
                             {menuVisible?.type === 'comment' && menuVisible?.id === comment.commentId && (
                                 <View style={[styles.commentPopup, { zIndex: 1000 }]}>
-                                    <TouchableOpacity onPress={() => handleEditComment(comment.commentId, comment.content)}><Text style={styles.popupText}>수정</Text></TouchableOpacity>
+                                    <TouchableOpacity onPress={() => openEditModal('comment', comment.commentId, comment.content)}><Text style={styles.popupText}>수정</Text></TouchableOpacity>
                                     <TouchableOpacity onPress={() => handleDeleteComment(comment.commentId)}><Text style={styles.popupText}>삭제</Text></TouchableOpacity>
                                     <TouchableOpacity onPress={() => openReportModal('comment', comment.commentId)}><Text style={styles.popupText}>신고</Text></TouchableOpacity>
                                     <TouchableOpacity onPress={() => handleStartChat(comment.writerId)}><Text style={styles.popupText}>채팅 시작</Text></TouchableOpacity>
@@ -546,7 +553,7 @@ const PostDetailScreen = () => {
 
                                     {menuVisible?.type === 'reply' && menuVisible?.id === reply.replyId && (
                                         <View style={[styles.commentPopup, { zIndex: 1000 }]}>
-                                            <TouchableOpacity onPress={() => handleEditReply(reply)}><Text style={styles.popupText}>수정</Text></TouchableOpacity>
+                                            <TouchableOpacity onPress={() => openEditModal('reply', reply.replyId, reply.content)}><Text style={styles.popupText}>수정</Text></TouchableOpacity>
                                             <TouchableOpacity onPress={() => handleDeleteReply(reply.replyId)}><Text style={styles.popupText}>삭제</Text></TouchableOpacity>
                                             <TouchableOpacity onPress={() => openReportModal('reply', reply.replyId)}><Text style={styles.popupText}>신고</Text></TouchableOpacity>
                                             <TouchableOpacity onPress={() => handleStartChat(reply.writerId)}><Text style={styles.popupText}>채팅 시작</Text></TouchableOpacity>
@@ -628,18 +635,20 @@ export default PostDetailScreen;
 
 const styles = StyleSheet.create({
     scrollContent: {
-        paddingHorizontal: '4%',
-        paddingBottom: 100,
-        backgroundColor: '#FDF8F3',
+        paddingHorizontal: screenWidth * 0.04,
+        paddingTop: screenHeight * 0.03,
+        paddingBottom: screenHeight * 0.1,
+        backgroundColor: '#F4F8FF', // 인트로 색상
     },
     postCard: {
-        width: '94%',
+        width: screenWidth * 0.96,
         alignSelf: 'center',
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
-        paddingVertical: '5%',
-        paddingHorizontal: '6%',
-        marginBottom: '6%',
+        paddingVertical: screenHeight * 0.025,
+        paddingHorizontal: screenWidth * 0.05,
+        marginTop: screenHeight * 0.02, // 상단 간격
+        marginBottom: screenHeight * 0.03,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.06,
@@ -652,10 +661,10 @@ const styles = StyleSheet.create({
         marginBottom: '4%',
     },
     avatar: {
-        width: 46,
-        height: 46,
-        borderRadius: 23,
-        marginRight: 14,
+        width: screenWidth * 0.12,
+        height: screenWidth * 0.12,
+        borderRadius: screenWidth * 0.06,
+        marginRight: screenWidth * 0.03,
         borderWidth: 1,
         borderColor: '#DDD',
     },
@@ -711,10 +720,10 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     thumbnail: {
-        width: 90,
-        height: 90,
+        width: screenWidth * 0.24,
+        height: screenWidth * 0.24,
         borderRadius: 10,
-        marginRight: 10,
+        marginRight: screenWidth * 0.02,
         backgroundColor: '#EEE',
     },
     downloadButton: {
@@ -747,12 +756,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     commentBox: {
-        width: '94%',
+        width: screenWidth * 0.96,
         alignSelf: 'center',
-        backgroundColor: '#FFFFFF',
         borderRadius: 16,
-        padding: '5%',
-        marginBottom: '5%',
+        backgroundColor: '#FFFFFF',
+        padding: screenWidth * 0.04,
+        marginBottom: screenHeight * 0.02,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.06,
@@ -815,11 +824,11 @@ const styles = StyleSheet.create({
     },
     replyBox: {
         backgroundColor: '#F9F5F1',
-        marginTop: '2%',
-        marginLeft: '12%',
+        marginTop: screenHeight * 0.01,
+        marginLeft: screenWidth * 0.1,
         borderRadius: 14,
-        padding: '3%',
-        width: '86%',
+        padding: screenWidth * 0.03,
+        width: screenWidth * 0.8,
         alignSelf: 'flex-start',
     },
     replyHeader: {
@@ -865,11 +874,11 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        height: 64,
+        height: screenHeight * 0.08, // 예: 약 64px
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderColor: '#E5DED6',
-        paddingHorizontal: 16,
+        paddingHorizontal: screenWidth * 0.04, // 예: 약 16px
         flexDirection: 'row',
         alignItems: 'center',
         shadowColor: '#000',
@@ -890,12 +899,12 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     sendButton: {
-        marginLeft: 10,
+        marginLeft: screenWidth * 0.02,
         fontSize: 18,
         color: '#fff',
         backgroundColor: '#000',
-        paddingVertical: 10,
-        paddingHorizontal: 16,
+        paddingVertical: screenHeight * 0.012,
+        paddingHorizontal: screenWidth * 0.04,
         borderRadius: 20,
         fontWeight: 'bold',
     },
