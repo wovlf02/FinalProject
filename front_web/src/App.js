@@ -11,7 +11,7 @@ import VideoRoom from './pages/VideoRoom'; // VideoRoom 컴포넌트 추가
 import RoomFull from './pages/RoomFull'; // RoomFull 페이지 추가
 import BackendTest from './pages/BackendTest';
 import Register from './pages/Register'; // 회원가입 페이지 추가
-
+import 'bootstrap/dist/css/bootstrap.min.css';
 function App() {
   return (
     <Router>
