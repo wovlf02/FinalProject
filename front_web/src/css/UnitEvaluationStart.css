@@ -86,6 +86,13 @@
   justify-content: center;
 }
 
+.timer {
+  font-size: 1.1rem;
+  color: #ef4444;
+  margin: 12px 0 0 0;
+  font-weight: 600;
+}
+
 .unit-eval-divider {
   margin: 1.5rem 0 2.5rem 0;
   border: none;
@@ -93,7 +100,7 @@
   width: 100%;
 }
 
-/* === 문제지(퀴즈 본문) 더 크고 시원하게 === */
+/* 문제지(퀴즈 본문) 더 크고 시원하게 */
 .quiz-question-section {
   width: 100%;
   max-width: 700px;
@@ -185,6 +192,93 @@
 }
 .unit-eval-main-btn:hover {
   background: #388e3c;
+}
+
+/* 결과 페이지 */
+.quiz-result-container {
+  margin-left: 160px;
+  min-height: 100vh;
+  background: #f7fafd;
+  padding: 48px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.quiz-result-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.quiz-result-score {
+  font-size: 1.3rem;
+  margin-bottom: 24px;
+  color: #2563eb;
+  font-weight: 700;
+}
+.quiz-result-list {
+  width: 100%;
+  max-width: 700px;
+}
+.quiz-result-item {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px #0001;
+  margin-bottom: 18px;
+  padding: 18px 28px;
+  font-size: 1.1rem;
+}
+.quiz-result-item.correct {
+  border-left: 8px solid #4caf50;
+}
+.quiz-result-item.wrong {
+  border-left: 8px solid #f44336;
+}
+.quiz-result-item .o {
+  color: #4caf50;
+  font-weight: 700;
+}
+.quiz-result-item .x {
+  color: #f44336;
+  font-weight: 700;
+}
+
+/* 제출 모달 */
+.quiz-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.quiz-modal {
+  background: #fff;
+  padding: 32px 32px 24px 32px;
+  border-radius: 16px;
+  min-width: 320px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+  text-align: center;
+}
+.quiz-modal-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 28px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.quiz-modal-btn.force {
+  background: #ef4444;
+}
+.quiz-modal-btn.force:hover {
+  background: #b91c1c;
+}
+.quiz-modal-btn:hover {
+  background: #174ea6;
 }
 
 @media (max-width: 900px) {

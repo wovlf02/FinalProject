@@ -94,9 +94,9 @@ function Evaluation() {
   };
 
   // 기타 버튼 예시
-  const handleSchedule = () => alert('일정 기능 (추후 캘린더 페이지로 이동)');
-  const handleStudyPlan = () => alert('학습 계획 기능 (추후 페이지로 이동)');
-  const handleAIFeedback = () => alert('AI 피드백 기능 (추후 페이지로 이동)');
+  const handleSchedule = () => navigate('/unit-evaluation/schedule');
+  const handleStudyPlan = () => navigate('/unit-evaluation/plan');
+  const handleAIFeedback = () => navigate('/unit-evaluation/feedback');
 
   return (
     <div className="evaluation-container">

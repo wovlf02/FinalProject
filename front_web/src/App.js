@@ -17,7 +17,11 @@ import RoomList from './pages/RoomList';
 import Evaluation from './pages/evaluation';
 import Community from './pages/Community/Community';
 import Statistics from './pages/Statistics';
-import MyPage from './pages/MyPage';   // 추가
+import MyPage from './pages/MyPage';
+import QuizResult from './pages/QuizResult';
+import UnitEvaluationPlan from './pages/UnitEvaluationPlan';
+import UnitEvaluationFeedback from './pages/UnitEvaluationFeedback';
+import UnitEvaluationSchedule from './pages/UnitEvaluationSchedule';
 import './css/style.css';
 
 const LayoutWithSidebar = () => (
@@ -51,8 +55,12 @@ function App() {
           <Route path="/evaluation" element={<Evaluation />} />
           <Route path="/community" element={<Community />} />
           <Route path="/statistics" element={<Statistics />} />
-          <Route path="/mypage" element={<MyPage />} />   {/* 마이페이지 라우트 추가 */}
+          <Route path="/mypage" element={<MyPage />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
+          <Route path="/quiz-result" element={<QuizResult />} />
+          <Route path="/unit-evaluation/plan" element={<UnitEvaluationPlan />} />
+          <Route path="/unit-evaluation/feedback" element={<UnitEvaluationFeedback />} />
+          <Route path="/unit-evaluation/schedule" element={<UnitEvaluationSchedule />} />
         </Route>
       </Routes>
     </Router>
