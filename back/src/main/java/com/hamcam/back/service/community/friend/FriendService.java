@@ -8,11 +8,15 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.friend.Friend;
 import com.hamcam.back.entity.friend.FriendBlock;
 import com.hamcam.back.entity.friend.FriendRequest;
+import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.friend.FriendBlockRepository;
 import com.hamcam.back.repository.friend.FriendRepository;
 import com.hamcam.back.repository.friend.FriendRequestRepository;
+import com.hamcam.back.security.auth.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,12 +36,20 @@ public class FriendService {
     private final UserRepository userRepository;
 
     private Long getCurrentUserId() {
-        return 1L; // JWT 인증 연동 전까지는 하드코딩
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) throw new CustomException("로그인 정보가 없습니다.");
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
+
+        throw new CustomException("사용자 정보를 불러올 수 없습니다.");
     }
 
     private User getCurrentUser() {
         return userRepository.findById(getCurrentUserId())
-                .orElseThrow(() -> new IllegalArgumentException("로그인한 사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException("사용자 정보를 불러올 수 없습니다."));
     }
 
     /**
@@ -89,7 +101,7 @@ public class FriendService {
      */
     public void rejectFriendRequest(FriendRejectRequest request) {
         User receiver = getCurrentUser();
-        User sender = userRepository.findById(request.getRequestId())
+        User sender = userRepository.findById(request.getReceiverId())
                 .orElseThrow(() -> new IllegalArgumentException("보낸 사용자가 존재하지 않습니다."));
 
         FriendRequest friendRequest = friendRequestRepository
@@ -109,6 +121,7 @@ public class FriendService {
         return new FriendListResponse(
                 friends.stream()
                         .map(f -> f.getUser().equals(me) ? f.getFriend() : f.getUser())
+                        .distinct()
                         .map(FriendListResponse.FriendDto::from)
                         .collect(Collectors.toList())
         );
@@ -131,10 +144,24 @@ public class FriendService {
      * 사용자 닉네임으로 검색
      */
     public FriendSearchResponse searchUsersByNickname(String nickname) {
+        User me = getCurrentUser();
         List<User> users = userRepository.findByNicknameContaining(nickname);
         return new FriendSearchResponse(
                 users.stream()
-                        .map(FriendSearchResponse.UserSearchResult::from)
+                        .filter(user -> !user.getId().equals(me.getId())) // 자기 자신은 제외
+                        .map(user -> {
+                            boolean alreadyFriend = friendRepository.existsByUserAndFriend(me, user)
+                                    || friendRepository.existsByUserAndFriend(user, me); // 양방향 확인
+                            boolean alreadyRequested = friendRequestRepository.existsBySenderAndReceiver(me, user);
+
+                            return new FriendSearchResponse.UserSearchResult(
+                                    user.getId(),
+                                    user.getNickname(),
+                                    user.getProfileImageUrl(),
+                                    alreadyFriend,
+                                    alreadyRequested
+                            );
+                        })
                         .collect(Collectors.toList())
         );
     }
