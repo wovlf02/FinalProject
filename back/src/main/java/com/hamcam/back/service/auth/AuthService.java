@@ -16,10 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 
-/**
- * 인증 및 회원가입 관련 로직을 담당하는 AuthService 구현 클래스입니다.
- * 인터페이스 없이 단일 구현체로 사용됩니다.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -62,12 +58,19 @@ public class AuthService {
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new CustomException("이미 존재하는 아이디입니다.");
+            throw new CustomException("이미 존재하는 아이디입니다. 다른 아이디를 선택해 주세요.");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new CustomException("이미 존재하는 이메일입니다.");
+            throw new CustomException("이미 존재하는 이메일입니다. 다른 이메일을 사용해 주세요.");
         }
 
+        String phone = request.getPhone() != null ? request.getPhone() : null;
+
+        if (phone != null && !isValidPhone(phone)) {
+            throw new CustomException("유효하지 않은 전화번호 형식입니다.");
+        }
+
+        // ✅ name 필드 포함!
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -77,6 +80,8 @@ public class AuthService {
                 .studyHabit(request.getStudyHabit())
                 .subjects(request.getSubjects())
                 .profileImageUrl(request.getProfileImageUrl())
+                .phone(phone)
+                .name(request.getName()) // <-- 반드시 포함
                 .build();
 
         userRepository.save(user);
@@ -95,7 +100,14 @@ public class AuthService {
 
         redisTemplate.opsForValue().set("RT:" + user.getId(), refreshToken, Duration.ofDays(14));
 
-        return new LoginResponse(accessToken, refreshToken);
+        // ✅ LoginResponse에 모든 정보 포함!
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .name(user.getName())
+                .build();
     }
 
     public void logout(TokenRequest request) {
@@ -174,5 +186,10 @@ public class AuthService {
         }
 
         user.softDelete();
+    }
+
+    // 전화번호 유효성 검사
+    private boolean isValidPhone(String phone) {
+        return phone.matches("^\\d{10,15}$");
     }
 }

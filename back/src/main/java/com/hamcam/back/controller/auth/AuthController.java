@@ -64,6 +64,7 @@ public class AuthController {
      */
     @DeleteMapping("/temp")
     public ApiResponse<Void> deleteTempData(@RequestBody @Valid EmailRequest request) {
+        System.out.println("RegisterRequest: " + request);
         authService.deleteTempData(request);
         return ApiResponse.ok();
     }
@@ -73,6 +74,9 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ApiResponse<Void> register(@RequestBody @Valid RegisterRequest request) {
+        System.out.println("RegisterRequest: " + request);
+        System.out.println("name: " + request.getName());
+        System.out.println("phone: " + request.getPhone());
         authService.register(request);
         return ApiResponse.ok();
     }

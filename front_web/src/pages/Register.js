@@ -9,19 +9,43 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [grade, setGrade] = useState('');
+  const [studyHabit, setStudyHabit] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [subjects, setSubjects] = useState('');
+
   const navigate = useNavigate();
 
-  const handleRegister = async () => {
+  const handleRegister = async (e) => {
+    e.preventDefault();
+
+    if (
+      !username ||
+      !password ||
+      !email ||
+      !name ||
+      !nickname ||
+      !grade ||
+      !subjects ||
+      !studyHabit
+    ) {
+      alert('모든 필수 항목을 입력해 주세요.');
+      return;
+    }
+
+    const phoneOnly = phone.replace(/[^0-9]/g, '');
+
     const data = {
       username,
       password,
       email,
       name,
-      phone,
+      phone: phoneOnly || undefined,
+      grade: Number(grade),
+      studyHabit,
+      nickname,
+      subjects: subjects.split(',').map(subject => subject.trim()).filter(Boolean),
     };
-
-    // ✅ 보낼 JSON 데이터를 콘솔에 출력
-    console.log('회원가입 요청 데이터:', data);
 
     try {
       const response = await axios.post('http://localhost:8080/api/auth/register', data);
@@ -31,20 +55,52 @@ const Register = () => {
         navigate('/login');
       }
     } catch (error) {
-      console.error('회원가입 에러 응답:', error.response?.data);
       alert('회원가입 실패: ' + (error.response?.data?.message || '오류가 발생했습니다.'));
     }
   };
 
   return (
     <div className="register-container">
-      <h1>회원가입</h1>
-      <input type="text" placeholder="아이디" value={username} onChange={(e) => setUsername(e.target.value)} />
-      <input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <input type="email" placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <input type="text" placeholder="이름" value={name} onChange={(e) => setName(e.target.value)} />
-      <input type="text" placeholder="전화번호" value={phone} onChange={(e) => setPhone(e.target.value)} />
-      <button onClick={handleRegister}>회원가입</button>
+      <h1 className="register-title">회원가입</h1>
+      <form className="register-form" onSubmit={handleRegister}>
+        <div className="register-row">
+          <label>아이디<span>*</span></label>
+          <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="아이디" />
+        </div>
+        <div className="register-row">
+          <label>비밀번호<span>*</span></label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="비밀번호(8자 이상)" />
+        </div>
+        <div className="register-row">
+          <label>이메일<span>*</span></label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="이메일" />
+        </div>
+        <div className="register-row">
+          <label>이름<span>*</span></label>
+          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="이름" />
+        </div>
+        <div className="register-row">
+          <label>전화번호</label>
+          <input type="text" value={phone} onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))} placeholder="숫자만 입력" maxLength={15} />
+        </div>
+        <div className="register-row">
+          <label>학년<span>*</span></label>
+          <input type="number" value={grade} onChange={e => setGrade(e.target.value)} placeholder="학년" min={1} max={3} />
+        </div>
+        <div className="register-row">
+          <label>학습 습관<span>*</span></label>
+          <input type="text" value={studyHabit} onChange={e => setStudyHabit(e.target.value)} placeholder="예: 새벽형, 야행성" />
+        </div>
+        <div className="register-row">
+          <label>닉네임<span>*</span></label>
+          <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} placeholder="닉네임" />
+        </div>
+        <div className="register-row">
+          <label>과목<span>*</span></label>
+          <input type="text" value={subjects} onChange={e => setSubjects(e.target.value)} placeholder="쉼표로 구분 (예: 수학, 영어)" />
+        </div>
+        <button className="register-btn" type="submit">회원가입</button>
+      </form>
     </div>
   );
 };

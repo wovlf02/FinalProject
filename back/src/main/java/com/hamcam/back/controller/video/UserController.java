@@ -21,6 +21,12 @@ public class UserController {
         String username = userDetails.getUsername();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
-        return ResponseEntity.ok(new UserDto(user.getUsername(), user.getNickname()));
+        // name, email 추가
+        return ResponseEntity.ok(new UserDto(
+            user.getUsername(),
+            user.getNickname(),
+            user.getName(),    // ✅ name
+            user.getEmail()    // ✅ email
+        ));
     }
 }

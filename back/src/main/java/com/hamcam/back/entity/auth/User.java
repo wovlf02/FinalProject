@@ -22,6 +22,9 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
+     @Column(nullable = false, length = 50) // ✅ 추가된 name 필드
+    private String name;
+
     @Column(nullable = false)
     private String password;
 
@@ -63,6 +66,9 @@ public class User {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(length = 15)
+    private String phone; // 추가된 전화번호 필드
 
     @PrePersist
     protected void onCreate() {
