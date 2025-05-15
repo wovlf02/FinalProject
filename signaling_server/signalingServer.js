@@ -1,87 +1,52 @@
-// signalingServer.js
 const http = require("http");
 const { Server } = require("socket.io");
-const axios = require("axios");
-require("dotenv").config();
-
-const API_BASE = process.env.API_BASE || "http://172.17.5.61:8080";
 
 const server = http.createServer();
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+    origin: "*", // 배포 시 특정 도메인으로 변경 권장
+    methods: ["GET", "POST"]
+  }
 });
 
-const userMap = new Map(); // socket.id -> userName
-
+// 소켓 연결
 io.on("connection", (socket) => {
-  console.log("✅ 사용자 연결됨:", socket.id);
+  console.log("사용자 연결됨:", socket.id);
 
-  socket.on("join-room", async ({ roomId, userName }) => {
-    if (!socket.rooms.has(roomId)) {
-      socket.join(roomId);
-      socket.data.userName = userName;
-      socket.data.roomId = roomId;
-      userMap.set(socket.id, userName);
+  // 방 참가
+  socket.on("join-room", (roomId) => {
+    socket.join(roomId);
+    console.log(`${socket.id} 님이 방 ${roomId} 에 입장했습니다.`);
 
-      console.log(`📥 ${userName} (${socket.id})님이 ${roomId} 방에 입장`);
+    // 다른 참가자에게 알림
+    socket.to(roomId).emit("user-connected", socket.id);
 
-      try {
-        await axios.post(`${API_BASE}/api/video/join/${roomId}`);
-        const res = await axios.get(`${API_BASE}/api/video/count/${roomId}`);
-        const count = res.data;
-
-        io.to(roomId).emit("user-count", count);
-      } catch (err) {
-        console.error("접속자 수 증가 실패:", err);
-      }
-
-      // 현재 참여자 목록 전송
-      const clients = [...io.sockets.adapter.rooms.get(roomId) || []]
-        .filter(id => id !== socket.id)
-        .map(id => ({ socketId: id, userName: userMap.get(id) || "알 수 없음" }));
-      socket.emit("all-users", clients);
-
-      socket.to(roomId).emit("user-connected", {
-        socketId: socket.id,
-        userName,
-      });
-    }
+    // 현재 방의 인원 수 전달
+    const numClients = io.sockets.adapter.rooms.get(roomId)?.size || 0;
+    io.to(roomId).emit("user-count", numClients);
   });
 
-  socket.on("chat", ({ roomId, message, senderId }) => {
-    io.to(roomId).emit("chat", { message, senderId });
-  });
-
+  // WebRTC 시그널링 전달
   socket.on("signal", ({ roomId, data }) => {
     socket.to(roomId).emit("signal", data);
   });
 
-  socket.on("disconnecting", async () => {
-    const roomId = socket.data.roomId;
-    const userName = socket.data.userName;
-    userMap.delete(socket.id);
+  // 채팅 기능
+  socket.on("chat", ({ roomId, message, senderId }) => {
+    io.to(roomId).emit("chat", { message, senderId });
+  });
 
-    if (!roomId) return;
-
-    console.log(`👋 ${userName || "익명"} (${socket.id})님이 ${roomId} 방을 떠남`);
-
-    try {
-      await axios.post(`${API_BASE}/api/video/leave/${roomId}`);
-      const res = await axios.get(`${API_BASE}/api/video/count/${roomId}`);
-      const count = res.data;
-
-      io.to(roomId).emit("user-count", count);
-    } catch (err) {
-      console.error("접속자 수 감소 실패:", err);
-    }
-
-    socket.to(roomId).emit("user-disconnected", {
-      socketId: socket.id,
-      userName,
+  // 연결 해제
+  socket.on("disconnecting", () => {
+    const rooms = Array.from(socket.rooms).filter((room) => room !== socket.id);
+    rooms.forEach((roomId) => {
+      // 퇴장 후 인원 수 갱신
+      setTimeout(() => {
+        const numClients = io.sockets.adapter.rooms.get(roomId)?.size || 0;
+        io.to(roomId).emit("user-count", numClients);
+      }, 100); // 소켓 퇴장 직후엔 아직 방에 남아있어서 약간의 지연 필요
     });
+    console.log("사용자 연결 해제:", socket.id);
   });
 });
 
