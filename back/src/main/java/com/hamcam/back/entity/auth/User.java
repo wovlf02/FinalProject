@@ -1,22 +1,32 @@
 package com.hamcam.back.entity.auth;
 
+import com.hamcam.back.entity.chat.ChatMessage;
+import com.hamcam.back.entity.chat.ChatParticipant;
+import com.hamcam.back.entity.community.*;
+import com.hamcam.back.entity.friend.*;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 사용자 엔티티 (MySQL 기반, 고등학생 대상 플랫폼)
+ */
 @Entity
-@Table(name = "users")
+@Table(name = "users") // MySQL은 소문자 테이블명 권장
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Where(clause = "is_deleted = false")
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 전략
     private Long id;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -25,16 +35,13 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, length = 50)
-    private String name; // ✅ 새로 추가된 필드
-
     @Column(nullable = false, length = 100)
     private String nickname;
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false, name = "email_verified")
+    @Column(name = "email_verified", nullable = false)
     @Builder.Default
     private boolean emailVerified = false;
 
@@ -45,15 +52,15 @@ public class User {
     private String profileImageUrl;
 
     @Column(nullable = false)
-    private Integer grade; // 학년
+    private Integer grade;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_subjects", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "subject")
-    private List<String> subjects; // 관심 과목
+    private List<String> subjects;
 
     @Column(nullable = false, length = 50)
-    private String studyHabit; // 공부 습관
+    private String studyHabit;
 
     @Column(nullable = false)
     @Builder.Default
@@ -67,10 +74,82 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    // ===== 연관관계 =====
+
+    @Builder.Default
+    @OneToMany(mappedBy = "writer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Post> posts = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "writer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "writer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Reply> replies = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostFavorite> favorites = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Like> likes = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reporter", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Report> reportsSent = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "targetUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Report> reportsReceived = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FriendRequest> friendRequestsSent = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FriendRequest> friendRequestsReceived = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Friend> friends = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "friend", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Friend> friendOf = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "blocker", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FriendBlock> blockedUsers = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "blocked", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FriendBlock> blockedBy = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reporter", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FriendReport> friendReportsSent = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "reported", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FriendReport> friendReportsReceived = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatMessage> chatMessages = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatParticipant> chatParticipations = new ArrayList<>();
+
+    // ===== 콜백 & 유틸 =====
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
     }
 
     @PreUpdate
@@ -85,5 +164,9 @@ public class User {
     public void softDelete() {
         this.isDeleted = true;
         this.deletedAt = LocalDateTime.now();
+    }
+
+    public void verifyEmail() {
+        this.emailVerified = true;
     }
 }

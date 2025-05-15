@@ -3,13 +3,14 @@ package com.hamcam.back.config.web;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 
 import java.nio.file.Paths;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    private static final String LOCAL_UPLOAD_DIR = "C:/upload"; // 파일 업로드 경로
+    private static final String LOCAL_UPLOAD_DIR = "C:/IoTProject/uploads"; // 파일 업로드 경로
 
     /**
      * 정적 자원 핸들러 설정
@@ -17,10 +18,15 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String uploadPath = Paths.get(LOCAL_UPLOAD_DIR).toUri().toString();
-        registry.addResourceHandler("/static/**")
-                .addResourceLocations(uploadPath);
+        String uploadPath = Paths.get("C:/FinalProject/uploads/").toUri().toString();
+
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(uploadPath)
+                .setCachePeriod(3600) // optional
+                .resourceChain(true)
+                .addResolver(new PathResourceResolver());
     }
+
 
     /**
      * CORS 설정 (React Native, Web 요청 허용)
@@ -30,14 +36,11 @@ public class WebConfig implements WebMvcConfigurer {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**") // /api/** 경로에 대해 CORS 허용
-                        .allowedOrigins("http://localhost:3000", // React 앱의 주소
-                                        "http://10.20.72.146:3000",
-                                        "http://172.17.5.61:3000",
-                                        "https://cd6c-123-215-41-208.ngrok-free.app")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 허용할 HTTP 메서드
-                        .allowedHeaders("*") // 모든 헤더 허용
-                        .allowCredentials(true); // 인증 정보 허용
+                registry.addMapping("/api/**")
+                        .allowedOrigins("http://localhost:3000", "http://192.168.35.52:3000")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
             }
         };
     }

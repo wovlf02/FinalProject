@@ -1,506 +1,524 @@
 import React, { useState, useEffect } from 'react';
-import {View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Dimensions, ScrollView, Image} from 'react-native';
+import {
+    View, Text, TextInput, TouchableOpacity, StyleSheet,
+    ScrollView, Image, Alert, Dimensions
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { launchImageLibrary } from 'react-native-image-picker';
+import api from '../../api/api';
 import { useNavigation } from '@react-navigation/native';
-import api from "../../api/api";
 
 const { width, height } = Dimensions.get('window');
 
+const habits = ['새벽형', '야행성', '주말 집중형', '루틴형'];
+const allSubjects = ['국어', '수학', '영어', '과학', '사회', '기타'];
+
 const RegisterScreen = () => {
+    const navigation = useNavigation();
+    const [step, setStep] = useState(1);
+
     const [username, setUsername] = useState('');
     const [isUsernameValid, setIsUsernameValid] = useState(null);
+    const [nickname, setNickname] = useState('');
+    const [isNicknameValid, setIsNicknameValid] = useState(null);
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
-    const [isPasswordMatch, setIsPasswordMatch] = useState(null);
-    const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [emailDomain, setEmailDomain] = useState('');
     const [isCustomDomain, setIsCustomDomain] = useState(false);
-    const [authInput, setAuthInput] = useState('');
+    const [authCode, setAuthCode] = useState('');
     const [isAuthSent, setIsAuthSent] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(0); // 타이머 (초 단위)
+    const [authVerified, setAuthVerified] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(0);
+
     const [isFormValid, setIsFormValid] = useState(false);
+    const [grade, setGrade] = useState(null);
+    const [subjects, setSubjects] = useState([]);
+    const [studyHabit, setStudyHabit] = useState('');
+    const [profileImage, setProfileImage] = useState(null);
 
-    const navigation = useNavigation(); // navigation 객체 가져오기
-
-    // 아이디 중복 확인
-    const handleUserIdCheck = async () => {
-        try{
-            const response = await api.post('/auth/check-username', {username});
-            if(!response.data.success){
-                setIsUsernameValid(true);
-                Alert.alert('중복 확인', '사용 가능한 아이디입니다.');
-            } else {
-                setIsUsernameValid(false);
-                Alert.alert('중복 확인', '이미 사용 중인 아이디입니다.');
-            }
-        } catch(error){
-            Alert.alert('오류', '아이디 확인 중 문제가 발생했습니다.');
-        }
-    };
-
-    // 비밀번호 입력 처리
-    const handlePasswordChange = (text) => {
-        setPassword(text);
-        setIsPasswordMatch(text === passwordConfirm);
-    };
-
-    // 비밀번호 입력 내용 일치 여부 확인
-    const handlePasswordConfirmChange = (text) => {
-        setPasswordConfirm(text);
-        setIsPasswordMatch(password === text);
-    };
-
-    // 전화번호 포맷팅
-    const handlePhoneChange = (text) => {
-        const formatted = text
-            .replace(/[^0-9]/g, '') // 숫자 외의 문자 제거
-            .replace(/^(\d{3})(\d{0,4})?(\d{0,4})?$/, (match, p1, p2, p3) => {
-                if (p3) return `${p1}-${p2}-${p3}`; // 3-4-4 형식
-                if (p2) return `${p1}-${p2}`; // 3-4 형식
-                return p1; // 3 형식
-            });
-        setPhone(formatted);
-    };
-
-    // 인증번호 발송
-    const sendEmailVerificationCode = async () => {
-        if (email && emailDomain) {
-            // 이메일 주소 조합
-            const fullEmail = `${email}@${emailDomain}`;
-
-            try {
-                const response = await api.post('/auth/send-email-code', { email: fullEmail });
-
-                if (!response.data.success) {
-                    setIsAuthSent(true); // 인증번호 발송 상태 설정
-                    setTimeLeft(300); // 타이머 300초 (5분) 설정
-                    Alert.alert('인증번호 발송', response.data.message);
-                } else {
-                    Alert.alert('오류', response.data.message);
-                }
-            } catch (error) {
-                Alert.alert('오류', '인증번호 발송 중 문제가 발생했습니다.');
-            }
-        } else {
-            Alert.alert('오류', '이메일을 올바르게 입력해주세요.');
-        }
-    };
-
-
-    // 이메일 도메인 선택 처리
-    const handleDomainChange = (value) => {
-        if(value === 'custom'){
-            setIsCustomDomain(true);
-            setEmailDomain('');
-        } else {
-            setIsCustomDomain(false);
-            setEmailDomain(value);
-        }
-    };
-
-    // 타이머 동작
     useEffect(() => {
-        if (timeLeft > 0) {
+        if (timeLeft > 0 && !authVerified) {
             const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
             return () => clearTimeout(timer);
         }
-    }, [timeLeft]);
+    }, [timeLeft, authVerified]);
 
-    // 인증번호 확인
-    const checkEmailVerificationCode = async () => {
+    useEffect(() => {
+        const valid =
+            username && isUsernameValid &&
+            nickname && isNicknameValid &&
+            password && passwordConfirm && password === passwordConfirm &&
+            email && emailDomain && authCode && authVerified &&
+            grade && subjects.length > 0 && studyHabit;
+        setIsFormValid(valid);
+    }, [username, isUsernameValid, nickname, isNicknameValid, password, passwordConfirm, email, emailDomain, authCode, authVerified, grade, subjects, studyHabit]);
+
+    const handleUsernameCheck = async () => {
         try {
-            const fullEmail = `${email}@${emailDomain}`; // 이메일 주소 조합
-            const response = await api.post('/auth/verify-email-code', {
-                email: fullEmail,
-                code: authInput,
+            const res = await api.post('/auth/check-username', { username });
+            setIsUsernameValid(res.data.data);
+            Alert.alert('알림', res.data.data ? '사용 가능한 아이디입니다.' : '이미 사용 중입니다.');
+        } catch {
+            Alert.alert('오류', '아이디 확인 실패');
+        }
+    };
+
+    const handleNicknameCheck = async () => {
+        try {
+            const res = await api.post('/auth/check-nickname', { nickname });
+            setIsNicknameValid(res.data.data);
+            Alert.alert('알림', res.data.data ? '사용 가능한 닉네임입니다.' : '이미 사용 중입니다.');
+        } catch {
+            Alert.alert('오류', '닉네임 확인 실패');
+        }
+    };
+
+    const handleSendCode = async () => {
+        try {
+            await api.post('/auth/send-code', {
+                email: `${email}@${emailDomain}`,
+                type: 'REGISTER'  // ✅ 필수 필드 추가 (예: REGISTER, RESET 등)
+            });
+            setIsAuthSent(true);
+            setAuthVerified(false);
+            setTimeLeft(180);
+            Alert.alert('알림', '인증번호가 발송되었습니다.');
+        } catch {
+            Alert.alert('오류', '인증번호 발송 실패');
+        }
+    };
+
+
+    const handleVerifyCode = async () => {
+        try {
+            const res = await api.post('/auth/verify-code', {
+                email: `${email}@${emailDomain}`,
+                code: authCode
+            });
+            setAuthVerified(res.data.data);
+            Alert.alert('알림', res.data.data ? '인증 성공' : '인증 실패');
+        } catch {
+            Alert.alert('오류', '인증번호 확인 실패');
+        }
+    };
+
+    const toggleSubject = (subject) => {
+        setSubjects(prev =>
+            prev.includes(subject) ? prev.filter(s => s !== subject) : [...prev, subject]
+        );
+    };
+
+    const handleImagePick = () => {
+        launchImageLibrary({ mediaType: 'photo' }, (res) => {
+            if (!res.didCancel && res.assets?.length > 0) {
+                setProfileImage(res.assets[0]);
+            }
+        });
+    };
+
+    const handleRegister = async () => {
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+        formData.append('email', `${email}@${emailDomain}`);
+        formData.append('nickname', nickname);
+        formData.append('grade', grade);
+        subjects.forEach(subj => formData.append('subjects', subj));
+        formData.append('studyHabit', studyHabit);
+        if (profileImage) {
+            formData.append('profileImage', {
+                uri: profileImage.uri,
+                name: profileImage.fileName || 'profile.jpg',
+                type: profileImage.type || 'image/jpeg'
+            });
+        }
+
+        try {
+            const res = await api.post('/auth/register', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            if (!response.data.success) {
-                Alert.alert('인증 성공', '인증이 완료되었습니다.');
+            if (res.data.success) {
+                Alert.alert(
+                    '회원가입 완료',
+                    '로그인 화면으로 이동합니다.',
+                    [{ text: '확인', onPress: () => navigation.navigate('Login') }]
+                );
             } else {
-                Alert.alert('인증 실패', '인증번호가 일치하지 않습니다.');
+                Alert.alert('오류', res.data.message || '회원가입에 실패했습니다.');
             }
-        } catch (error) {
-            console.error('인증번호 확인 오류:', error);
-            Alert.alert('오류', '인증번호 확인 중 문제가 발생했습니다.');
+        } catch {
+            Alert.alert('오류', '회원가입 중 문제가 발생했습니다.');
         }
     };
 
 
-    // 회원가입 처리
-    const handleRegister = async () => {
-        const userData = {
-            username,
-            password,
-            name,
-            phone,
-            email: `${email}@${emailDomain}`,
-        };
-        try{
-            const response = await api.post('/auth/register', userData);
-            if(!response.data.success){
-                Alert.alert('회원가입 성공', response.data.message, [
-                    {
-                        text: '확인',
-                        onPress: () => navigation.navigate('Login'),
-                    },
-                ]);
-            } else {
-                Alert.alert('회원가입 실패', response.data.message);
-            }
-        } catch(error){
-            Alert.alert('오류', '회원가입 중 문제가 발생했습니다.')
-        }
+    const getInputStyleWithValidation = (status) => {
+        if (status === null) return [styles.inputWithButton, { borderColor: 'transparent', borderWidth: 1 }];
+        if (status === true) return [styles.inputWithButton, { borderColor: 'green', borderWidth: 1 }];
+        return [styles.inputWithButton, { borderColor: 'red', borderWidth: 1 }];
     };
 
-    // 회원가입 버튼 활성화 여부 확인
-    useEffect(() => {
-        setIsFormValid(
-            username &&
-            isUsernameValid &&
-            password &&
-            passwordConfirm &&
-            isPasswordMatch &&
-            name &&
-            phone &&
-            email &&
-            emailDomain &&
-            authInput
-        );
-    }, [username, isUsernameValid, password, passwordConfirm, isPasswordMatch, name, phone, email, emailDomain, authInput]);
+    const getConfirmStyle = () => {
+        if (passwordConfirm.length === 0) return [styles.inputWithButton, { borderColor: 'transparent', borderWidth: 1 }];
+        return [styles.inputWithButton, {
+            borderColor: password === passwordConfirm ? 'green' : 'red',
+            borderWidth: 1
+        }];
+    };
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>회원가입</Text>
 
-            <View style={styles.inputGroupRow}>
-                {/* 아이디 입력 */}
-                <TextInput
-                    style={[
-                        styles.inputSmall,
-                        isUsernameValid === false ? styles.inputError : {},
-                        isUsernameValid === true ? styles.inputSuccess : {},
-                    ]}
-                    placeholder="아이디"
-                    value={username}
-                    onChangeText={setUsername}
-                />
-                {/* 체크/엑스 표시 */}
-                {isUsernameValid !== null && (
-                    <Image
-                        source={
-                            isUsernameValid
-                                ? require('../../assets/check.png')
-                                : require('../../assets/x.png')
-                        }
-                        style={styles.idValidationIcon}
-                    />
-                )}
-                {/* 중복확인 버튼 */}
-                <TouchableOpacity style={styles.checkButtonInline} onPress={handleUserIdCheck}>
-                    <Text style={styles.buttonText}>중복확인</Text>
-                </TouchableOpacity>
-            </View>
+            {step === 1 ? (
+                <>
+                    {/* 아이디 */}
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={getInputStyleWithValidation(isUsernameValid)}
+                            placeholder="아이디"
+                            value={username}
+                            onChangeText={text => {
+                                setUsername(text);
+                                setIsUsernameValid(null);
+                            }}
+                        />
+                        <TouchableOpacity style={styles.inlineButton} onPress={handleUsernameCheck}>
+                            <Text style={styles.inlineButtonText}>중복확인</Text>
+                        </TouchableOpacity>
+                    </View>
 
+                    {/* 닉네임 */}
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={getInputStyleWithValidation(isNicknameValid)}
+                            placeholder="닉네임"
+                            value={nickname}
+                            onChangeText={text => {
+                                setNickname(text);
+                                setIsNicknameValid(null);
+                            }}
+                        />
+                        <TouchableOpacity style={styles.inlineButton} onPress={handleNicknameCheck}>
+                            <Text style={styles.inlineButtonText}>중복확인</Text>
+                        </TouchableOpacity>
+                    </View>
 
-            {/* 비밀번호 입력 */}
-            <TextInput
-                style={styles.input}
-                placeholder="비밀번호"
-                secureTextEntry
-                value={password}
-                onChangeText={handlePasswordChange}
-            />
-            {/* 비밀번호 확인 */}
-            <View style={styles.inputGroup}>
-                <TextInput
-                    style={[
-                        styles.input,
-                        isPasswordMatch === false ? styles.inputError : {},
-                        isPasswordMatch === true ? styles.inputSuccess : {},
-                    ]}
-                    placeholder="비밀번호 재입력"
-                    secureTextEntry
-                    value={passwordConfirm}
-                    onChangeText={handlePasswordConfirmChange}
-                />
-                {isPasswordMatch !== null && (
-                    <Image
-                        source={
-                            isPasswordMatch
-                                ? require('../../assets/check.png')
-                                : require('../../assets/x.png')
-                        }
-                        style={styles.passwordValidationIcon}
-                    />
-                )}
-
-            </View>
-
-            {/* 이름 입력 */}
-            <TextInput
-                style={styles.input}
-                placeholder="이름"
-                value={name}
-                onChangeText={setName}
-            />
-
-            {/* 전화번호 입력 */}
-            <TextInput
-                style={styles.input}
-                placeholder="전화번호"
-                keyboardType="number-pad"
-                value={phone}
-                onChangeText={handlePhoneChange}
-            />
-
-            {/* 이메일 입력 */}
-            <View style={styles.emailContainer}>
-                <TextInput
-                    style={styles.emailInput}
-                    placeholder="아이디"
-                    value={email}
-                    onChangeText={setEmail}
-                />
-                <Text style={styles.atSymbol}>@</Text>
-                {isCustomDomain ? (
+                    {/* 비밀번호 */}
                     <TextInput
-                        style={styles.emailInput}
-                        placeholder=""
-                        value={emailDomain}
-                        onChangeText={setEmailDomain}
+                        style={styles.input}
+                        placeholder="비밀번호"
+                        secureTextEntry
+                        value={password}
+                        onChangeText={text => {
+                            setPassword(text);
+                        }}
                     />
-                ) : (
-                    <View style={styles.pickerContainer}>
+
+                    {/* 비밀번호 확인 */}
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={getConfirmStyle()}
+                            placeholder="비밀번호 확인"
+                            secureTextEntry
+                            value={passwordConfirm}
+                            onChangeText={setPasswordConfirm}
+                        />
+                    </View>
+
+                    {/* 이메일 */}
+                    <View style={styles.emailRow}>
+                        <TextInput
+                            style={styles.emailInput}
+                            placeholder="이메일 아이디"
+                            value={email}
+                            onChangeText={setEmail}
+                        />
+                        <Text style={styles.atSymbol}>@</Text>
+                        {isCustomDomain ? (
+                            <TextInput
+                                style={styles.emailInput}
+                                placeholder="도메인 입력"
+                                value={emailDomain}
+                                onChangeText={setEmailDomain}
+                            />
+                        ) : (
+                            <View style={styles.emailDomainPickerWrapper}>
+                                <Picker
+                                    selectedValue={emailDomain}
+                                    onValueChange={(val) => {
+                                        setIsCustomDomain(val === 'custom');
+                                        setEmailDomain(val === 'custom' ? '' : val);
+                                    }}
+                                    style={styles.picker}
+                                >
+                                    <Picker.Item label="도메인 선택" value="" />
+                                    <Picker.Item label="gmail.com" value="gmail.com" />
+                                    <Picker.Item label="naver.com" value="naver.com" />
+                                    <Picker.Item label="daum.net" value="daum.net" />
+                                    <Picker.Item label="직접 입력" value="custom" />
+                                </Picker>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* 인증 */}
+                    <TouchableOpacity style={styles.authButton} onPress={handleSendCode}>
+                        <Text style={styles.buttonText}>인증번호 발송</Text>
+                    </TouchableOpacity>
+
+                    {isAuthSent && (
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={styles.inputWithButton}
+                                placeholder="인증번호 입력"
+                                value={authCode}
+                                onChangeText={setAuthCode}
+                                keyboardType="number-pad"
+                            />
+                            {timeLeft > 0 && !authVerified && (
+                                <Text style={styles.timerText}>
+                                    {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                                </Text>
+                            )}
+                            <TouchableOpacity style={styles.inlineButton} onPress={handleVerifyCode}>
+                                <Text style={styles.inlineButtonText}>확인</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    <TouchableOpacity style={styles.nextButton} onPress={() => setStep(2)}>
+                        <Text style={styles.buttonText}>다음</Text>
+                    </TouchableOpacity>
+                </>
+            ) : (
+                <>
+                    <Text style={styles.sectionTitle}>학년</Text>
+                    <View style={styles.row}>
+                        {[1, 2, 3].map(g => (
+                            <TouchableOpacity
+                                key={g}
+                                style={[styles.gradeButton, grade === g && styles.selected]}
+                                onPress={() => setGrade(g)}
+                            >
+                                <Text style={{ color: grade === g ? '#fff' : '#000' }}>{g}학년</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <Text style={styles.sectionTitle}>과목 선택</Text>
+                    <View style={styles.rowWrap}>
+                        {allSubjects.map(subj => (
+                            <TouchableOpacity
+                                key={subj}
+                                style={[styles.gradeButton, subjects.includes(subj) && styles.selected]}
+                                onPress={() => toggleSubject(subj)}
+                            >
+                                <Text style={{ color: subjects.includes(subj) ? '#fff' : '#000' }}>{subj}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <Text style={styles.sectionTitle}>공부 습관</Text>
+                    <View style={styles.studyHabitPickerWrapper}>
                         <Picker
-                            selectedValue={emailDomain}
-                            onValueChange={handleDomainChange}
+                            selectedValue={studyHabit}
+                            onValueChange={setStudyHabit}
                             style={styles.picker}
                         >
-                            <Picker.Item label="도메인 선택" value="" />
-                            <Picker.Item label="gmail.com" value="gmail.com" />
-                            <Picker.Item label="naver.com" value="naver.com" />
-                            <Picker.Item label="daum.net" value="daum.net" />
-                            <Picker.Item label="직접 입력" value="custom" />
+                            <Picker.Item label="선택" value="" />
+                            {habits.map(h => <Picker.Item key={h} label={h} value={h} />)}
                         </Picker>
                     </View>
-                )}
-            </View>
 
-            {/* 인증번호 발송 */}
-            <TouchableOpacity style={styles.authButton} onPress={sendEmailVerificationCode}>
-                <Text style={styles.buttonText}>인증번호 발송</Text>
-            </TouchableOpacity>
-
-            {/* 인증번호 입력 및 타이머 */}
-            {isAuthSent && (
-                <View style={styles.inputGroupRow}>
-                    {/* 인증번호 입력 칸 */}
-                    <TextInput
-                        style={styles.inputSmall}
-                        placeholder="인증번호"
-                        keyboardType="number-pad"
-                        value={authInput}
-                        onChangeText={setAuthInput}
-                    />
-                    {/* 타이머 */}
-                    <Text style={styles.timerInline}>
-                        {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
-                    </Text>
-                    {/* 인증번호 확인 버튼 */}
-                    <TouchableOpacity style={styles.checkButtonInline} onPress={checkEmailVerificationCode}>
-                        <Text style={styles.buttonText}>확인</Text>
+                    <Text style={styles.sectionTitle}>프로필 이미지</Text>
+                    <TouchableOpacity onPress={handleImagePick}>
+                        <Image
+                            source={profileImage ? { uri: profileImage.uri } : require('../../assets/base_profile.png')}
+                            style={styles.profileImage}
+                        />
                     </TouchableOpacity>
-                </View>
+
+                    <TouchableOpacity
+                        style={[styles.submitButton, !isFormValid && styles.inactiveButton]}
+                        disabled={!isFormValid}
+                        onPress={handleRegister}
+                    >
+                        <Text style={styles.buttonText}>회원가입</Text>
+                    </TouchableOpacity>
+                </>
             )}
-
-
-            {/* 회원가입 버튼 */}
-            <TouchableOpacity
-                style={[styles.submitButton, isFormValid ? styles.activeButton : styles.inactiveButton]}
-                disabled={!isFormValid}
-                onPress={handleRegister}
-            >
-                <Text style={styles.buttonText}>회원가입</Text>
-            </TouchableOpacity>
         </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        flexGrow: 1,
-        backgroundColor: '#E3F2FD',
-        alignItems: 'center',
         padding: width * 0.05,
+        backgroundColor: '#F6FAFE',
+        flexGrow: 1,
     },
     title: {
-        fontSize: height * 0.035,
+        fontSize: 24,
         fontWeight: 'bold',
-        color: '#007BFF',
-        marginBottom: height * 0.03,
+        color: '#000',
+        marginBottom: 20,
+        alignSelf: 'center',
+    },
+    inputWrapper: {
+        position: 'relative',
+        marginBottom: height * 0.02,
+        justifyContent: 'center',
+    },
+    inputWithButton: {
+        height: height * 0.065,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        paddingLeft: 16,
+        paddingRight: width * 0.24,
+        fontSize: width * 0.038,
     },
     input: {
-        width: '100%',
-        height: height * 0.06,
+        height: height * 0.065,
         backgroundColor: '#FFFFFF',
-        borderRadius: height * 0.015,
-        paddingHorizontal: width * 0.04,
+        paddingHorizontal: width * 0.045,
+        borderRadius: 16,
+        fontSize: width * 0.038,
         marginBottom: height * 0.02,
     },
-    inputError: {
-        borderColor: 'red',
-        borderWidth: 2,
+    inlineButton: {
+        position: 'absolute',
+        right: 8,
+        top: 6,
+        bottom: 6,
+        width: width * 0.2,
+        borderRadius: 12,
+        backgroundColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    inputSuccess: {
-        borderColor: 'green',
-        borderWidth: 2,
+    inlineButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 13,
     },
-    inputGroup: {
-        width: '100%',
-        marginBottom: height * 0.03,
-    },
-    emailContainer: {
+    emailRow: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: height * 0.02,
-        width: '100%',
-    },
-    idValidationIcon: {
-        position: 'absolute',
-        right: 118,
-        top: 16,
-        width: 24,
-        height: 24,
-    },
-    passwordValidationIcon: {
-        position: 'absolute',
-        right: 17,
-        top: 16,
-        width: 24,
-        height: 24,
+        gap: 6,
     },
     emailInput: {
-        flex: 3,
-        height: height * 0.06,
+        flex: 1,
+        height: height * 0.065,
         backgroundColor: '#FFFFFF',
-        borderRadius: height * 0.015,
-        paddingHorizontal: width * 0.04,
-        marginRight: width * 0.02,
-    },
-    atSymbol: {
-        fontSize: height * 0.03,
-        marginHorizontal: width * 0.02,
-    },
-    pickerContainer: {
-        flex: 4,
-        height: height * 0.06,
-        backgroundColor: '#FFFFFF',
-        borderRadius: height * 0.015,
-        justifyContent: 'center',
-    },
-    picker: {
-        width: '100%',
-        height: '100%',
+        borderRadius: 16,
+        paddingHorizontal: width * 0.035,
+        fontSize: width * 0.038,
     },
     authButton: {
         width: '100%',
-        height: height * 0.06,
-        backgroundColor: '#007BFF',
-        borderRadius: height * 0.015,
+        height: height * 0.065,
+        backgroundColor: '#000',
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: height * 0.03,
+        marginBottom: height * 0.02,
     },
-    buttonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    timerInline: {
-        position: 'absolute',
-        right: width * 0.28, // 타이머가 입력 칸 바로 오른쪽에 위치
-        top: height * 0.015, // 입력 칸 높이에 맞게 위치 조정
-        fontSize: height * 0.02,
-        color: '#FF0000', // 빨간색 타이머
-    },
-    checkButton: {
-        marginTop: height * 0.02,
-        backgroundColor: '#007BFF',
-        paddingVertical: height * 0.015,
-        paddingHorizontal: width * 0.05,
-        borderRadius: height * 0.015,
-        alignSelf: 'center',
+    nextButton: {
+        backgroundColor: '#000',
+        padding: 16,
+        borderRadius: 16,
+        marginTop: 16,
+        alignItems: 'center',
+        elevation: 3,
     },
     submitButton: {
-        width: '100%',
-        height: height * 0.06,
-        borderRadius: height * 0.015,
-        justifyContent: 'center',
+        backgroundColor: '#000',
+        padding: 16,
+        borderRadius: 16,
+        marginTop: 24,
         alignItems: 'center',
-        marginTop: height * 0.03,
-    },
-    activeButton: {
-        backgroundColor: '#007BFF',
+        elevation: 3,
     },
     inactiveButton: {
-        backgroundColor: '#CCC',
+        backgroundColor: '#999',
     },
-    // 검증 아이콘의 기본 스타일
-    validationIconId: {
-        position: 'absolute', // 아이콘을 입력 칸 오른쪽에 고정
-        right: width * 0.28, // 입력 칸 오른쪽 여백
-        top: height * 0.013, // 입력 칸 위쪽 여백
-        fontSize: height * 0.02, // 아이콘 크기
+    buttonText: {
+        fontSize: width * 0.042,
+        fontWeight: 'bold',
+        color: '#fff',
     },
-    validationIconPassword: {
-        position: 'absolute', // 아이콘을 입력 칸 오른쪽에 고정
-        right: width * 0.03, // 입력 칸 오른쪽 여백
-        top: height * 0.013, // 입력 칸 위쪽 여백
-        fontSize: height * 0.02, // 아이콘 크기
+    sectionTitle: {
+        marginTop: 20,
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginBottom: 8,
+        color: '#000',
     },
-    validationIconEmailVerificationCode: {
-        position: 'absolute', // 아이콘을 입력 칸 오른쪽에 고정
-        right: width * 0.28, // 입력 칸 오른쪽 여백
-        top: height * 0.013, // 입력 칸 위쪽 여백
-        fontSize: height * 0.02, // 아이콘 크기
+    profileImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        alignSelf: 'center',
+        marginVertical: 16,
     },
-    // 초록색 체크 아이콘 스타일
-    iconSuccess: {
-        color: 'green', // 초록색
-    },
-    // 빨간색 X 아이콘 스타일
-    iconError: {
-        color: 'red', // 빨간색
-    },
-    inputGroupRow: {
+    row: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: height * 0.03,
+        justifyContent: 'space-around',
+        marginBottom: 10,
+    },
+    rowWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
+    gradeButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: 5,
+        borderWidth: 1,
+        borderColor: '#DDD',
+    },
+    selected: {
+        backgroundColor: '#000',
+    },
+    studyHabitPickerWrapper: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        overflow: 'hidden',
+        height: height * 0.065,
+        justifyContent: 'center',
+        marginBottom: height * 0.02,
+    },
+    emailDomainPickerWrapper: {
+        flex: 1,
+        height: height * 0.065,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    picker: {
+        fontSize: width * 0.038,
+        height: '100%',
         width: '100%',
     },
-
-    inputSmall: {
-        flex: 3,
-        height: height * 0.06,
-        backgroundColor: '#FFFFFF',
-        borderRadius: height * 0.015,
-        paddingHorizontal: width * 0.04,
-        marginRight: width * 0.02,
+    atSymbol: {
+        fontSize: width * 0.045,
+        fontWeight: 'bold',
+        color: '#000',
+        marginHorizontal: 6,
     },
-
-    checkButtonInline: {
-        flex: 1,
-        height: height * 0.06,
-        backgroundColor: '#007BFF',
-        borderRadius: height * 0.015,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: width * 0.02,
+    timerText: {
+        position: 'absolute',
+        right: width * 0.25,
+        color: '#000',
+        fontSize: width * 0.035,
     },
-
 });
 
 export default RegisterScreen;

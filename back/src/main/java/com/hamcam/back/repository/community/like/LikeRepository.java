@@ -1,10 +1,12 @@
 package com.hamcam.back.repository.community.like;
 
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.community.*;
+import com.hamcam.back.entity.community.Comment;
+import com.hamcam.back.entity.community.Like;
+import com.hamcam.back.entity.community.Post;
+import com.hamcam.back.entity.community.Reply;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 /**

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from "../utils/axios";
+import axios from 'axios';
 
 const RoomList = () => {
     const [rooms, setRooms] = useState([]);
@@ -10,13 +10,13 @@ const RoomList = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        api.get('/api/rooms')
+        axios.get('http://localhost:8080/api/rooms')
             .then((response) => setRooms(response.data))
             .catch((error) => console.error('방 목록 가져오기 실패:', error));
     }, []);
 
     const handleCreateRoom = () => {
-        api.post('/api/rooms/create', {
+        axios.post('http://localhost:8080/api/rooms/create', {
             title: newRoomTitle,
             roomType,
             maxParticipants,

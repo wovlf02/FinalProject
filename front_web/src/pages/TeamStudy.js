@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import api from "../utils/axios";
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../css/TeamStudy.css';
-import { io } from "socket.io-client";
-
-const socket = io("http://localhost:4000"); // 🔁 실제 signaling 서버 주소로 수정
 
 const TeamStudy = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -15,9 +12,9 @@ const TeamStudy = () => {
     const [maxParticipants, setMaxParticipants] = useState(10);
     const [password, setPassword] = useState('');
     const [filteredRooms, setFilteredRooms] = useState([]);
-    const [userCounts, setUserCounts] = useState({});
     const navigate = useNavigate();
 
+    // ✅ 페이지가 처음 로드될 때 학습방 목록을 서버에서 불러옴
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
@@ -25,49 +22,18 @@ const TeamStudy = () => {
             return;
         }
 
-        // 학습방 목록 가져오기
-        api.get('/api/study/team/rooms', {
-            headers: { Authorization: `Bearer ${token}` }
-        }).then((res) => {
-            setStudyRooms(res.data);
-            setFilteredRooms(res.data);
-        });
-
-        // 초기 사용자 수 불러오기
-        api.get('/api/video/room-user-counts', {
-            headers: { Authorization: `Bearer ${token}` }
-        }).then(res => {
-            setUserCounts(res.data);
-        });
-
-        // 소켓 이벤트 수신
-        socket.on('updateUserCounts', ({ roomId, count }) => {
-            setUserCounts(prev => ({
-                ...prev,
-                [roomId]: count
-            }));
-        });
-
-        // 브라우저 닫을 때 leave 처리
-        const handleBeforeUnload = () => {
-            const currentRoomId = sessionStorage.getItem('currentRoomId');
-            const userName = localStorage.getItem('userName') || '익명';
-
-            if (currentRoomId) {
-                api.post(`/api/video/leave/${currentRoomId}`, {}, {
-                    headers: { Authorization: `Bearer ${token}` }
-                }).then(() => {
-                    socket.emit('leave-room', { roomId: currentRoomId, userName });
-                }).catch(() => {});
+        axios.get('http://localhost:8080/api/study/team/rooms', {
+            headers: {
+                Authorization: `Bearer ${token}`
             }
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-            handleBeforeUnload(); // 언마운트 시에도 호출
-        };
+        })
+        .then((response) => {
+            setStudyRooms(response.data);
+            setFilteredRooms(response.data);
+        })
+        .catch((error) => {
+            console.error('학습방 목록 불러오기 실패:', error);
+        });
     }, []);
 
     const handleSearch = () => {
@@ -78,20 +44,7 @@ const TeamStudy = () => {
     };
 
     const handleJoinRoom = (roomId) => {
-        const token = localStorage.getItem('accessToken');
-        const userName = localStorage.getItem('userName') || '익명';
-
-        sessionStorage.setItem('currentRoomId', roomId);
-
-        api.post(`/api/video/join/${roomId}`, {}, {
-            headers: { Authorization: `Bearer ${token}` }
-        }).then(() => {
-            socket.emit('join-room', { roomId, userName }); // ✅ 수정
-            navigate(`/video-room/${roomId}`);
-        }).catch(err => {
-            console.error('입장 처리 실패:', err);
-            alert('방 입장 중 문제가 발생했습니다.');
-        });
+        navigate(`/video-room/${roomId}`);
     };
 
     const handleCreateRoom = async () => {
@@ -102,8 +55,8 @@ const TeamStudy = () => {
                 return;
             }
 
-            const response = await api.post(
-                '/api/study/team/rooms/create',
+            const response = await axios.post(
+                'http://localhost:8080/api/study/team/rooms/create',
                 {
                     title: newRoomTitle,
                     roomType,
@@ -120,7 +73,7 @@ const TeamStudy = () => {
 
             alert('학습방이 생성되었습니다!');
             setStudyRooms(prev => [...prev, response.data]);
-            setFilteredRooms(prev => [...prev, response.data]);
+            setFilteredRooms(prev => [...prev, response.data]); // 리스트 갱신
             setShowModal(false);
             setNewRoomTitle('');
             setRoomType('QUIZ');
@@ -150,7 +103,7 @@ const TeamStudy = () => {
                     <li key={room.id} className="study-room-item">
                         <div className="room-info">
                             <h2>{room.title}</h2>
-                            <p>현재 접속자: {userCounts[room.id] || 0} / {room.maxParticipants}</p>
+                            <p>참여자: {room.maxParticipants}</p>
                         </div>
                         <button className="join-button" onClick={() => handleJoinRoom(room.id)}>참여하기</button>
                     </li>

@@ -7,10 +7,12 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.time.Duration;
 
 /**
  * JWT 토큰을 생성하고 파싱 및 검증하는 유틸 클래스입니다.
@@ -21,6 +23,8 @@ public class JwtProvider {
 
     @Value("${jwt.secret}")
     private String secretKey;
+
+    private final StringRedisTemplate redisTemplate;
 
     private Key key;
 
@@ -33,17 +37,21 @@ public class JwtProvider {
     }
 
     /**
-     * Access Token 생성
+     * Access Token 생성 및 Redis 저장
      */
     public String generateAccessToken(User user) {
-        return generateToken(user.getId(), ACCESS_EXP);
+        String token = generateToken(user.getId(), ACCESS_EXP);
+        redisTemplate.opsForValue().set("AT:" + user.getId(), token, Duration.ofMillis(ACCESS_EXP));
+        return token;
     }
 
     /**
-     * Refresh Token 생성
+     * Refresh Token 생성 및 Redis 저장
      */
     public String generateRefreshToken(User user) {
-        return generateToken(user.getId(), REFRESH_EXP);
+        String token = generateToken(user.getId(), REFRESH_EXP);
+        redisTemplate.opsForValue().set("RT:" + user.getId(), token, Duration.ofMillis(REFRESH_EXP));
+        return token;
     }
 
     /**
@@ -69,11 +77,18 @@ public class JwtProvider {
     }
 
     /**
-     * 토큰 유효성 검증
+     * Redis에 저장된 AccessToken과 비교하며 유효성 검증
      */
     public boolean validateToken(String token) {
         try {
-            parseClaims(token);
+            Claims claims = parseClaims(token);
+            String userId = claims.getSubject();
+            String redisToken = redisTemplate.opsForValue().get("AT:" + userId);
+
+            if (redisToken == null || !redisToken.equals(token)) {
+                throw new CustomException("Redis에 등록되지 않았거나 만료된 토큰입니다.");
+            }
+
             return true;
         } catch (ExpiredJwtException e) {
             throw new CustomException("토큰이 만료되었습니다.");

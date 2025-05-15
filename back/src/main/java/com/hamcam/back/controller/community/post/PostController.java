@@ -1,41 +1,69 @@
 package com.hamcam.back.controller.community.post;
 
-import com.hamcam.back.dto.community.post.request.PostCreateRequest;
-import com.hamcam.back.dto.community.post.request.PostUpdateRequest;
-import com.hamcam.back.dto.community.post.request.ProblemReferenceRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hamcam.back.dto.common.MessageResponse;
+import com.hamcam.back.dto.community.post.request.*;
 import com.hamcam.back.dto.community.post.response.*;
+import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.service.community.post.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.hamcam.back.dto.common.MessageResponse;
+import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 커뮤니티 게시글 API 컨트롤러
+ */
 @RestController
 @RequestMapping("/api/community/posts")
 @RequiredArgsConstructor
 public class PostController {
 
     private final PostService postService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 게시글 작성
+     * 게시글 등록
      */
-    @PostMapping
-    public ResponseEntity<MessageResponse> createPost(@RequestBody PostCreateRequest request) {
-        Long postId = postService.createPost(request);
-        return ResponseEntity.ok(new MessageResponse("게시글이 등록되었습니다.", postId));
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MessageResponse> createPost(
+            @RequestPart("post") String postJson,
+            @RequestPart(value = "files", required = false) MultipartFile[] files
+    ) {
+        try {
+            PostCreateRequest request = objectMapper.readValue(postJson, PostCreateRequest.class);
+            Long postId = postService.createPost(request, files);
+            return ResponseEntity.ok(new MessageResponse("게시글이 등록되었습니다.", postId));
+        } catch (JsonProcessingException e) {
+            throw new CustomException("게시글 데이터 파싱 중 오류가 발생했습니다: " + e.getOriginalMessage());
+        } catch (Exception e) {
+            throw new CustomException("게시글 등록 중 오류가 발생했습니다.");
+        }
     }
 
     /**
      * 게시글 수정
      */
-    @PutMapping("/{postId}")
+    @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MessageResponse> updatePost(
             @PathVariable Long postId,
-            @RequestBody PostUpdateRequest request
+            @RequestPart("post") String postJson,
+            @RequestPart(value = "files", required = false) MultipartFile[] files
     ) {
-        postService.updatePost(postId, request);
-        return ResponseEntity.ok(new MessageResponse("게시글이 수정되었습니다."));
+        try {
+            PostUpdateRequest request = objectMapper.readValue(postJson, PostUpdateRequest.class);
+            postService.updatePost(postId, request, files);
+            return ResponseEntity.ok(new MessageResponse("게시글이 수정되었습니다."));
+        } catch (JsonProcessingException e) {
+            throw new CustomException("게시글 데이터 파싱 중 오류가 발생했습니다: " + e.getOriginalMessage());
+        } catch (Exception e) {
+            throw new CustomException("게시글 수정 중 오류가 발생했습니다.");
+        }
     }
 
     /**
@@ -48,15 +76,14 @@ public class PostController {
     }
 
     /**
-     * 게시글 목록 조회 (페이지, 카테고리)
+     * 게시글 목록 조회 (페이지네이션)
      */
     @GetMapping
     public ResponseEntity<PostListResponse> getPostList(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String category
+            @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(postService.getPostList(page, size, category));
+        return ResponseEntity.ok(postService.getPostList(page, size));
     }
 
     /**
@@ -73,9 +100,9 @@ public class PostController {
     @GetMapping("/search")
     public ResponseEntity<PostListResponse> searchPosts(
             @RequestParam String keyword,
-            @RequestParam(required = false) String category
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(postService.searchPosts(keyword, category));
+        return ResponseEntity.ok(postService.searchPosts(keyword, pageable));
     }
 
     /**
@@ -83,12 +110,11 @@ public class PostController {
      */
     @GetMapping("/filter")
     public ResponseEntity<PostListResponse> filterPosts(
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false, defaultValue = "recent") String sort,
-            @RequestParam(required = false, defaultValue = "0") int minLikes,
+            @RequestParam(defaultValue = "recent") String sort,
+            @RequestParam(defaultValue = "0") int minLikes,
             @RequestParam(required = false) String keyword
     ) {
-        return ResponseEntity.ok(postService.filterPosts(category, sort, minLikes, keyword));
+        return ResponseEntity.ok(postService.filterPosts(sort, minLikes, keyword));
     }
 
     /**
@@ -108,7 +134,7 @@ public class PostController {
     }
 
     /**
-     * 실시간 문제풀이방 - 게시글 자동 완성
+     * 실시간 문제풀이방 자동 완성
      */
     @PostMapping("/auto-fill")
     public ResponseEntity<PostAutoFillResponse> autoFillPost(@RequestBody ProblemReferenceRequest request) {
@@ -134,7 +160,7 @@ public class PostController {
     }
 
     /**
-     * 내가 즐겨찾기한 게시글 목록 조회
+     * 즐겨찾기한 게시글 목록 조회
      */
     @GetMapping("/favorites")
     public ResponseEntity<FavoritePostListResponse> getFavoritePosts() {

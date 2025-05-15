@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/video")
@@ -53,11 +52,5 @@ public class VideoRoomController {
     @GetMapping("/count/{roomId}")
     public ResponseEntity<Long> getUserCount(@PathVariable Long roomId) {
         return ResponseEntity.ok(videoRoomService.getUserCount(roomId));
-    }
-
-    // ✅ Redis: 전체 방 접속자 수 Map으로 조회
-    @GetMapping("/room-user-counts")
-    public ResponseEntity<Map<Long, Long>> getAllRoomUserCounts() {
-        return ResponseEntity.ok(videoRoomService.getAllRoomUserCounts());
     }
 }

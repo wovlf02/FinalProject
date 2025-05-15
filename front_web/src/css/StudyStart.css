@@ -1,9 +1,16 @@
 .study-start-container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 0 32px 0;
+  margin-left: 160px;
+  padding: 32px 24px;
   background: #fafbfc;
   min-height: 100vh;
+  width: 100%;
+}
+@media (max-width: 900px) {
+  .study-start-container {
+    margin-left: 0;
+    width: 100%;
+    padding: 24px 12px;
+  }
 }
 
 .study-start-title {
@@ -18,6 +25,7 @@
   gap: 36px;
   justify-content: center;
   align-items: flex-start;
+  width: 100%;
 }
 
 .study-start-card {

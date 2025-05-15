@@ -26,12 +26,6 @@ function Statistics() {
       <div className="statistics-header">
         <h2>통계</h2>
         <div className="statistics-profile">
-          <span>김종프</span>
-          <img
-            src="https://via.placeholder.com/36x36/cccccc/ffffff?text=U"
-            alt="profile"
-            className="statistics-profile-img"
-          />
         </div>
       </div>
       <div className="statistics-grid">

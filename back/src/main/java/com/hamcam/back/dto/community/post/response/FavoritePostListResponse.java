@@ -12,5 +12,5 @@ import java.util.List;
 @AllArgsConstructor
 public class FavoritePostListResponse {
 
-    private List<PostSimpleResponse> posts;
+    private List<PostSummaryResponse> posts;
 }
