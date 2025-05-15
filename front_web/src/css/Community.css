@@ -314,3 +314,17 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 }
+
+
+.group-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.member-count {
+  margin-left: 4px;
+  font-size: 12px;
+  color: #888;
+}

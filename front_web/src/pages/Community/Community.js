@@ -6,6 +6,7 @@ const Community = () => {
     const navigate = useNavigate();
 
     const dummyChatRooms = [
+        // 🧍‍♀️ 1:1 채팅방 5개
         {
             id: 1,
             opponentName: '김민지',
@@ -15,6 +16,7 @@ const Community = () => {
             lastSentAt: '15:24',
             notificationsEnabled: true,
             isPinned: true,
+            isGroup: false,
         },
         {
             id: 2,
@@ -25,6 +27,7 @@ const Community = () => {
             lastSentAt: '13:10',
             notificationsEnabled: false,
             isPinned: false,
+            isGroup: false,
         },
         {
             id: 3,
@@ -35,6 +38,7 @@ const Community = () => {
             lastSentAt: '10:48',
             notificationsEnabled: true,
             isPinned: true,
+            isGroup: false,
         },
         {
             id: 4,
@@ -45,6 +49,7 @@ const Community = () => {
             lastSentAt: '어제',
             notificationsEnabled: true,
             isPinned: false,
+            isGroup: false,
         },
         {
             id: 5,
@@ -55,8 +60,51 @@ const Community = () => {
             lastSentAt: '09:03',
             notificationsEnabled: false,
             isPinned: false,
+            isGroup: false,
+        },
+
+        // 👥 그룹 채팅방 3개
+        {
+            id: 6,
+            roomName: '스터디 팀 A',
+            groupProfileImage: '', // 빈 문자열이면 hostProfile 대체 사용
+            hostProfile: 'https://i.pravatar.cc/150?img=23',
+            memberCount: 5,
+            lastMessage: '오늘 몇 시에 시작할까요?',
+            unreadCount: 3,
+            lastSentAt: '11:12',
+            notificationsEnabled: false,
+            isPinned: true,
+            isGroup: true,
+        },
+        {
+            id: 7,
+            roomName: '웹개발 그룹',
+            groupProfileImage: 'https://i.pravatar.cc/150?img=30',
+            hostProfile: 'https://i.pravatar.cc/150?img=31',
+            memberCount: 8,
+            lastMessage: 'API 연동 완료했습니다.',
+            unreadCount: 0,
+            lastSentAt: '어제',
+            notificationsEnabled: true,
+            isPinned: false,
+            isGroup: true,
+        },
+        {
+            id: 8,
+            roomName: '토익 스터디',
+            groupProfileImage: '',
+            hostProfile: 'https://i.pravatar.cc/150?img=26',
+            memberCount: 6,
+            lastMessage: '다음 단어 시험은 금요일!',
+            unreadCount: 6,
+            lastSentAt: '08:41',
+            notificationsEnabled: false,
+            isPinned: true,
+            isGroup: true,
         },
     ];
+
 
 
 
@@ -174,30 +222,46 @@ const Community = () => {
                         <button onClick={() => navigate('/community/chat')}>더보기</button>
                     </div>
 
-                    {dummyChatRooms.map((room) => (
-                        <div key={room.id} className="chatroom-card">
-                            <div className="chatroom-left">
-                                <img src={room.opponentProfile} alt="profile" className="chatroom-avatar" />
-                                <div className="chatroom-info">
-                                    <div className="chatroom-name">{room.opponentName}</div>
-                                    <div className="chatroom-last-message">{room.lastMessage}</div>
-                                </div>
-                            </div>
+                    {dummyChatRooms.map((room) => {
+                        const profileSrc = room.isGroup
+                            ? room.groupProfileImage || room.ownerProfileImage
+                            : room.opponentProfile;
 
-                            <div className="chatroom-meta">
-                                <div className="chatroom-top-meta">
-                                    <span className="chatroom-time">{room.lastSentAt}</span>
-                                    {room.isPinned && <span className="chatroom-pin">📌</span>}
-                                    {!room.notificationsEnabled && (
-                                        <span className="chatroom-notify-off">🔕</span>
+                        return (
+                            <div key={room.id} className="chatroom-card">
+                                <div className="chatroom-left">
+                                    <img src={profileSrc} alt="profile" className="chatroom-avatar" />
+                                    <div className="chatroom-info">
+                                        <div className="chatroom-name">
+                                            {room.isGroup ? (
+                                                <>
+                                                    {room.groupName}
+                                                    <img src="/images/people.png" alt="group" className="group-icon" />
+                                                    <span className="member-count">{room.memberCount}</span>
+                                                </>
+                                            ) : (
+                                                room.opponentName
+                                            )}
+                                        </div>
+                                        <div className="chatroom-last-message">{room.lastMessage}</div>
+                                    </div>
+                                </div>
+
+                                <div className="chatroom-meta">
+                                    <div className="chatroom-top-meta">
+                                        {room.isPinned && <span className="chatroom-pin">📌</span>}
+                                        {!room.notificationsEnabled && (
+                                            <span className="chatroom-notify-off">🔕</span>
+                                        )}
+                                        <span className="chatroom-time">{room.lastSentAt}</span>
+                                    </div>
+                                    {room.unreadCount > 0 && (
+                                        <span className="chatroom-unread">{room.unreadCount}</span>
                                     )}
                                 </div>
-                                {room.unreadCount > 0 && (
-                                    <span className="chatroom-unread">{room.unreadCount}</span>
-                                )}
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* ✅ 게시글 섹션 */}
