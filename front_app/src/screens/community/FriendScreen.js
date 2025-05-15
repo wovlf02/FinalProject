@@ -9,7 +9,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { jwtDecode } from 'jwt-decode';
 import api from '../../api/api';
 
-const BASE_URL = 'http://192.168.0.2:8080';
+const BASE_URL = 'http://192.168.78.59:8080';
 
 const FriendScreen = () => {
     const navigation = useNavigation();
@@ -250,7 +250,7 @@ const FriendScreen = () => {
                         <TouchableOpacity onPress={() => navigation.navigate('PostList')}>
                             <Text style={styles.dropdownItem}>게시판</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => navigation.navigate('ChatList')}>
+                        <TouchableOpacity onPress={() => navigation.navigate('ChatRoomList')}>
                             <Text style={styles.dropdownItem}>채팅</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => navigation.navigate('Friend')}>

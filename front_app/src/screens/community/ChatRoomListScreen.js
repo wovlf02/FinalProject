@@ -12,7 +12,7 @@ import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
 import api from '../../api/api';
 
-const BASE_URL = 'http://192.168.0.2:8080';
+const BASE_URL = 'http://192.168.78.59:8080';
 
 const ChatRoomListScreen = () => {
     const navigation = useNavigation();

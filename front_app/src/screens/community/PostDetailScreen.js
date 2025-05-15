@@ -14,7 +14,7 @@ import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import FastImage from 'react-native-fast-image';
 import api from '../../api/api';
 
-const BASE_URL = 'http://192.168.0.2:8080';
+const BASE_URL = 'http://192.168.78.59:8080';
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const PostDetailScreen = () => {
     const { postId } = useRoute().params;

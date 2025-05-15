@@ -16,7 +16,7 @@ const FindAccountScreen = ({ navigation }) => {
     const [isAuthSent, setIsAuthSent] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
     const [isAuthVerified, setIsAuthVerified] = useState(false);
-    const [userId, setUserId] = useState('');
+    const [username, setUsername] = useState('');
 
     const fullEmail = `${emailId}@${emailDomain}`;
 
@@ -24,7 +24,10 @@ const FindAccountScreen = ({ navigation }) => {
         setTimeLeft(300);
         const timer = setInterval(() => {
             setTimeLeft(prev => {
-                if (prev <= 1) clearInterval(timer);
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
                 return prev - 1;
             });
         }, 1000);
@@ -34,14 +37,16 @@ const FindAccountScreen = ({ navigation }) => {
         if (!emailId || !emailDomain) {
             return Alert.alert('입력 오류', '이메일을 정확히 입력해주세요.');
         }
+
         try {
             if (activeTab === 'username') {
                 await api.post('/auth/find-username/send-code', { email: fullEmail });
             } else {
-                if (!userId) return Alert.alert('입력 오류', '아이디를 먼저 입력해주세요.');
-                await api.post('/auth/password/request', { username: userId, email: fullEmail });
+                if (!username.trim()) return Alert.alert('입력 오류', '아이디를 입력해주세요.');
+                await api.post('/auth/password/request', { username, email: fullEmail });
             }
             setIsAuthSent(true);
+            setIsAuthVerified(false);
             startTimer();
             Alert.alert('성공', '인증번호가 발송되었습니다.');
         } catch (e) {
@@ -51,18 +56,18 @@ const FindAccountScreen = ({ navigation }) => {
 
     const verifyAuthCode = async () => {
         try {
+            const endpoint = activeTab === 'username'
+                ? '/auth/find-username/verify-code'
+                : '/auth/password/verify-code';
+
+            const res = await api.post(endpoint, { email: fullEmail, code: authCode });
+
             if (activeTab === 'username') {
-                const res = await api.post('/auth/find-username/verify-code', {
-                    email: fullEmail, code: authCode,
-                });
-                const username = res.data.data;
-                Alert.alert('아이디 찾기 성공', `회원님의 아이디는 "${username}"입니다.`, [
+                const foundUsername = res.data.data;
+                Alert.alert('아이디 찾기 성공', `회원님의 아이디는 "${foundUsername}"입니다.`, [
                     { text: '로그인하기', onPress: () => navigation.navigate('Login') },
                 ]);
             } else {
-                const res = await api.post('/auth/password/verify-code', {
-                    email: fullEmail, code: authCode,
-                });
                 const success = res.data.data;
                 if (success) {
                     setIsAuthVerified(true);
@@ -77,8 +82,10 @@ const FindAccountScreen = ({ navigation }) => {
     };
 
     const handleFindPassword = () => {
-        if (!isAuthVerified) return Alert.alert('실패', '이메일 인증을 먼저 진행해주세요.');
-        navigation.navigate('ResetPassword', { userId });
+        if (!isAuthVerified) {
+            return Alert.alert('실패', '이메일 인증을 먼저 완료해주세요.');
+        }
+        navigation.navigate('ResetPassword', { username });
     };
 
     return (
@@ -88,14 +95,22 @@ const FindAccountScreen = ({ navigation }) => {
             <View style={styles.tabRow}>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'username' && styles.tabActive]}
-                    onPress={() => setActiveTab('username')}>
+                    onPress={() => {
+                        setActiveTab('username');
+                        setIsAuthSent(false);
+                        setIsAuthVerified(false);
+                    }}>
                     <Text style={[styles.tabText, activeTab === 'username' && styles.tabTextActive]}>
                         아이디 찾기
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'password' && styles.tabActive]}
-                    onPress={() => setActiveTab('password')}>
+                    onPress={() => {
+                        setActiveTab('password');
+                        setIsAuthSent(false);
+                        setIsAuthVerified(false);
+                    }}>
                     <Text style={[styles.tabText, activeTab === 'password' && styles.tabTextActive]}>
                         비밀번호 찾기
                     </Text>
@@ -106,8 +121,8 @@ const FindAccountScreen = ({ navigation }) => {
                 <TextInput
                     style={styles.input}
                     placeholder="아이디"
-                    value={userId}
-                    onChangeText={setUserId}
+                    value={username}
+                    onChangeText={setUsername}
                 />
             )}
 
@@ -133,8 +148,7 @@ const FindAccountScreen = ({ navigation }) => {
                             setIsCustomDomain(val === 'custom');
                             setEmailDomain(val === 'custom' ? '' : val);
                         }}
-                        style={styles.picker}
-                    >
+                        style={styles.picker}>
                         <Picker.Item label="선택" value="" />
                         <Picker.Item label="gmail.com" value="gmail.com" />
                         <Picker.Item label="naver.com" value="naver.com" />
@@ -149,7 +163,7 @@ const FindAccountScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             {isAuthSent && (
-                <View style={styles.verifyRow}>
+                <>
                     <TextInput
                         style={styles.input}
                         placeholder="인증번호"
@@ -157,16 +171,18 @@ const FindAccountScreen = ({ navigation }) => {
                         value={authCode}
                         onChangeText={setAuthCode}
                     />
-                    <TouchableOpacity style={[styles.button, { flex: 1 }]} onPress={verifyAuthCode}>
-                        <Text style={styles.buttonText}>확인</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.timer}>
-                        {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
-                    </Text>
-                </View>
+                    <View style={styles.rowBetween}>
+                        <Text style={styles.timer}>
+                            {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+                        </Text>
+                        <TouchableOpacity style={styles.smallButton} onPress={verifyAuthCode}>
+                            <Text style={styles.buttonText}>확인</Text>
+                        </TouchableOpacity>
+                    </View>
+                </>
             )}
 
-            {activeTab === 'password' && isAuthVerified && userId && (
+            {activeTab === 'password' && isAuthVerified && (
                 <TouchableOpacity style={styles.button} onPress={handleFindPassword}>
                     <Text style={styles.buttonText}>비밀번호 재설정</Text>
                 </TouchableOpacity>
@@ -280,6 +296,19 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         color: 'red',
+    },
+    rowBetween: {
+        width: width * 0.85,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: height * 0.01,
+    },
+    smallButton: {
+        backgroundColor: '#000',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 30,
     },
 });
 
