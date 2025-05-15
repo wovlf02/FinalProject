@@ -23,6 +23,10 @@ import UnitEvaluationPlan from './pages/UnitEvaluationPlan';
 import UnitEvaluationFeedback from './pages/UnitEvaluationFeedback';
 import UnitEvaluationSchedule from './pages/UnitEvaluationSchedule';
 import './css/style.css';
+import Post from "./pages/Community/Post";
+import Notice from "./pages/Community/Notice";
+import Chat from "./pages/Community/Chat";
+import Friend from "./pages/Community/Friend";
 
 const LayoutWithSidebar = () => (
   <div style={{ display: 'flex' }}>
@@ -53,7 +57,11 @@ function App() {
           <Route path="/backend-test" element={<BackendTest />} />
           <Route path="/rooms" element={<RoomList />} />
           <Route path="/evaluation" element={<Evaluation />} />
-          <Route path="/community/*" element={<Community />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/community/notice" element={<Notice/>}/>
+          <Route path="/community/post" element={<Post/>}/>
+          <Route path="/community/chat" element={<Chat/>}/>
+          <Route path="/community/friend" element={<Friend/>}/>
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/mypage" element={<MyPage />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />

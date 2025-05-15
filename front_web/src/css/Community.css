@@ -1,6 +1,6 @@
 /* 전체 레이아웃 */
 .community-home {
-  padding: 30px 40px 30px 230px; /* 좌측 고정 Navbar 고려 */
+  padding: 3vh 4vw 3vh 15vw; /* 화면 비율 기반 */
   box-sizing: border-box;
 }
 
@@ -12,23 +12,24 @@
 
 .community-columns {
   display: flex;
-  gap: 20px;         /* ✅ 줄이기 */
-  flex-wrap: nowrap; /* ✅ 줄바꿈 방지 */
+  flex-wrap: nowrap;
+  gap: 1.5vw;
+  justify-content: space-between;
 }
 
-
+/* 4개의 동일한 너비 컬럼 */
 .community-column {
-  flex: 1 1 calc(25% - 18px); /* 4개 컬럼 기준 (100% - gap 고려) */
-  min-width: 360px;
-  max-width: 100%;
+  flex: 1 1 22%;
   background: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.04);
+  border-radius: 0.6rem;
+  padding: 1.5rem;
+  box-shadow: 0 0 0.625rem rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  min-width: 200px;
 }
+
 
 /* 헤더 */
 .community-column-header {
@@ -61,8 +62,7 @@
 
 /* 공지사항 카드 */
 .notice-card {
-  background-color: #fff7e6;
-  border-left: 5px solid #f0ad4e;
+  border: 1px solid #e0e4e8;
   padding: 14px 16px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -166,7 +166,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #f8f9fb;
   border-radius: 10px;
   padding: 16px 20px;
   margin-bottom: 14px;
@@ -333,16 +332,6 @@
   opacity: 0.8;
 }
 
-/* 공통 hover */
-.community-post-card:hover,
-.friend-card:hover,
-.chatroom-card:hover,
-.notice-card:hover {
-  background-color: #f4f6f8;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  transition: all 0.2s ease;
-}
-
 /* 유틸 */
 .group-icon {
   width: 16px;
@@ -355,4 +344,25 @@
   margin-left: 4px;
   font-size: 12px;
   color: #888;
+}
+
+/* 공통 카드 배경 색상 통일 */
+.community-post-card,
+.friend-card,
+.chatroom-card,
+.notice-card {
+  background-color: #f9fafc !important;
+}
+
+.community-post-card:hover,
+.friend-card:hover,
+.chatroom-card:hover,
+.notice-card:hover {
+  background-color: #f0f2f5;
+  box-shadow: 0 0.15rem 0.4rem rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.notice-card {
+  border-left: 5px solid #f0ad4e !important; /* ✅ 우선순위 보장 */
 }
