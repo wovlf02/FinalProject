@@ -25,6 +25,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false, length = 50)
+    private String name; // ✅ 새로 추가된 필드
+
     @Column(nullable = false, length = 100)
     private String nickname;
 
@@ -42,19 +45,19 @@ public class User {
     private String profileImageUrl;
 
     @Column(nullable = false)
-    private Integer grade; // ✅ 학년
+    private Integer grade; // 학년
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_subjects", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "subject")
-    private List<String> subjects; // ✅ 관심 과목
+    private List<String> subjects; // 관심 과목
 
     @Column(nullable = false, length = 50)
-    private String studyHabit; // ✅ 공부 습관
+    private String studyHabit; // 공부 습관
 
     @Column(nullable = false)
     @Builder.Default
-    private Boolean isDeleted = false; // ✅ 소프트 삭제용
+    private Boolean isDeleted = false;
 
     private LocalDateTime deletedAt;
 
@@ -75,16 +78,10 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * 비밀번호 변경
-     */
     public void updatePassword(String newPassword) {
         this.password = newPassword;
     }
 
-    /**
-     * 소프트 삭제 처리
-     */
     public void softDelete() {
         this.isDeleted = true;
         this.deletedAt = LocalDateTime.now();

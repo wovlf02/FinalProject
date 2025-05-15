@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import api from "../utils/axios";
 import { useNavigate } from 'react-router-dom';
 import '../css/TeamStudy.css';
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:4000"); // 🔁 실제 signaling 서버 주소로 수정
 
 const TeamStudy = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -22,47 +25,48 @@ const TeamStudy = () => {
             return;
         }
 
+        // 학습방 목록 가져오기
         api.get('/api/study/team/rooms', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-        .then((response) => {
-            setStudyRooms(response.data);
-            setFilteredRooms(response.data);
-        })
-        .catch((error) => {
-            console.error('학습방 목록 불러오기 실패:', error);
+            headers: { Authorization: `Bearer ${token}` }
+        }).then((res) => {
+            setStudyRooms(res.data);
+            setFilteredRooms(res.data);
         });
 
+        // 초기 사용자 수 불러오기
         api.get('/api/video/room-user-counts', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        })
-        .then(res => {
+            headers: { Authorization: `Bearer ${token}` }
+        }).then(res => {
             setUserCounts(res.data);
-        })
-        .catch(err => {
-            console.error('접속자 수 불러오기 실패:', err);
         });
 
-        // ✅ 사용자가 페이지 떠날 때 leaveRoom 호출
+        // 소켓 이벤트 수신
+        socket.on('updateUserCounts', ({ roomId, count }) => {
+            setUserCounts(prev => ({
+                ...prev,
+                [roomId]: count
+            }));
+        });
+
+        // 브라우저 닫을 때 leave 처리
         const handleBeforeUnload = () => {
             const currentRoomId = sessionStorage.getItem('currentRoomId');
+            const userName = localStorage.getItem('userName') || '익명';
+
             if (currentRoomId) {
                 api.post(`/api/video/leave/${currentRoomId}`, {}, {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                    headers: { Authorization: `Bearer ${token}` }
+                }).then(() => {
+                    socket.emit('leave-room', { roomId: currentRoomId, userName });
                 }).catch(() => {});
             }
         };
 
         window.addEventListener('beforeunload', handleBeforeUnload);
+
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            handleBeforeUnload();
+            handleBeforeUnload(); // 언마운트 시에도 호출
         };
     }, []);
 
@@ -75,13 +79,14 @@ const TeamStudy = () => {
 
     const handleJoinRoom = (roomId) => {
         const token = localStorage.getItem('accessToken');
+        const userName = localStorage.getItem('userName') || '익명';
+
         sessionStorage.setItem('currentRoomId', roomId);
 
         api.post(`/api/video/join/${roomId}`, {}, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+            headers: { Authorization: `Bearer ${token}` }
         }).then(() => {
+            socket.emit('join-room', { roomId, userName }); // ✅ 수정
             navigate(`/video-room/${roomId}`);
         }).catch(err => {
             console.error('입장 처리 실패:', err);

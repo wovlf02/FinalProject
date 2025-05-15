@@ -19,8 +19,21 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserDto> getMyInfo(@AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails.getUsername();
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
-        return ResponseEntity.ok(new UserDto(user.getUsername(), user.getNickname()));
+
+        // accessToken, refreshToken은 이 API에서는 null 처리
+        UserDto userDto = new UserDto(
+                null, // accessToken
+                null, // refreshToken
+                user.getUsername(),
+                user.getName(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getProfileImageUrl()
+        );
+
+        return ResponseEntity.ok(userDto);
     }
 }

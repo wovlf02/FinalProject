@@ -6,8 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 로그인 성공 시 반환되는 응답 DTO입니다.
- * 클라이언트는 발급받은 access & refresh 토큰을 저장하고 활용합니다.
+ * 로그인 성공 시 클라이언트로 반환되는 DTO
+ * 토큰 + 사용자 정보 포함
  */
 @Getter
 @NoArgsConstructor
@@ -15,13 +15,11 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LoginResponse {
 
-    /**
-     * Access Token (1시간 유효)
-     */
-    private String accessToken;
-
-    /**
-     * Refresh Token (14일 유효)
-     */
-    private String refreshToken;
+    private String accessToken;        // Access Token (1시간 유효)
+    private String refreshToken;       // Refresh Token (14일 유효)
+    private String username;
+    private String name;
+    private String email;
+    private String nickname;
+    private String profileImageUrl;
 }

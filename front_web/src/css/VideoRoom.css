@@ -1,21 +1,40 @@
+.video-room-container {
+  padding: 20px;
+}
+
+.video-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .video-box {
-    position: relative;
-    width: 45%;
-  }
-  
-  .video {
-    width: 100%;
-    border-radius: 10px;
-  }
-  
-  .name-tag {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 14px;
-  }
-  
+  position: relative;
+  width: 300px;
+  height: 220px;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.name-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 6px;
+  color: #fff;
+  background: rgba(0,0,0,0.5);
+  padding: 2px 6px;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+.user-count-box {
+  font-weight: bold;
+  margin-bottom: 15px;
+}

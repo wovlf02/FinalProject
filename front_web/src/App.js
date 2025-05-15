@@ -26,7 +26,7 @@ function App() {
         <NavBar />
         <div style={{ flex: 1, marginTop: '60px', padding: '20px' }}>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+             <Route path="/" element={<Navigate to="/login" />} /> {/* 기본 페이지 설정 */}
             <Route path="/login" element={<Login />} />
             <Route path="/unit-evaluation" element={<UnitEvaluation />} />
             <Route path="/unit-evaluation/start" element={<UnitEvaluationStart />} />
