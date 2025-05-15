@@ -53,7 +53,7 @@ function App() {
           <Route path="/backend-test" element={<BackendTest />} />
           <Route path="/rooms" element={<RoomList />} />
           <Route path="/evaluation" element={<Evaluation />} />
-          <Route path="/community" element={<Community />} />
+          <Route path="/community/*" element={<Community />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/mypage" element={<MyPage />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
