@@ -1,6 +1,6 @@
 package com.hamcam.back.dto.community.report.request;
 
-import lombok.Data;
+import lombok.*;
 
 /**
  * 신고 요청 DTO
@@ -19,16 +19,11 @@ import lombok.Data;
  * }
  * </pre>
  */
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReportRequest {
-
-    /**
-     * 신고자 사용자 ID
-     */
-    private Long reporterId;
-
-    /**
-     * 신고 사유
-     */
     private String reason;
 }
+

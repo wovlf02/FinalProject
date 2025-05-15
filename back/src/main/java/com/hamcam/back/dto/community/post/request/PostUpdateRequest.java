@@ -2,6 +2,8 @@ package com.hamcam.back.dto.community.post.request;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 게시글 수정 요청 DTO
  * <p>
@@ -20,9 +22,11 @@ public class PostUpdateRequest {
      * 수정할 본문
      */
     private String content;
+//
+//    /**
+//     * 수정할 카테고리
+//     */
+//    private String category;
 
-    /**
-     * 수정할 카테고리
-     */
-    private String category;
+    private List<Long> deleteFileIds;
 }

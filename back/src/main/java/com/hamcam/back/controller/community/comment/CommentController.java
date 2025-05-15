@@ -4,11 +4,15 @@ import com.hamcam.back.dto.community.comment.request.CommentCreateRequest;
 import com.hamcam.back.dto.community.comment.request.CommentUpdateRequest;
 import com.hamcam.back.dto.community.comment.response.CommentListResponse;
 import com.hamcam.back.dto.common.MessageResponse;
+import com.hamcam.back.dto.community.comment.response.CommentResponse;
+import com.hamcam.back.dto.community.reply.request.ReplyCreateRequest;
 import com.hamcam.back.service.community.comment.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/community")
@@ -21,10 +25,9 @@ public class CommentController {
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<MessageResponse> createComment(
             @PathVariable Long postId,
-            @ModelAttribute CommentCreateRequest request,
-            @RequestParam(value = "files", required = false) MultipartFile[] files
+            @RequestBody CommentCreateRequest request
     ) {
-        commentService.createComment(postId, request, files);
+        commentService.createComment(postId, request);
         return ResponseEntity.ok(new MessageResponse("댓글이 등록되었습니다."));
     }
 
@@ -32,29 +35,44 @@ public class CommentController {
     @PostMapping("/comments/{commentId}/replies")
     public ResponseEntity<MessageResponse> createReply(
             @PathVariable Long commentId,
-            @ModelAttribute CommentCreateRequest request,
-            @RequestParam(value = "files", required = false) MultipartFile[] files
+            @RequestBody ReplyCreateRequest request
     ) {
-        commentService.createReply(commentId, request, files);
+        commentService.createReply(commentId, request);
         return ResponseEntity.ok(new MessageResponse("대댓글이 등록되었습니다."));
     }
 
-    /** 댓글 or 대댓글 수정 */
+    /** 댓글 수정 */
     @PutMapping("/comments/{commentId}/update")
     public ResponseEntity<MessageResponse> updateComment(
             @PathVariable Long commentId,
-            @ModelAttribute CommentUpdateRequest request,
-            @RequestParam(value = "files", required = false) MultipartFile[] files
+            @RequestBody CommentUpdateRequest request
     ) {
-        commentService.updateComment(commentId, request, files);
+        commentService.updateComment(commentId, request.getContent());
         return ResponseEntity.ok(new MessageResponse("댓글이 수정되었습니다."));
     }
 
-    /** 댓글 or 대댓글 삭제 */
+    /** 대댓글 수정 */
+    @PutMapping("/replies/{replyId}/update")
+    public ResponseEntity<MessageResponse> updateReply(
+            @PathVariable Long replyId,
+            @RequestBody CommentUpdateRequest request
+    ) {
+        commentService.updateReply(replyId, request.getContent());
+        return ResponseEntity.ok(new MessageResponse("대댓글이 수정되었습니다."));
+    }
+
+    /** 댓글 삭제 */
     @DeleteMapping("/comments/{commentId}/delete")
     public ResponseEntity<MessageResponse> deleteComment(@PathVariable Long commentId) {
         commentService.deleteComment(commentId);
         return ResponseEntity.ok(new MessageResponse("댓글이 삭제되었습니다."));
+    }
+
+    /** 대댓글 삭제 */
+    @DeleteMapping("/replies/{replyId}/delete")
+    public ResponseEntity<MessageResponse> deleteReply(@PathVariable Long replyId) {
+        commentService.deleteReply(replyId);
+        return ResponseEntity.ok(new MessageResponse("대댓글이 삭제되었습니다."));
     }
 
     /** 게시글 기준 전체 댓글 및 대댓글 조회 (계층 구조) */
@@ -62,20 +80,4 @@ public class CommentController {
     public ResponseEntity<CommentListResponse> getCommentsByPost(@PathVariable Long postId) {
         return ResponseEntity.ok(commentService.getCommentsByPost(postId));
     }
-
-    /** 댓글 좋아요 추가 */
-    @PostMapping("/comments/{commentId}/like")
-    public ResponseEntity<MessageResponse> likeComment(@PathVariable Long commentId) {
-        commentService.likeComment(commentId);
-        return ResponseEntity.ok(new MessageResponse("댓글에 좋아요를 눌렀습니다."));
-    }
-
-    /** 댓글 좋아요 취소 */
-    @DeleteMapping("/comments/{commentId}/like")
-    public ResponseEntity<MessageResponse> unlikeComment(@PathVariable Long commentId) {
-        commentService.unlikeComment(commentId);
-        return ResponseEntity.ok(new MessageResponse("댓글 좋아요가 취소되었습니다."));
-    }
-
-
 }

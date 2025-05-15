@@ -30,4 +30,10 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
      * 사용자가 참여 중인 모든 채팅방 조회
      */
     List<ChatParticipant> findByUser(User user);
+
+    /**
+     * 채팅방의 참여자 수 조회
+     */
+    int countByChatRoom(ChatRoom chatRoom);
+
 }

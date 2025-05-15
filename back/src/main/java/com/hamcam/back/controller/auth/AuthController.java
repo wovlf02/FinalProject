@@ -3,15 +3,33 @@ package com.hamcam.back.controller.auth;
 import com.hamcam.back.dto.auth.request.*;
 import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.dto.auth.response.TokenResponse;
+import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.response.ApiResponse;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 인증 및 회원 관련 API를 제공하는 컨트롤러입니다.
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -68,13 +86,62 @@ public class AuthController {
         return ApiResponse.ok();
     }
 
-    /**
-     * 최종 회원가입 (학습 정보, 프로필 포함)
-     */
-    @PostMapping("/register")
-    public ApiResponse<Void> register(@RequestBody @Valid RegisterRequest request) {
-        authService.register(request);
-        return ApiResponse.ok();
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<String> register(
+            @RequestPart("username") String username,
+            @RequestPart("password") String rawPassword,
+            @RequestPart("email") String email,
+            @RequestPart("nickname") String nickname,
+            @RequestPart("grade") String gradeStr,
+            @RequestPart("subjects") String subjectsStr, // <-- 수정됨
+            @RequestPart("studyHabit") String studyHabit,
+            @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
+    ) {
+        try {
+            // grade 파싱
+            Integer grade = Integer.parseInt(gradeStr);
+
+            // subjects 파싱 (예: "수학,영어")
+            List<String> subjects = Arrays.stream(subjectsStr.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+
+            // 프로필 이미지 처리
+            String profileImageUrl = null;
+            if (profileImage != null && !profileImage.isEmpty()) {
+                String originalFilename = profileImage.getOriginalFilename();
+                String storedName = UUID.randomUUID() + "_" + originalFilename;
+                Path uploadDir = Paths.get("uploads/profile");
+                Files.createDirectories(uploadDir);
+                Path targetPath = uploadDir.resolve(storedName);
+                Files.copy(profileImage.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                profileImageUrl = "/uploads/profile/" + storedName;
+            }
+
+            // DTO 생성
+            RegisterRequest request = RegisterRequest.builder()
+                    .username(username)
+                    .password(rawPassword)
+                    .email(email)
+                    .nickname(nickname)
+                    .grade(grade)
+                    .subjects(subjects)
+                    .studyHabit(studyHabit)
+                    .profileImageUrl(profileImageUrl)
+                    .build();
+
+            authService.register(request);
+            return ApiResponse.ok("회원가입이 완료되었습니다.");
+
+        } catch (NumberFormatException e) {
+            throw new CustomException("학년(grade)은 숫자여야 합니다.");
+        } catch (IOException e) {
+            throw new CustomException("프로필 이미지 업로드 중 오류가 발생했습니다.");
+        } catch (Exception e) {
+            log.error("회원가입 중 예외 발생", e);
+            throw new CustomException("회원가입 처리 중 오류가 발생했습니다.");
+        }
     }
 
     /**

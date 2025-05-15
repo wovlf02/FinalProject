@@ -1,11 +1,13 @@
 package com.hamcam.back.service.auth;
 
-import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.dto.auth.request.*;
 import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.dto.auth.response.TokenResponse;
+import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.config.auth.JwtProvider;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 
-/**
- * 인증 및 회원가입 관련 로직을 담당하는 AuthService 구현 클래스입니다.
- * 인터페이스 없이 단일 구현체로 사용됩니다.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -30,6 +28,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
+    private final SecurityUtil securityUtil;
 
     public Boolean checkUsername(UsernameCheckRequest request) {
         return !userRepository.existsByUsername(request.getUsername());
@@ -44,7 +43,7 @@ public class AuthService {
     }
 
     public String sendVerificationCode(EmailSendRequest request) {
-        String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6자리 랜덤 코드
+        String code = String.valueOf((int) (Math.random() * 900000) + 100000);
         redisTemplate.opsForValue().set("EMAIL:CODE:" + request.getEmail(), code, Duration.ofMinutes(3));
         mailService.sendVerificationCode(request.getEmail(), code, request.getType());
         return "인증코드가 이메일로 발송되었습니다.";
@@ -73,10 +72,10 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .nickname(request.getNickname())
-                .grade(request.getGrade())
-                .studyHabit(request.getStudyHabit())
-                .subjects(request.getSubjects())
                 .profileImageUrl(request.getProfileImageUrl())
+                .grade(request.getGrade())
+                .subjects(request.getSubjects())
+                .studyHabit(request.getStudyHabit())
                 .build();
 
         userRepository.save(user);
@@ -84,23 +83,22 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new CustomException("비밀번호가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
         }
 
         String accessToken = jwtProvider.generateAccessToken(user);
         String refreshToken = jwtProvider.generateRefreshToken(user);
 
-        redisTemplate.opsForValue().set("RT:" + user.getId(), refreshToken, Duration.ofDays(14));
-
         return new LoginResponse(accessToken, refreshToken);
     }
 
     public void logout(TokenRequest request) {
-        Long userId = jwtProvider.getUserIdFromToken(request.getAccessToken());
+        Long userId = securityUtil.getCurrentUserId();
         redisTemplate.delete("RT:" + userId);
+
         long expiration = jwtProvider.getExpiration(request.getAccessToken());
         redisTemplate.opsForValue().set("BL:" + request.getAccessToken(), "logout", Duration.ofMillis(expiration));
     }
@@ -160,14 +158,12 @@ public class AuthService {
     }
 
     public void updatePassword(PasswordChangeRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+        User user = securityUtil.getCurrentUser();
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
     }
 
     public void withdraw(PasswordConfirmRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+        User user = securityUtil.getCurrentUser();
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException("비밀번호가 일치하지 않습니다.");

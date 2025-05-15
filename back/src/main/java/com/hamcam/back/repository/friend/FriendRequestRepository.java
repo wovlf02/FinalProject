@@ -3,6 +3,8 @@ package com.hamcam.back.repository.friend;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.friend.FriendRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,12 +29,9 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
     List<FriendRequest> findByReceiver(User receiver);
 
     /**
-     * 특정 사용자가 보낸 모든 친구 요청 조회
-     */
-    List<FriendRequest> findBySender(User sender);
-
-    /**
      * 친구 요청 수락 시 ID로 조회
      */
     Optional<FriendRequest> findById(Long id);
+
+    boolean existsBySenderAndReceiver(User sender, User receiver);
 }

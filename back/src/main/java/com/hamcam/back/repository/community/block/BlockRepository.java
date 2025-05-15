@@ -47,4 +47,8 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
      * 특정 대댓글에 대한 차단 여부 조회
      */
     Optional<Block> findByUserAndReply(User user, Reply reply);
+
+    List<Block> findByUserAndPostIsNotNullAndIsDeletedFalse(User user);
+    List<Block> findByUserAndCommentIsNotNullAndIsDeletedFalse(User user);
+    List<Block> findByUserAndReplyIsNotNullAndIsDeletedFalse(User user);
 }

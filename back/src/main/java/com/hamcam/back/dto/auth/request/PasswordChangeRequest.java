@@ -14,12 +14,6 @@ import lombok.NoArgsConstructor;
 public class PasswordChangeRequest {
 
     /**
-     * 비밀번호를 재설정할 사용자 아이디
-     */
-    @NotBlank(message = "아이디는 필수 입력 값입니다.")
-    private String username;
-
-    /**
      * 새 비밀번호
      */
     @NotBlank(message = "새 비밀번호는 필수 입력 값입니다.")

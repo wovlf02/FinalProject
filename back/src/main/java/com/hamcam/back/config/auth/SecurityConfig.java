@@ -51,11 +51,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ cors 활성화
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ws/**", "/topic/**", "/app/**").permitAll() // ✅ WebSocket 및 STOMP 경로 허용
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers(
+                                "/ws/**", "/topic/**", "/app/**", // WebSocket
+                                "/uploads/**",                    // ✅ 업로드된 이미지 허용
+                                "/api/**"                         // API 엔드포인트 허용
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -65,6 +68,7 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
