@@ -134,15 +134,13 @@ const PostListScreen = () => {
             </Text>
 
             <View style={styles.infoRow}>
-                <Text style={styles.infoText}>
-                    📎 {item.attachmentCount ?? item.attachments?.length ?? 0}개
-                </Text>
+                <View style={{ flex: 1 }} />
                 <View style={styles.rightInfo}>
                     <Text style={[styles.infoText, item.liked && styles.liked]}>
                         ❤️ {item.likeCount}
                     </Text>
-                    <Text style={styles.infoText}>💬 {item.commentCount}</Text>
                     <Text style={styles.infoText}>👁️ {item.viewCount}</Text>
+                    <Text style={styles.infoText}>💬 {item.commentCount}</Text>
                 </View>
             </View>
 
@@ -228,7 +226,7 @@ export default PostListScreen;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F4F8FF',
+        backgroundColor: '#F8FAFC',
     },
     header: {
         flexDirection: 'row',
@@ -335,6 +333,8 @@ const styles = StyleSheet.create({
     },
     rightInfo: {
         flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
         gap: 12,
     },
     infoText: {

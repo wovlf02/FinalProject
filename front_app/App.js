@@ -24,10 +24,7 @@ import PostDetailScreen from './src/screens/community/PostDetailScreen';
 import PostEditScreen from './src/screens/community/PostEditScreen';
 import ChatRoomListScreen from './src/screens/community/ChatRoomListScreen';
 import ChatRoomScreen from './src/screens/community/ChatRoomScreen';
-import FriendListScreen from './src/screens/community/FriendListScreen';
-import FriendSearchScreen from './src/screens/community/FriendSearchScreen';
-import FriendRequestScreen from './src/screens/community/FriendRequestScreen';
-import FriendBlockListScreen from './src/screens/community/FriendBlockListScreen';
+import FriendScreen from './src/screens/community/FriendScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -41,10 +38,7 @@ const CommunityNavigator = () => (
       <CommunityStack.Screen name="PostEdit" component={PostEditScreen} />
       <CommunityStack.Screen name="ChatRoomList" component={ChatRoomListScreen} />
       <CommunityStack.Screen name="ChatRoom" component={ChatRoomScreen} />
-      <CommunityStack.Screen name="FriendList" component={FriendListScreen} />
-      <CommunityStack.Screen name="FriendSearch" component={FriendSearchScreen} />
-      <CommunityStack.Screen name="FriendRequest" component={FriendRequestScreen} />
-      <CommunityStack.Screen name="FriendBlockList" component={FriendBlockListScreen} />
+      <CommunityStack.Screen name="FriendList" component={FriendScreen} />
     </CommunityStack.Navigator>
 );
 

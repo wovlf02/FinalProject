@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: screenWidth * 0.04,
         paddingTop: screenHeight * 0.03,
         paddingBottom: screenHeight * 0.1,
-        backgroundColor: '#F4F8FF', // 인트로 색상
+        backgroundColor: '#F8FAFC', // 인트로 색상
     },
     postCard: {
         width: screenWidth * 0.96,

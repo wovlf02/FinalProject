@@ -4,13 +4,13 @@ import com.hamcam.back.dto.community.friend.request.FriendAcceptRequest;
 import com.hamcam.back.dto.community.friend.request.FriendRejectRequest;
 import com.hamcam.back.dto.community.friend.request.FriendRequestSendRequest;
 import com.hamcam.back.dto.community.friend.response.*;
+import com.hamcam.back.dto.community.report.request.ReportRequest;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.friend.Friend;
-import com.hamcam.back.entity.friend.FriendBlock;
-import com.hamcam.back.entity.friend.FriendRequest;
+import com.hamcam.back.entity.friend.*;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.friend.FriendBlockRepository;
+import com.hamcam.back.repository.friend.FriendReportRepository;
 import com.hamcam.back.repository.friend.FriendRepository;
 import com.hamcam.back.repository.friend.FriendRequestRepository;
 import com.hamcam.back.security.auth.CustomUserDetails;
@@ -19,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,6 +34,7 @@ public class FriendService {
     private final FriendRepository friendRepository;
     private final FriendRequestRepository friendRequestRepository;
     private final FriendBlockRepository friendBlockRepository;
+    private final FriendReportRepository friendReportRepository;
     private final UserRepository userRepository;
 
     private Long getCurrentUserId() {
@@ -146,25 +148,29 @@ public class FriendService {
     public FriendSearchResponse searchUsersByNickname(String nickname) {
         User me = getCurrentUser();
         List<User> users = userRepository.findByNicknameContaining(nickname);
+
         return new FriendSearchResponse(
                 users.stream()
-                        .filter(user -> !user.getId().equals(me.getId())) // 자기 자신은 제외
+                        .filter(user -> !user.getId().equals(me.getId())) // 자기 자신 제외
                         .map(user -> {
                             boolean alreadyFriend = friendRepository.existsByUserAndFriend(me, user)
-                                    || friendRepository.existsByUserAndFriend(user, me); // 양방향 확인
+                                    || friendRepository.existsByUserAndFriend(user, me);
                             boolean alreadyRequested = friendRequestRepository.existsBySenderAndReceiver(me, user);
+                            boolean isBlocked = friendBlockRepository.existsByBlockerAndBlocked(me, user);
 
                             return new FriendSearchResponse.UserSearchResult(
                                     user.getId(),
                                     user.getNickname(),
                                     user.getProfileImageUrl(),
                                     alreadyFriend,
-                                    alreadyRequested
+                                    alreadyRequested,
+                                    isBlocked
                             );
                         })
-                        .collect(Collectors.toList())
+                        .toList()
         );
     }
+
 
     /**
      * 친구 삭제
@@ -223,5 +229,40 @@ public class FriendService {
                         .map(block -> BlockedFriendListResponse.BlockedUserDto.from(block.getBlocked()))
                         .collect(Collectors.toList())
         );
+    }
+
+    /**
+     * 사용자 신고 처리
+     *
+     * @param reportedUserId 신고 대상 사용자 ID
+     * @param request 신고 요청 (신고 사유 포함)
+     */
+    public void reportUser(Long reportedUserId, ReportRequest request) {
+        User reporter = getCurrentUser();
+
+        if (reporter.getId().equals(reportedUserId)) {
+            throw new IllegalArgumentException("자기 자신은 신고할 수 없습니다.");
+        }
+
+        User reported = userRepository.findById(reportedUserId)
+                .orElseThrow(() -> new IllegalArgumentException("신고 대상 사용자가 존재하지 않습니다."));
+
+        boolean alreadyReported = friendReportRepository
+                .findByReporterAndReported(reporter, reported)
+                .isPresent();
+
+        if (alreadyReported) {
+            throw new IllegalStateException("이미 해당 사용자를 신고했습니다.");
+        }
+
+        FriendReport report = FriendReport.builder()
+                .reporter(reporter)
+                .reported(reported)
+                .reason(request.getReason())
+                .status(FriendReportStatus.PENDING)
+                .reportedAt(LocalDateTime.now())
+                .build();
+
+        friendReportRepository.save(report);
     }
 }

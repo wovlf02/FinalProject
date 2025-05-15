@@ -22,16 +22,6 @@ public interface FriendReportRepository extends JpaRepository<FriendReport, Long
     Optional<FriendReport> findByReporterAndReported(User reporter, User reported);
 
     /**
-     * 내가 신고한 사용자 목록 조회
-     */
-    List<FriendReport> findByReporter(User reporter);
-
-    /**
-     * 나를 신고한 사용자 목록 조회
-     */
-    List<FriendReport> findByReported(User reported);
-
-    /**
      * 관리자 - 전체 신고 목록 조회
      */
     List<FriendReport> findAll();

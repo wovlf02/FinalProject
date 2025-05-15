@@ -50,38 +50,5 @@ public class FriendReportService {
                 .orElseThrow(() -> new CustomException("사용자 정보를 불러올 수 없습니다."));
     }
 
-    /**
-     * 사용자 신고 처리
-     *
-     * @param reportedUserId 신고 대상 사용자 ID
-     * @param request 신고 요청 (신고 사유 포함)
-     */
-    public void reportUser(Long reportedUserId, ReportRequest request) {
-        User reporter = getCurrentUser();
 
-        if (reporter.getId().equals(reportedUserId)) {
-            throw new IllegalArgumentException("자기 자신은 신고할 수 없습니다.");
-        }
-
-        User reported = userRepository.findById(reportedUserId)
-                .orElseThrow(() -> new IllegalArgumentException("신고 대상 사용자가 존재하지 않습니다."));
-
-        boolean alreadyReported = friendReportRepository
-                .findByReporterAndReported(reporter, reported)
-                .isPresent();
-
-        if (alreadyReported) {
-            throw new IllegalStateException("이미 해당 사용자를 신고했습니다.");
-        }
-
-        FriendReport report = FriendReport.builder()
-                .reporter(reporter)
-                .reported(reported)
-                .reason(request.getReason())
-                .status(FriendReportStatus.PENDING)
-                .reportedAt(LocalDateTime.now())
-                .build();
-
-        friendReportRepository.save(report);
-    }
 }

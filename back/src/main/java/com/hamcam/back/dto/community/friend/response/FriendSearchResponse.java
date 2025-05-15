@@ -23,16 +23,20 @@ public class FriendSearchResponse {
         private String profileImageUrl;
         private boolean alreadyFriend;
         private boolean alreadyRequested;
+        private boolean isBlocked;
 
+        /**
+         * 기본값 false로 생성할 수 있는 from 메서드
+         */
         public static UserSearchResult from(User user) {
             return new UserSearchResult(
                     user.getId(),
                     user.getNickname(),
                     user.getProfileImageUrl(),
                     false,
+                    false,
                     false
             );
         }
     }
 }
-
