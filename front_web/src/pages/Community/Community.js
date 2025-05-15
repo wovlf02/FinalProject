@@ -1,9 +1,26 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../css/Community.css';
+import peopleIcon from '../../icons/people.png';
+import bellOffIcon from '../../icons/bell_off.png';
 
 const Community = () => {
     const navigate = useNavigate();
+
+    const dummyNotices = [
+        {
+            id: 1,
+            title: '📢 커뮤니티 이용 안내',
+            content: '다른 사용자에게 예의를 지켜주세요.',
+            date: '2025.05.12',
+        },
+        {
+            id: 2,
+            title: '✅ 채팅 기능 업데이트',
+            content: '채팅방 고정 및 알림 설정 기능이 추가되었습니다.',
+            date: '2025.05.10',
+        },
+    ];
 
     const dummyChatRooms = [
         // 🧍‍♀️ 1:1 채팅방 5개
@@ -212,19 +229,33 @@ const Community = () => {
     return (
         <div className="community-home">
             <h2>커뮤니티</h2>
-            <p className="community-subtitle">실시간 채팅, 게시판 글, 친구 목록을 한눈에 확인해보세요</p>
+            <p className="community-subtitle">공지사항, 실시간 채팅, 게시판 글, 친구 목록을 한눈에 확인해보세요</p>
 
-            <div className="community-columns">
+            <div className="community-columns four-column-layout">
+                {/* ✅ 공지사항 섹션 */}
+                <div className="community-column">
+                    <div className="community-column-header">
+                        <h3>공지사항</h3>
+                        <button onClick={() => navigate('/community/notice')}>더보기</button>
+                    </div>
+                    {dummyNotices.map((notice) => (
+                        <div key={notice.id} className="notice-card">
+                            <h4 className="notice-title">{notice.title}</h4>
+                            <p className="notice-content">{notice.content}</p>
+                            <div className="notice-date">{notice.date}</div>
+                        </div>
+                    ))}
+                </div>
+
                 {/* ✅ 채팅방 섹션 */}
                 <div className="community-column">
                     <div className="community-column-header">
                         <h3>채팅방</h3>
                         <button onClick={() => navigate('/community/chat')}>더보기</button>
                     </div>
-
                     {dummyChatRooms.map((room) => {
                         const profileSrc = room.isGroup
-                            ? room.groupProfileImage || room.ownerProfileImage
+                            ? room.groupProfileImage || room.hostProfile
                             : room.opponentProfile;
 
                         return (
@@ -235,8 +266,8 @@ const Community = () => {
                                         <div className="chatroom-name">
                                             {room.isGroup ? (
                                                 <>
-                                                    {room.groupName}
-                                                    <img src="/images/people.png" alt="group" className="group-icon" />
+                                                    {room.roomName}
+                                                    <img src={peopleIcon} alt="group" className="group-icon" />
                                                     <span className="member-count">{room.memberCount}</span>
                                                 </>
                                             ) : (
@@ -246,15 +277,14 @@ const Community = () => {
                                         <div className="chatroom-last-message">{room.lastMessage}</div>
                                     </div>
                                 </div>
-
                                 <div className="chatroom-meta">
-                                    <div className="chatroom-top-meta">
+                                    <div className="chatroom-top-icons">
                                         {room.isPinned && <span className="chatroom-pin">📌</span>}
                                         {!room.notificationsEnabled && (
-                                            <span className="chatroom-notify-off">🔕</span>
+                                            <img src={bellOffIcon} alt="bell off" className="chatroom-notify-icon" />
                                         )}
-                                        <span className="chatroom-time">{room.lastSentAt}</span>
                                     </div>
+                                    <span className="chatroom-time">{room.lastSentAt}</span>
                                     {room.unreadCount > 0 && (
                                         <span className="chatroom-unread">{room.unreadCount}</span>
                                     )}
