@@ -74,9 +74,10 @@ const NavBar = () => {
       name: '커뮤니티',
       path: '/community',
       subItems: [
-        { name: '채팅', path: '/community/chat' },
-        { name: '게시판', path: '/community/post' },
-        { name: '친구', path: '/community/friend' },
+          { name: '공지사항', path: '/community/notice'},
+          { name: '채팅', path: '/community/chat' },
+          { name: '게시판', path: '/community/post' },
+          { name: '친구', path: '/community/friend' },
       ],
     },
   ];
@@ -85,7 +86,8 @@ const NavBar = () => {
     const path = location.pathname;
     if (path.startsWith('/community')) {
       setSelectedTab('커뮤니티');
-      if (path.includes('/chat')) setSelectedSubTab('채팅');
+      if (path.includes('/notice')) setSelectedSubTab('공지사항');
+      else if (path.includes('/chat')) setSelectedSubTab('채팅');
       else if (path.includes('/post')) setSelectedSubTab('게시판');
       else if (path.includes('/friend')) setSelectedSubTab('친구');
       else setSelectedSubTab('');
