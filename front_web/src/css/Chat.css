@@ -1,0 +1,94 @@
+.chatroom-container {
+    padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.chatroom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.create-btn {
+    background-color: #222;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.chatroom-tabs {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.chatroom-tabs button {
+    padding: 6px 14px;
+    border: none;
+    background-color: #eee;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.chatroom-tabs .active {
+    background-color: #222;
+    color: white;
+}
+
+.chatroom-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.chatroom-card {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    position: relative;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+.chatroom-info {
+    flex: 1;
+}
+
+.chatroom-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.chatroom-msg {
+    color: #555;
+    font-size: 14px;
+}
+
+.chatroom-unread {
+    background-color: #e94141;
+    color: white;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 8px;
+}
+
+.pin-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}

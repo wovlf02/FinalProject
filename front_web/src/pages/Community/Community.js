@@ -227,9 +227,11 @@ const Community = () => {
     ];
 
     return (
-        <div className="community-home">
-            <h2>커뮤니티</h2>
-            <p className="community-subtitle">공지사항, 실시간 채팅, 게시판 글, 친구 목록을 한눈에 확인해보세요</p>
+        <div className="dashboard-container">
+            <h2 className="page-title">커뮤니티</h2>
+            <p className="community-subtitle">
+                공지사항, 실시간 채팅, 게시판 글, 친구 목록을 한눈에 확인해보세요
+            </p>
 
             <div className="community-columns four-column-layout">
                 {/* ✅ 공지사항 섹션 */}
@@ -281,7 +283,11 @@ const Community = () => {
                                     <div className="chatroom-top-icons">
                                         {room.isPinned && <span className="chatroom-pin">📌</span>}
                                         {!room.notificationsEnabled && (
-                                            <img src={bellOffIcon} alt="bell off" className="chatroom-notify-icon" />
+                                            <img
+                                                src={bellOffIcon}
+                                                alt="bell off"
+                                                className="chatroom-notify-icon"
+                                            />
                                         )}
                                     </div>
                                     <span className="chatroom-time">{room.lastSentAt}</span>

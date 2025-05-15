@@ -6,27 +6,25 @@ import com.hamcam.back.entity.community.*;
 import com.hamcam.back.entity.friend.*;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 사용자 엔티티 (MySQL 기반, 고등학생 대상 플랫폼)
+ * 사용자 엔티티 (MySQL 기반, 하드 삭제 적용)
  */
 @Entity
-@Table(name = "users") // MySQL은 소문자 테이블명 권장
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Where(clause = "is_deleted = false")
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -41,13 +39,6 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "email_verified", nullable = false)
-    @Builder.Default
-    private boolean emailVerified = false;
-
-    @Column(name = "refresh_token")
-    private String refreshToken;
-
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
 
@@ -61,12 +52,6 @@ public class User {
 
     @Column(nullable = false, length = 50)
     private String studyHabit;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean isDeleted = false;
-
-    private LocalDateTime deletedAt;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -157,16 +142,10 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
+    /**
+     * 비밀번호 변경
+     */
     public void updatePassword(String newPassword) {
         this.password = newPassword;
-    }
-
-    public void softDelete() {
-        this.isDeleted = true;
-        this.deletedAt = LocalDateTime.now();
-    }
-
-    public void verifyEmail() {
-        this.emailVerified = true;
     }
 }

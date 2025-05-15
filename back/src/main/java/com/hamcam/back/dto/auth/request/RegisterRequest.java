@@ -25,17 +25,23 @@ public class RegisterRequest {
     @Email(message = "올바른 이메일 형식이어야 합니다.")
     private String email;
 
-    @NotBlank(message = "닉네임은 필수 입력 값입니다.")
-    private String nickname;
+    @NotBlank(message = "이름은 필수 입력 값입니다.")
+    private String name;
+
+    @NotBlank(message = "전화번호는 필수 입력 값입니다.")
+    private String phone;
 
     @NotNull(message = "학년은 필수 입력 값입니다.")
     private Integer grade;
 
-    @NotNull(message = "과목은 최소 1개 이상 선택해야 합니다.")
-    private List<String> subjects;
-
     @NotBlank(message = "공부 습관은 필수 입력 값입니다.")
     private String studyHabit;
 
-    private String profileImageUrl; // 선택 항목
+    @NotBlank(message = "닉네임은 필수 입력 값입니다.")
+    private String nickname;
+
+    @NotNull(message = "과목은 최소 1개 이상 선택해야 합니다.")
+    private List<String> subjects;
+
+    private String profileImageUrl; // 선택 항목 -> 미선택 시 기본 프로필로 처리
 }
