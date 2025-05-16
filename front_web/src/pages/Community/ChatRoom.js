@@ -16,7 +16,6 @@ const ChatRoom = () => {
             sender: 'user2',
             senderName: 'user2',
             senderImage: user2,
-            type: 'received',
             content: 'user1님, 오늘 회의는 몇 시에 시작하나요?',
             time: '오후 2:30',
         },
@@ -25,7 +24,6 @@ const ChatRoom = () => {
             sender: 'user1',
             senderName: 'user1',
             senderImage: user1,
-            type: 'sent',
             content: '3시에 시작해요. 회의 링크도 공유드릴게요!',
             time: '오후 2:35',
         },
@@ -34,7 +32,6 @@ const ChatRoom = () => {
             sender: 'user3',
             senderName: 'user3',
             senderImage: user3,
-            type: 'received',
             content: 'user1님, 자료는 어디서 확인하나요?',
             time: '오후 3:30',
         },
@@ -43,7 +40,6 @@ const ChatRoom = () => {
             sender: 'user1',
             senderName: 'user1',
             senderImage: user1,
-            type: 'sent',
             content: '구글 드라이브에 올렸습니다. 확인 부탁드려요!',
             time: '오후 4:30',
         },
@@ -51,15 +47,16 @@ const ChatRoom = () => {
 
     const handleSend = () => {
         if (!message.trim()) return;
+
         const newMessage = {
             id: messages.length + 1,
             sender: currentUser,
             senderName: 'user1',
             senderImage: user1,
-            type: 'sent',
             content: message,
             time: '방금 전',
         };
+
         setMessages([...messages, newMessage]);
         setMessage('');
     };
@@ -70,7 +67,7 @@ const ChatRoom = () => {
 
     return (
         <div className="chat-room">
-            {/* 상단 상대방 정보 */}
+            {/* 상단 헤더 */}
             <div className="chat-room-header">
                 <img src={user2} alt="user2" />
                 <div className="chat-room-header-info">
@@ -79,26 +76,33 @@ const ChatRoom = () => {
                 </div>
             </div>
 
-            {/* 메시지 영역 */}
+            {/* 채팅 메시지 영역 */}
             <div className="chat-room-body">
                 {messages.map((msg) => {
                     const isMe = msg.sender === currentUser;
+
                     return (
-                        <div key={msg.id} className={`message-row ${isMe ? 'sent' : 'received'}`}>
-                            {!isMe && <img src={msg.senderImage} className="message-avatar" alt={msg.sender} />}
-                            <div className="message-bubble">
-                                <div className="message-meta">
+                        <div key={msg.id} className={`message-wrapper ${isMe ? 'right' : 'left'}`}>
+                            <div className="message-content-wrap">
+                                {/* 닉네임 + 프로필 라인 (윗줄) */}
+                                <div className={`message-meta ${isMe ? 'right' : 'left'}`}>
+                                    {!isMe && <img src={msg.senderImage} className="message-avatar" alt={msg.sender} />}
                                     <span className="message-nickname">{msg.senderName}</span>
+                                    {isMe && <img src={msg.senderImage} className="message-avatar" alt="me" />}
                                 </div>
-                                <div className="message-content">{msg.content}</div>
-                                <div className="message-time">{msg.time}</div>
+
+                                {/* 말풍선 라인 (아랫줄) */}
+                                <div className="message-bubble">
+                                    <div className="message-content">{msg.content}</div>
+                                    <div className="message-time">{msg.time}</div>
+                                </div>
                             </div>
-                            {isMe && <img src={msg.senderImage} className="message-avatar" alt="me" />}
                         </div>
                     );
                 })}
                 <div ref={scrollRef} />
             </div>
+
 
             {/* 입력창 */}
             <div className="chat-room-input">
