@@ -29,13 +29,14 @@ import Chat from "./pages/Community/Chat";
 import Friend from "./pages/Community/Friend";
 
 const LayoutWithSidebar = () => (
-  <div style={{ display: 'flex' }}>
-    <NavBar />
-    <div style={{ flex: 1, marginTop: '60px', padding: '20px' }}>
-      <Outlet />
+    <div style={{ display: 'flex' }}>
+      <NavBar />
+      <div style={{ flex: 1, marginTop: '0px' }}> {/* ✅ padding 제거 */}
+        <Outlet />
+      </div>
     </div>
-  </div>
 );
+
 
 function App() {
   return (

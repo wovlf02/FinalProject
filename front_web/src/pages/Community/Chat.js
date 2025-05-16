@@ -1,83 +1,107 @@
-import React, { useState } from 'react';
+import React from 'react';
 import '../../css/Chat.css';
-
-const dummyChatRooms = [
-    {
-        id: 1,
-        type: 'DIRECT',
-        name: '김민지',
-        profileImage: '/images/user1.jpg',
-        lastMessage: '오늘 자료 확인해봤어?',
-        lastTime: '15:24',
-        unreadCount: 2,
-        isPinned: true,
-    },
-    {
-        id: 2,
-        type: 'DIRECT',
-        name: '이준호',
-        profileImage: '/images/user2.jpg',
-        lastMessage: '내일 회의 몇 시였지?',
-        lastTime: '13:10',
-        unreadCount: 0,
-        isPinned: false,
-    },
-    {
-        id: 3,
-        type: 'GROUP',
-        name: '스터디 팀 A',
-        profileImage: '/images/group1.jpg',
-        lastMessage: '오늘 몇 시에 시작할까요?',
-        lastTime: '11:12',
-        unreadCount: 3,
-        isPinned: true,
-    },
-    // ... 더미 데이터 추가
-];
+import ChatRoom from './ChatRoom';
+import { FaBell, FaChevronDown } from 'react-icons/fa';
+import searchIcon from '../../icons/search.png'; // ✅ 아이콘 이미지 import
+import user1 from '../../icons/user1.png';
+import user2 from '../../icons/user2.png';
+import user3 from '../../icons/user3.png';
 
 const Chat = () => {
-    const [category, setCategory] = useState('ALL');
+    const onlineUsers = [
+        { id: 1, name: '유저1', avatar: user1 },
+        { id: 2, name: '유저2', avatar: user2 },
+    ];
 
-    const filteredRooms = dummyChatRooms.filter((room) => {
-        if (category === 'ALL') return true;
-        return room.type === category;
-    });
+    const chatRooms = [
+        {
+            id: 1,
+            name: 'user1',
+            avatar: user1,
+            lastMessage: '오늘 자료 확인해봤어?',
+            time: '5분 전',
+            unread: 2,
+        },
+        {
+            id: 2,
+            name: 'user2',
+            avatar: user2,
+            lastMessage: '회의 일정 확인해줘.',
+            time: '10분 전',
+            unread: 0,
+        },
+        {
+            id: 3,
+            name: 'user3',
+            avatar: user3,
+            lastMessage: '오늘 몇 시에 시작할까요?',
+            time: '1시간 전',
+            unread: 3,
+        },
+    ];
 
     return (
-        <div className="chatroom-container">
-            <div className="chatroom-header">
-                <h2>채팅</h2>
-                <button className="create-btn">+ 채팅방 생성</button>
+        <div className="chat-container">
+            <div className="chat-topbar">
+                <div className="chat-search-wrapper">
+                    <img src={searchIcon} className="chat-search-icon" alt="search" />
+                    <input className="chat-search" placeholder="검색" />
+                </div>
+                <FaBell className="chat-icon" />
+                <div className="chat-profile">
+                    <img src={user3} className="chat-avatar" alt="user3" />
+                    <span className="chat-name">홍길동</span>
+                    <FaChevronDown className="chat-icon small" />
+                </div>
             </div>
 
-            <div className="chatroom-tabs">
-                <button onClick={() => setCategory('ALL')} className={category === 'ALL' ? 'active' : ''}>전체</button>
-                <button onClick={() => setCategory('DIRECT')} className={category === 'DIRECT' ? 'active' : ''}>1:1</button>
-                <button onClick={() => setCategory('GROUP')} className={category === 'GROUP' ? 'active' : ''}>그룹</button>
-            </div>
-
-            <div className="chatroom-list">
-                {filteredRooms.map((room) => (
-                    <div key={room.id} className="chatroom-card">
-                        <img className="avatar" src={room.profileImage} alt="profile" />
-                        <div className="chatroom-info">
-                            <div className="chatroom-top">
-                                <span className="chatroom-name">{room.name}</span>
-                                <span className="chatroom-time">{room.lastTime}</span>
-                            </div>
-                            <div className="chatroom-bottom">
-                                <span className="chatroom-msg">{room.lastMessage}</span>
-                                {room.unreadCount > 0 && (
-                                    <span className="chatroom-unread">{room.unreadCount}</span>
-                                )}
-                            </div>
+            {/* 본문 영역 */}
+            <div className="chat-main">
+                {/* 좌측 사이드바 */}
+                <div className="chat-sidebar">
+                    <div className="online-now">
+                        <div className="online-header">
+                            <h4>Online Now</h4>
+                            <span className="online-count">{onlineUsers.length}</span>
                         </div>
-                        {room.isPinned && <span className="pin-icon">📌</span>}
+                        <div className="online-list">
+                            {onlineUsers.map(user => (
+                                <div key={user.id} className="online-user">
+                                    <img src={user.avatar} alt={user.name} />
+                                    <span className="green-dot" />
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                ))}
+
+                    <div className="chat-room-list">
+                        <h4>Messages</h4>
+                        {chatRooms.map(room => (
+                            <div key={room.id} className="chat-room-item wide">
+                                <img src={room.avatar} alt={room.name} />
+                                <div className="chat-room-info">
+                                    <div className="chat-room-top">
+                                        <span className="chat-room-name">{room.name}</span>
+                                        <span className="chat-room-time">{room.time}</span>
+                                    </div>
+                                    <div className="chat-room-bottom">
+                                        <span className="chat-room-message">{room.lastMessage}</span>
+                                        {room.unread > 0 && (
+                                            <span className="chat-room-badge">{room.unread}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 우측 채팅 */}
+                <ChatRoom />
             </div>
         </div>
     );
+
 };
 
 export default Chat;

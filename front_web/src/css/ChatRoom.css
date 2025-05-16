@@ -1,0 +1,158 @@
+.chat-room {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #f7f8fa;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ─── 상단 상대 정보 ───────────── */
+.chat-room-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background-color: white;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.chat-room-header img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.chat-room-header-info h4 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0;
+    color: #111;
+}
+
+.chat-room-header-info .status {
+    font-size: 12px;
+    color: #2ecc71;
+}
+
+/* ─── 메시지 영역 ───────────── */
+.chat-room-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* 메시지 줄 */
+.message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.message-row.sent {
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+}
+
+.message-row.received {
+    justify-content: flex-start;
+}
+
+/* 프로필 이미지 */
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* 말풍선 */
+.message-bubble {
+    max-width: 60%;
+    background-color: #fff;
+    padding: 10px 14px;
+    border-radius: 16px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    word-break: break-word;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.message-row.sent .message-bubble {
+    background-color: #dbeafe;
+    align-items: flex-end;
+}
+
+.message-row.received .message-bubble {
+    background-color: #ffffff;
+    border: 1px solid #e5e5e5;
+    align-items: flex-start;
+}
+
+/* 닉네임 */
+.message-nickname {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+/* 내용 */
+.message-content {
+    font-size: 14px;
+    color: #222;
+    white-space: pre-wrap;
+}
+
+/* 시간 */
+.message-time {
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
+    align-self: flex-end;
+}
+
+/* ─── 입력창 ───────────── */
+.chat-room-input {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: white;
+    border-top: 1px solid #e5e5e5;
+}
+
+.chat-room-input input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    font-size: 14px;
+    margin: 0 10px;
+    background-color: #f9f9f9;
+    outline: none;
+}
+
+.input-icon {
+    font-size: 16px;
+    color: #666;
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.send-btn {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
