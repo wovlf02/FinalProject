@@ -9,12 +9,19 @@ import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +33,9 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     public Boolean checkUsername(UsernameCheckRequest request) {
         return !userRepository.existsByUsername(request.getUsername());
@@ -40,7 +50,7 @@ public class AuthService {
     }
 
     public String sendVerificationCode(EmailSendRequest request) {
-        String code = String.valueOf((int)(Math.random() * 900000) + 100000); // 6자리 랜덤 코드
+        String code = String.valueOf((int)(Math.random() * 900000) + 100000);
         redisTemplate.opsForValue().set("EMAIL:CODE:" + request.getEmail(), code, Duration.ofMinutes(3));
         mailService.sendVerificationCode(request.getEmail(), code, request.getType());
         return "인증코드가 이메일로 발송되었습니다.";
@@ -56,7 +66,10 @@ public class AuthService {
         redisTemplate.delete("EMAIL:CODE:" + request.getEmail());
     }
 
-    public void register(RegisterRequest request) {
+    /**
+     * 회원가입 (프로필 이미지 업로드 지원)
+     */
+    public void register(RegisterRequest request, MultipartFile profileImage) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new CustomException("이미 존재하는 아이디입니다. 다른 아이디를 선택해 주세요.");
         }
@@ -70,7 +83,25 @@ public class AuthService {
             throw new CustomException("유효하지 않은 전화번호 형식입니다.");
         }
 
-        // ✅ name 필드 포함!
+        // 프로필 이미지 업로드 처리
+        String profileImageUrl = null;
+        if (profileImage != null && !profileImage.isEmpty()) {
+            try {
+                Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                }
+                String originalFileName = profileImage.getOriginalFilename();
+                String fileName = UUID.randomUUID() + "_" + originalFileName;
+                Path filePath = uploadPath.resolve(fileName);
+                profileImage.transferTo(filePath.toFile());
+                profileImageUrl = "/uploads/" + fileName;
+            } catch (IOException e) {
+                e.printStackTrace(); // 실제 에러 로그 출력
+                throw new CustomException("프로필 이미지 업로드에 실패했습니다.");
+            }
+        }
+
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -79,9 +110,9 @@ public class AuthService {
                 .grade(request.getGrade())
                 .studyHabit(request.getStudyHabit())
                 .subjects(request.getSubjects())
-                .profileImageUrl(request.getProfileImageUrl())
                 .phone(phone)
-                .name(request.getName()) // <-- 반드시 포함
+                .name(request.getName())
+                .profileImageUrl(profileImageUrl)
                 .build();
 
         userRepository.save(user);
@@ -100,7 +131,6 @@ public class AuthService {
 
         redisTemplate.opsForValue().set("RT:" + user.getId(), refreshToken, Duration.ofDays(14));
 
-        // ✅ LoginResponse에 모든 정보 포함!
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)

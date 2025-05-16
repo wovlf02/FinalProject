@@ -41,8 +41,8 @@ public class RegisterRequest {
     @NotBlank(message = "공부 습관은 필수 입력 값입니다.")
     private String studyHabit;
 
-    private String profileImageUrl; // 선택 항목
-
     @Pattern(regexp = "^\\d{10,15}$", message = "전화번호는 숫자만 포함되어야 하며 10자리 이상 15자리 이하여야 합니다.")
-    private String phone; // ✅ 반드시 추가!
+    private String phone; // ✅ 필드 유지
+
+    // ❌ profileImageUrl 제거 (서버에서 생성 후 저장)
 }

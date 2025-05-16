@@ -83,3 +83,16 @@
     padding-top: 40px;
   }
 }
+.mypage-profile-img-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.mypage-profile-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e0e0e0;
+  background: #f4f4f4;
+}

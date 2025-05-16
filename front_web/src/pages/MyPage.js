@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import '../css/MyPage.css';
 
+const DEFAULT_PROFILE_IMG = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'; // 기본 이미지 URL
+
 const MyPage = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,10 +42,25 @@ const MyPage = () => {
 
   if (loading || !user) return <div className="mypage-container">불러오는 중...</div>;
 
+  // 프로필 이미지 경로 처리 (백엔드에서 http로 주면 그대로, 상대경로면 서버 주소 붙이기)
+  let profileImgSrc = DEFAULT_PROFILE_IMG;
+  if (user.profileImageUrl) {
+    profileImgSrc = user.profileImageUrl.startsWith('http')
+      ? user.profileImageUrl
+      : `http://localhost:8080${user.profileImageUrl}`;
+  }
+
   return (
     <div className="mypage-container">
       <h2 className="mypage-title">마이페이지</h2>
       <div className="mypage-info-card">
+        <div className="mypage-profile-img-row">
+          <img
+            src={profileImgSrc}
+            alt="프로필"
+            className="mypage-profile-img"
+          />
+        </div>
         <div className="mypage-row">
           <span className="mypage-label">이름</span>
           <span>{user.name}</span>
@@ -88,7 +105,6 @@ const MyPage = () => {
         )}
       </div>
       <div className="mypage-btn-row">
-        <button className="mypage-btn" onClick={handleChangePassword}>비밀번호 변경</button>
         <button className="mypage-btn logout" onClick={handleLogout}>로그아웃</button>
       </div>
     </div>

@@ -26,7 +26,11 @@ public class UserController {
             user.getUsername(),
             user.getNickname(),
             user.getName(),    // ✅ name
-            user.getEmail()    // ✅ email
+            user.getEmail(),
+            user.getProfileImageUrl(),  // ✅ profileImageUrl
+            user.getGrade(),   // ✅ grade
+            user.getStudyHabit(), // ✅ studyHabit
+            user.getCreatedAt().toString() // ✅ createdAt
         ));
     }
 }

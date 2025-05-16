@@ -13,6 +13,7 @@ const Register = () => {
   const [studyHabit, setStudyHabit] = useState('');
   const [nickname, setNickname] = useState('');
   const [subjects, setSubjects] = useState('');
+  const [profileImage, setProfileImage] = useState(null);
 
   const navigate = useNavigate();
 
@@ -35,20 +36,37 @@ const Register = () => {
 
     const phoneOnly = phone.replace(/[^0-9]/g, '');
 
-    const data = {
+    const formData = new FormData();
+
+    // ✅ JSON 형태로 request라는 이름으로 추가
+    const requestData = {
       username,
       password,
       email,
       name,
-      phone: phoneOnly || undefined,
-      grade: Number(grade),
+      phone: phoneOnly,
+      grade,
       studyHabit,
       nickname,
-      subjects: subjects.split(',').map(subject => subject.trim()).filter(Boolean),
+      subjects: subjects.split(',').map((s) => s.trim()),
     };
 
+    formData.append(
+      'request',
+      new Blob([JSON.stringify(requestData)], { type: 'application/json' })
+    );
+
+    // 프로필 이미지가 있다면 추가
+    if (profileImage) {
+      formData.append('profileImage', profileImage);
+    }
+
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/register', data);
+      const response = await axios.post(
+        'http://localhost:8080/api/auth/register',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
 
       if (response.status === 200) {
         alert('회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.');
@@ -63,6 +81,15 @@ const Register = () => {
     <div className="register-container">
       <h1 className="register-title">회원가입</h1>
       <form className="register-form" onSubmit={handleRegister}>
+        <div className="register-row">
+          <label>프로필 이미지</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setProfileImage(e.target.files[0])}
+          />
+        </div>
+
         <div className="register-row">
           <label>아이디<span>*</span></label>
           <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="아이디" />
