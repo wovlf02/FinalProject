@@ -7,16 +7,16 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 친구 신고 엔티티 (MySQL 기반)
+ * 친구 신고 엔티티 (Oracle Express 기반)
  */
 @Entity
 @Table(
-        name = "friend_report", // ✅ 테이블 소문자화
-        uniqueConstraints = @UniqueConstraint(name = "uk_reporter_reported", columnNames = {"reporter_id", "reported_id"}),
+        name = "FRIEND_REPORT",
+        uniqueConstraints = @UniqueConstraint(name = "UK_REPORTER_REPORTED", columnNames = {"REPORTER_ID", "REPORTED_ID"}),
         indexes = {
-                @Index(name = "idx_reporter", columnList = "reporter_id"),
-                @Index(name = "idx_reported", columnList = "reported_id"),
-                @Index(name = "idx_status", columnList = "status")
+                @Index(name = "IDX_REPORTER", columnList = "REPORTER_ID"),
+                @Index(name = "IDX_REPORTED", columnList = "REPORTED_ID"),
+                @Index(name = "IDX_STATUS", columnList = "STATUS")
         }
 )
 @Getter
@@ -27,60 +27,49 @@ import java.time.LocalDateTime;
 public class FriendReport {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 자동 증가 전략
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "friend_report_seq_generator")
+    @SequenceGenerator(
+            name = "friend_report_seq_generator",
+            sequenceName = "FRIEND_REPORT_SEQ",
+            allocationSize = 1
+    )
     private Long id;
 
-    /**
-     * 신고자
-     */
+    /** 신고자 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reporter_id", nullable = false)
+    @JoinColumn(name = "REPORTER_ID", nullable = false)
     private User reporter;
 
-    /**
-     * 신고 대상자
-     */
+    /** 신고 대상자 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reported_id", nullable = false)
+    @JoinColumn(name = "REPORTED_ID", nullable = false)
     private User reported;
 
-    /**
-     * 신고 사유
-     */
-    @Column(name = "reason", nullable = false, length = 500)
+    /** 신고 사유 */
+    @Column(name = "REASON", nullable = false, length = 500)
     private String reason;
 
-    /**
-     * 신고 시각
-     */
-    @Column(name = "reported_at", nullable = false, updatable = false)
+    /** 신고 시각 */
+    @Column(name = "REPORTED_AT", nullable = false, updatable = false)
     private LocalDateTime reportedAt;
 
-    /**
-     * 신고 상태
-     */
+    /** 신고 상태 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
+    @Column(name = "STATUS", nullable = false, length = 50)
     private FriendReportStatus status;
 
-    /**
-     * 관리자 처리자
-     */
+    /** 관리자 처리자 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "resolved_by")
+    @JoinColumn(name = "RESOLVED_BY")
     private User resolvedBy;
 
-    /**
-     * 삭제 여부
-     */
+    /** 삭제 여부 */
     @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "IS_DELETED", nullable = false)
     private boolean isDeleted = false;
 
-    /**
-     * 삭제 시각
-     */
-    @Column(name = "deleted_at")
+    /** 삭제 시각 */
+    @Column(name = "DELETED_AT")
     private LocalDateTime deletedAt;
 
     @PrePersist

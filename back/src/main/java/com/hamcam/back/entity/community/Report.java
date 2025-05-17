@@ -7,18 +7,18 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 신고 엔티티 (MySQL 기반)
+ * 신고 엔티티 (Oracle Express 기반)
  */
 @Entity
 @Table(
-        name = "report",
+        name = "REPORT",
         indexes = {
-                @Index(name = "idx_report_reporter", columnList = "reporter_id"),
-                @Index(name = "idx_report_post", columnList = "post_id"),
-                @Index(name = "idx_report_comment", columnList = "comment_id"),
-                @Index(name = "idx_report_reply", columnList = "reply_id"),
-                @Index(name = "idx_report_target_user", columnList = "target_user_id"),
-                @Index(name = "idx_report_status", columnList = "status")
+                @Index(name = "IDX_REPORT_REPORTER", columnList = "REPORTER_ID"),
+                @Index(name = "IDX_REPORT_POST", columnList = "POST_ID"),
+                @Index(name = "IDX_REPORT_COMMENT", columnList = "COMMENT_ID"),
+                @Index(name = "IDX_REPORT_REPLY", columnList = "REPLY_ID"),
+                @Index(name = "IDX_REPORT_TARGET_USER", columnList = "TARGET_USER_ID"),
+                @Index(name = "IDX_REPORT_STATUS", columnList = "STATUS")
         }
 )
 @Getter
@@ -29,37 +29,42 @@ import java.time.LocalDateTime;
 public class Report {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "report_seq_generator")
+    @SequenceGenerator(
+            name = "report_seq_generator",
+            sequenceName = "REPORT_SEQ",
+            allocationSize = 1
+    )
     private Long id;
 
-    @Column(name = "reason", nullable = false, length = 500)
+    @Column(name = "REASON", nullable = false, length = 500)
     private String reason;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
+    @Column(name = "STATUS", nullable = false, length = 50)
     private ReportStatus status;
 
-    @Column(name = "reported_at", nullable = false, updatable = false)
+    @Column(name = "REPORTED_AT", nullable = false, updatable = false)
     private LocalDateTime reportedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reporter_id", nullable = false)
+    @JoinColumn(name = "REPORTER_ID", nullable = false)
     private User reporter;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
+    @JoinColumn(name = "POST_ID")
     private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "comment_id")
+    @JoinColumn(name = "COMMENT_ID")
     private Comment comment;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reply_id")
+    @JoinColumn(name = "REPLY_ID")
     private Reply reply;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_user_id")
+    @JoinColumn(name = "TARGET_USER_ID")
     private User targetUser;
 
     @PrePersist
@@ -88,9 +93,6 @@ public class Report {
         return targetUser != null && post == null && comment == null && reply == null;
     }
 
-    /**
-     * 올바른 단일 대상이 설정되어 있는지 확인
-     */
     public boolean isValidTarget() {
         int count = 0;
         if (post != null) count++;

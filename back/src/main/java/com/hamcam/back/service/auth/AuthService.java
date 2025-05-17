@@ -1,15 +1,12 @@
 package com.hamcam.back.service.auth;
 
 import com.hamcam.back.dto.auth.request.*;
-import com.hamcam.back.dto.auth.response.LoginResponse;
-import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
-import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;

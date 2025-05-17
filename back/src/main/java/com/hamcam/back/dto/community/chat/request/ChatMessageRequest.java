@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.community.chat.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 /**
@@ -10,6 +11,7 @@ import lombok.Data;
  * </p>
  */
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ChatMessageRequest {
 
     /**

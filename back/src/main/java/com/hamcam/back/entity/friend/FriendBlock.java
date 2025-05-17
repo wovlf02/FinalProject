@@ -7,16 +7,16 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 친구 차단 엔티티 (MySQL 기반)
+ * 친구 차단 엔티티 (Oracle Express 기반)
  */
 @Entity
 @Table(
-        name = "friend_block", // ✅ 테이블명 소문자
-        uniqueConstraints = @UniqueConstraint(name = "uk_blocker_blocked", columnNames = {"blocker_id", "blocked_id"}),
+        name = "FRIEND_BLOCK",
+        uniqueConstraints = @UniqueConstraint(name = "UK_BLOCKER_BLOCKED", columnNames = {"BLOCKER_ID", "BLOCKED_ID"}),
         indexes = {
-                @Index(name = "idx_blocker", columnList = "blocker_id"),
-                @Index(name = "idx_blocked", columnList = "blocked_id"),
-                @Index(name = "idx_block_is_deleted", columnList = "is_deleted")
+                @Index(name = "IDX_BLOCKER", columnList = "BLOCKER_ID"),
+                @Index(name = "IDX_BLOCKED", columnList = "BLOCKED_ID"),
+                @Index(name = "IDX_BLOCK_IS_DELETED", columnList = "IS_DELETED")
         }
 )
 @Getter
@@ -27,40 +27,35 @@ import java.time.LocalDateTime;
 public class FriendBlock {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 전략
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "friend_block_seq_generator")
+    @SequenceGenerator(
+            name = "friend_block_seq_generator",
+            sequenceName = "FRIEND_BLOCK_SEQ",
+            allocationSize = 1
+    )
     private Long id;
 
-    /**
-     * 차단한 사용자
-     */
+    /** 차단한 사용자 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "blocker_id", nullable = false)
+    @JoinColumn(name = "BLOCKER_ID", nullable = false)
     private User blocker;
 
-    /**
-     * 차단당한 사용자
-     */
+    /** 차단당한 사용자 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "blocked_id", nullable = false)
+    @JoinColumn(name = "BLOCKED_ID", nullable = false)
     private User blocked;
 
-    /**
-     * 차단 시각
-     */
-    @Column(name = "blocked_at", nullable = false, updatable = false)
+    /** 차단 시각 */
+    @Column(name = "BLOCKED_AT", nullable = false, updatable = false)
     private LocalDateTime blockedAt;
 
-    /**
-     * 차단 해제 여부
-     */
+    /** 차단 해제 여부 */
     @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "IS_DELETED", nullable = false)
     private boolean isDeleted = false;
 
-    /**
-     * 차단 해제 시각
-     */
-    @Column(name = "unblocked_at")
+    /** 차단 해제 시각 */
+    @Column(name = "UNBLOCKED_AT")
     private LocalDateTime unblockedAt;
 
     @PrePersist
@@ -71,17 +66,11 @@ public class FriendBlock {
 
     // ===== 비즈니스 로직 =====
 
-    /**
-     * 차단 해제 처리
-     */
     public void unblock() {
         this.isDeleted = true;
         this.unblockedAt = LocalDateTime.now();
     }
 
-    /**
-     * 차단 복원 처리
-     */
     public void restore() {
         this.isDeleted = false;
         this.unblockedAt = null;

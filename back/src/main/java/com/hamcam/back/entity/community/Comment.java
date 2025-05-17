@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 게시글 댓글 엔티티 (MySQL 기반)
+ * 게시글 댓글 엔티티 (Oracle Express 기반)
  */
 @Entity
-@Table(name = "comments", // ✅ 소문자 테이블명
+@Table(name = "COMMENTS",
         indexes = {
-                @Index(name = "idx_comment_post", columnList = "post_id"),
-                @Index(name = "idx_comment_writer", columnList = "writer_id")
+                @Index(name = "IDX_COMMENT_POST", columnList = "POST_ID"),
+                @Index(name = "IDX_COMMENT_WRITER", columnList = "WRITER_ID")
         }
 )
 @Getter
@@ -26,34 +26,39 @@ import java.util.List;
 public class Comment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "comment_seq_generator")
+    @SequenceGenerator(
+            name = "comment_seq_generator",
+            sequenceName = "COMMENT_SEQ",
+            allocationSize = 1
+    )
     private Long id;
 
     /** 댓글 내용 */
-    @Column(name = "content", nullable = false, length = 1000)
+    @Column(name = "CONTENT", nullable = false, length = 1000)
     private String content;
 
     /** 댓글 작성자 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "writer_id", nullable = false)
+    @JoinColumn(name = "WRITER_ID", nullable = false)
     private User writer;
 
     /** 게시글 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
+    @JoinColumn(name = "POST_ID", nullable = false)
     private Post post;
 
     /** 생성일 */
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "CREATED_AT", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 수정일 */
-    @Column(name = "updated_at")
+    @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
 
     /** 좋아요 수 */
     @Builder.Default
-    @Column(name = "like_count", nullable = false)
+    @Column(name = "LIKE_COUNT", nullable = false)
     private int likeCount = 0;
 
     /** 좋아요 목록 */
@@ -68,11 +73,11 @@ public class Comment {
 
     /** 삭제 여부 (소프트 삭제) */
     @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "IS_DELETED", nullable = false)
     private boolean isDeleted = false;
 
     /** 삭제 시각 */
-    @Column(name = "deleted_at")
+    @Column(name = "DELETED_AT")
     private LocalDateTime deletedAt;
 
     @PrePersist

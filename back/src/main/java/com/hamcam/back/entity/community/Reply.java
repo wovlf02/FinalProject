@@ -9,16 +9,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 대댓글 엔티티 (MySQL 기반)
+ * 대댓글 엔티티 (Oracle Express 기반)
  */
 @Entity
 @Table(
-        name = "reply",
+        name = "REPLY",
         indexes = {
-                @Index(name = "idx_reply_post", columnList = "post_id"),
-                @Index(name = "idx_reply_comment", columnList = "comment_id"),
-                @Index(name = "idx_reply_writer", columnList = "writer_id"),
-                @Index(name = "idx_reply_is_deleted", columnList = "is_deleted")
+                @Index(name = "IDX_REPLY_POST", columnList = "POST_ID"),
+                @Index(name = "IDX_REPLY_COMMENT", columnList = "COMMENT_ID"),
+                @Index(name = "IDX_REPLY_WRITER", columnList = "WRITER_ID"),
+                @Index(name = "IDX_REPLY_IS_DELETED", columnList = "IS_DELETED")
         }
 )
 @Getter
@@ -29,33 +29,38 @@ import java.util.List;
 public class Reply {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 전략
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "reply_seq_generator")
+    @SequenceGenerator(
+            name = "reply_seq_generator",
+            sequenceName = "REPLY_SEQ",
+            allocationSize = 1
+    )
     private Long id;
 
-    @Lob // ✅ Oracle의 CLOB → MySQL에서는 TEXT로 매핑됨
-    @Column(name = "content", nullable = false)
+    @Lob
+    @Column(name = "CONTENT", nullable = false)
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "writer_id", nullable = false)
+    @JoinColumn(name = "WRITER_ID", nullable = false)
     private User writer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "comment_id", nullable = false)
+    @JoinColumn(name = "COMMENT_ID", nullable = false)
     private Comment comment;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
+    @JoinColumn(name = "POST_ID", nullable = false)
     private Post post;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "CREATED_AT", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
 
     @Builder.Default
-    @Column(name = "like_count", nullable = false)
+    @Column(name = "LIKE_COUNT", nullable = false)
     private int likeCount = 0;
 
     @Builder.Default
@@ -63,10 +68,10 @@ public class Reply {
     private List<Like> likes = new ArrayList<>();
 
     @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "IS_DELETED", nullable = false)
     private boolean isDeleted = false;
 
-    @Column(name = "deleted_at")
+    @Column(name = "DELETED_AT")
     private LocalDateTime deletedAt;
 
     @PrePersist

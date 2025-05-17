@@ -11,9 +11,9 @@ import java.util.List;
 
 /**
  * 채팅방 상세 정보 응답 DTO
- * <p>
- * 채팅방에 대한 전체 정보를 반환합니다. (참여자 목록, 생성 시각, 참조 ID 등 포함)
- * </p>
+ *
+ * 채팅방에 대한 전체 정보를 반환합니다.
+ * - 채팅방 이름, 참여자 수, 이미지, 생성일 포함
  */
 @Getter
 @Builder
@@ -37,10 +37,7 @@ public class ChatRoomResponse {
      */
     private String roomType;
 
-    /**
-     * 연동된 외부 자원 ID (게시글, 그룹 등)
-     */
-    private Long referenceId;
+    private int participantCount;
 
     /**
      * 채팅방 생성 시각
@@ -48,7 +45,19 @@ public class ChatRoomResponse {
     private LocalDateTime createdAt;
 
     /**
+     * 채팅방 대표 이미지 URL (optional)
+     */
+    private String representativeImageUrl;
+
+    /**
      * 참여 중인 사용자 정보 목록
      */
     private List<ChatParticipantDto> participants;
+
+    /**
+     * 참여자 수 (프론트 최적화용)
+     */
+    public int getParticipantCount() {
+        return participants != null ? participants.size() : 0;
+    }
 }

@@ -1,18 +1,13 @@
 package com.hamcam.back.controller.auth;
 
 import com.hamcam.back.dto.auth.request.*;
-import com.hamcam.back.dto.auth.response.LoginResponse;
-import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.response.ApiResponse;
-import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 

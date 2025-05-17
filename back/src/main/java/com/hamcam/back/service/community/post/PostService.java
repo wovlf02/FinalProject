@@ -167,4 +167,12 @@ public class PostService {
                 .collect(Collectors.toList());
         return new FavoritePostListResponse(posts);
     }
+
+    public void increaseViewCount(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        post.incrementViewCount(); // 또는 post.setViewCount(post.getViewCount() + 1);
+        postRepository.save(post);
+    }
+
 }

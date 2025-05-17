@@ -1,7 +1,6 @@
 package com.hamcam.back.config.auth;
 
 import com.hamcam.back.repository.auth.UserRepository;
-import com.hamcam.back.security.auth.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,11 +53,19 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/ws/**", "/topic/**", "/app/**", // WebSocket
-                                "/uploads/**",                    // ✅ 업로드된 이미지 허용
-                                "/api/**"                         // API 엔드포인트 허용
-                        ).permitAll()
+                        // ✅ WebSocket 관련 경로 허용 (handshake 포함)
+                        .requestMatchers("/ws/**").permitAll()
+
+                        // ✅ 업로드된 이미지/파일 열람 허용
+                        .requestMatchers("/uploads/**").permitAll()
+
+                        // ✅ 로그인/회원가입/인증 없이 접근 가능한 auth API
+                        .requestMatchers("/api/**").permitAll()
+
+                        // ✅ 채팅방 메시지 조회 및 업로드 허용 (메시지 초기 조회, 파일 전송 등)
+                        .requestMatchers("/chat/**", "/chat/upload").permitAll()
+
+                        // 🔒 그 외는 인증 필요
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -68,7 +75,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

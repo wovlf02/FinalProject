@@ -1,6 +1,5 @@
 package com.hamcam.back.dto.community.post.response;
 
-import com.hamcam.back.entity.community.Attachment;
 import com.hamcam.back.entity.community.Post;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

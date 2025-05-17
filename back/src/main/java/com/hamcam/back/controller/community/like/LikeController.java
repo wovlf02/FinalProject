@@ -24,18 +24,14 @@ public class LikeController {
 
     // ===================== 게시글 =====================
 
-    /** 게시글 좋아요 추가 */
-    @PostMapping("/posts/{postId}")
-    public ResponseEntity<MessageResponse> likePost(@PathVariable Long postId) {
-        likeService.likePost(postId);
-        return ResponseEntity.ok(new MessageResponse("게시글에 좋아요를 눌렀습니다."));
-    }
-
-    /** 게시글 좋아요 취소 */
-    @DeleteMapping("/posts/{postId}")
-    public ResponseEntity<MessageResponse> unlikePost(@PathVariable Long postId) {
-        likeService.unlikePost(postId);
-        return ResponseEntity.ok(new MessageResponse("게시글 좋아요를 취소했습니다."));
+    /** 게시글 좋아요 토글 */
+    @PostMapping("/posts/{postId}/toggle")
+    public ResponseEntity<MessageResponse> togglePostLike(@PathVariable Long postId) {
+        boolean liked = likeService.togglePostLike(postId);
+        return ResponseEntity.ok(new MessageResponse(
+                liked ? "게시글에 좋아요를 눌렀습니다." : "게시글 좋아요를 취소했습니다.",
+                liked
+        ));
     }
 
     /** 게시글 좋아요 수 조회 */
@@ -52,18 +48,14 @@ public class LikeController {
 
     // ===================== 댓글 =====================
 
-    /** 댓글 좋아요 추가 */
-    @PostMapping("/comments/{commentId}")
-    public ResponseEntity<MessageResponse> likeComment(@PathVariable Long commentId) {
-        likeService.likeComment(commentId);
-        return ResponseEntity.ok(new MessageResponse("댓글에 좋아요를 눌렀습니다."));
-    }
-
-    /** 댓글 좋아요 취소 */
-    @DeleteMapping("/comments/{commentId}")
-    public ResponseEntity<MessageResponse> unlikeComment(@PathVariable Long commentId) {
-        likeService.unlikeComment(commentId);
-        return ResponseEntity.ok(new MessageResponse("댓글 좋아요를 취소했습니다."));
+    /** 댓글 좋아요 토글 */
+    @PostMapping("/comments/{commentId}/toggle")
+    public ResponseEntity<MessageResponse> toggleCommentLike(@PathVariable Long commentId) {
+        boolean liked = likeService.toggleCommentLike(commentId);
+        return ResponseEntity.ok(new MessageResponse(
+                liked ? "댓글에 좋아요를 눌렀습니다." : "댓글 좋아요를 취소했습니다.",
+                liked
+        ));
     }
 
     /** 댓글 좋아요 수 조회 */
@@ -80,18 +72,14 @@ public class LikeController {
 
     // ===================== 대댓글 =====================
 
-    /** 대댓글 좋아요 추가 */
-    @PostMapping("/replies/{replyId}")
-    public ResponseEntity<MessageResponse> likeReply(@PathVariable Long replyId) {
-        likeService.likeReply(replyId);
-        return ResponseEntity.ok(new MessageResponse("대댓글에 좋아요를 눌렀습니다."));
-    }
-
-    /** 대댓글 좋아요 취소 */
-    @DeleteMapping("/replies/{replyId}")
-    public ResponseEntity<MessageResponse> unlikeReply(@PathVariable Long replyId) {
-        likeService.unlikeReply(replyId);
-        return ResponseEntity.ok(new MessageResponse("대댓글 좋아요를 취소했습니다."));
+    /** 대댓글 좋아요 토글 */
+    @PostMapping("/replies/{replyId}/toggle")
+    public ResponseEntity<MessageResponse> toggleReplyLike(@PathVariable Long replyId) {
+        boolean liked = likeService.toggleReplyLike(replyId);
+        return ResponseEntity.ok(new MessageResponse(
+                liked ? "대댓글에 좋아요를 눌렀습니다." : "대댓글 좋아요를 취소했습니다.",
+                liked
+        ));
     }
 
     /** 대댓글 좋아요 수 조회 */

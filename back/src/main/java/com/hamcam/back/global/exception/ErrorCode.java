@@ -42,6 +42,7 @@ public enum ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "E4043", "해당 게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E4044", "해당 댓글을 찾을 수 없습니다."),
     REPLY_NOT_FOUND(HttpStatus.NOT_FOUND, "E4045", "해당 대댓글이 존재하지 않습니다."),
+    UNIVERSITY_NOT_FOUND(HttpStatus.NOT_FOUND, "E4046", "해당 대학교 정보를 찾을 수 없습니다."),
 
     // 409 Conflict
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "E4091", "이미 존재하는 아이디입니다."),

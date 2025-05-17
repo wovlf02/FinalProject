@@ -6,18 +6,15 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * 게시글/댓글/대댓글 차단 엔티티 (MySQL 기반)
- */
 @Entity
 @Table(
-        name = "blocks", // ✅ MySQL에서는 소문자 테이블명 선호
+        name = "BLOCKS",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_block_user_post_comment_reply",
-                columnNames = {"user_id", "post_id", "comment_id", "reply_id"}
+                name = "UK_BLOCK_USER_POST_COMMENT_REPLY",
+                columnNames = {"USER_ID", "POST_ID", "COMMENT_ID", "REPLY_ID"}
         ),
         indexes = {
-                @Index(name = "idx_block_user", columnList = "user_id")
+                @Index(name = "IDX_BLOCK_USER", columnList = "USER_ID")
         }
 )
 @Getter
@@ -28,40 +25,45 @@ import java.time.LocalDateTime;
 public class Block {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "block_seq_generator")
+    @SequenceGenerator(
+            name = "block_seq_generator",
+            sequenceName = "BLOCK_SEQ",
+            allocationSize = 1
+    )
     private Long id;
 
     /** 차단한 사용자 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "USER_ID", nullable = false)
     private User user;
 
     /** 차단 대상: 게시글 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
+    @JoinColumn(name = "POST_ID")
     private Post post;
 
     /** 차단 대상: 댓글 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "comment_id")
+    @JoinColumn(name = "COMMENT_ID")
     private Comment comment;
 
     /** 차단 대상: 대댓글 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reply_id")
+    @JoinColumn(name = "REPLY_ID")
     private Reply reply;
 
     /** 차단 시각 */
-    @Column(name = "blocked_at", nullable = false, updatable = false)
+    @Column(name = "BLOCKED_AT", nullable = false, updatable = false)
     private LocalDateTime blockedAt;
 
     /** 논리 삭제 여부 */
     @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "IS_DELETED", nullable = false)
     private boolean isDeleted = false;
 
     /** 삭제 시각 */
-    @Column(name = "deleted_at")
+    @Column(name = "DELETED_AT")
     private LocalDateTime deletedAt;
 
     @PrePersist
@@ -69,25 +71,16 @@ public class Block {
         this.blockedAt = LocalDateTime.now();
     }
 
-    /**
-     * 소프트 삭제 처리
-     */
     public void softDelete() {
         this.isDeleted = true;
         this.deletedAt = LocalDateTime.now();
     }
 
-    /**
-     * 차단 복원 처리
-     */
     public void restore() {
         this.isDeleted = false;
         this.deletedAt = null;
     }
 
-    /**
-     * 차단 유형 반환
-     */
     public BlockType getBlockType() {
         if (isPostBlock()) return BlockType.POST;
         if (isCommentBlock()) return BlockType.COMMENT;
@@ -107,9 +100,6 @@ public class Block {
         return reply != null && post == null && comment == null;
     }
 
-    /**
-     * 차단 객체 유효성 검사 (1개 대상만 있을 때 유효)
-     */
     public boolean isInvalid() {
         int count = 0;
         if (post != null) count++;

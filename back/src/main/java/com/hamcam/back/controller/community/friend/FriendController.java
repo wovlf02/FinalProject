@@ -9,7 +9,6 @@ import com.hamcam.back.dto.community.friend.response.FriendRequestListResponse;
 import com.hamcam.back.dto.community.friend.response.FriendSearchResponse;
 import com.hamcam.back.dto.community.friend.response.BlockedFriendListResponse;
 import com.hamcam.back.dto.community.report.request.ReportRequest;
-import com.hamcam.back.service.community.friend.FriendReportService;
 import com.hamcam.back.service.community.friend.FriendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

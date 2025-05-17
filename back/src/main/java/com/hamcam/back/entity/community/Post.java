@@ -9,14 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 커뮤니티 게시글 엔티티 (MySQL 기반)
+ * 커뮤니티 게시글 엔티티 (Oracle Express 기반)
  */
 @Entity
-@Table(name = "post", // ✅ 테이블명 소문자
+@Table(name = "POST",
         indexes = {
-                @Index(name = "idx_post_writer", columnList = "writer_id"),
-                @Index(name = "idx_post_created", columnList = "created_at"),
-                @Index(name = "idx_post_is_deleted", columnList = "is_deleted")
+                @Index(name = "IDX_POST_WRITER", columnList = "WRITER_ID"),
+                @Index(name = "IDX_POST_CREATED", columnList = "CREATED_AT"),
+                @Index(name = "IDX_POST_IS_DELETED", columnList = "IS_DELETED")
         }
 )
 @Getter
@@ -27,39 +27,45 @@ import java.util.List;
 public class Post {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "post_seq_generator")
+    @SequenceGenerator(
+            name = "post_seq_generator",
+            sequenceName = "POST_SEQ",
+            allocationSize = 1
+    )
     private Long id;
 
-    @Column(name = "title", nullable = false, length = 200)
+    @Column(name = "TITLE", nullable = false, length = 200)
     private String title;
 
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    @Lob // Oracle에서는 TEXT 대신 CLOB
+    @Column(name = "CONTENT", nullable = false)
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "writer_id", nullable = false)
+    @JoinColumn(name = "WRITER_ID", nullable = false)
     private User writer;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "CREATED_AT", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
 
-    @Column(name = "like_count", nullable = false)
+    @Column(name = "LIKE_COUNT", nullable = false)
     private int likeCount;
 
-    @Column(name = "view_count", nullable = false)
+    @Column(name = "VIEW_COUNT", nullable = false)
     private int viewCount;
 
-    @Column(name = "comment_count", nullable = false)
+    @Column(name = "COMMENT_COUNT", nullable = false)
     private int commentCount;
 
     @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "IS_DELETED", nullable = false)
     private boolean isDeleted = false;
 
-    @Column(name = "deleted_at")
+    @Column(name = "DELETED_AT")
     private LocalDateTime deletedAt;
 
     // ===== 연관관계 =====

@@ -4,6 +4,7 @@ import com.hamcam.back.dto.community.chat.response.ChatFilePreviewResponse;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
+import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.chat.ChatRoom;
 import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
@@ -115,7 +116,7 @@ public class ChatAttachmentService {
         ChatMessage message = ChatMessage.builder()
                 .chatRoom(room)
                 .sender(sender) // ✅ 인증된 사용자로 설정
-                .type("FILE")
+                .type(ChatMessageType.FILE) // ✅ enum 사용
                 .content(originalFilename)
                 .storedFileName(storedFilename)
                 .sentAt(LocalDateTime.now())
@@ -153,11 +154,14 @@ public class ChatAttachmentService {
                 .roomId(message.getChatRoom().getId())
                 .senderId(sender.getId())
                 .content(message.getContent())
-                .type(message.getType())
+                .type(message.getType().name()) // ✅ enum → 문자열
                 .storedFileName(message.getStoredFileName())
                 .sentAt(message.getSentAt())
-                .profileUrl(sender.getProfileImageUrl()) // null 가능성 유의
+                .profileUrl(
+                        sender.getProfileImageUrl() != null ? sender.getProfileImageUrl() : ""
+                ) // ✅ null-safe 처리 (프론트가 빈 문자열 처리 가능하도록)
                 .nickname(sender.getNickname())
                 .build();
     }
+
 }

@@ -5,14 +5,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * 채팅 메시지 엔티티 (TEXT, IMAGE, FILE 지원)
- */
 @Entity
-@Table(name = "chat_message",
+@Table(name = "CHAT_MESSAGE",
         indexes = {
-                @Index(name = "idx_chat_room_sent_at", columnList = "chat_room_id, sent_at")
+                @Index(name = "IDX_CHAT_ROOM_SENT_AT", columnList = "CHAT_ROOM_ID, SENT_AT")
         }
 )
 @Getter
@@ -23,62 +22,49 @@ import java.time.LocalDateTime;
 public class ChatMessage {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "chat_message_seq_generator")
+    @SequenceGenerator(
+            name = "chat_message_seq_generator",
+            sequenceName = "CHAT_MESSAGE_SEQ",
+            allocationSize = 1
+    )
     private Long id;
 
-    /**
-     * 소속 채팅방
-     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chat_room_id", nullable = false)
+    @JoinColumn(name = "CHAT_ROOM_ID", nullable = false)
     private ChatRoom chatRoom;
 
-    /**
-     * 메시지 전송자
-     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", nullable = false)
+    @JoinColumn(name = "SENDER_ID", nullable = false)
     private User sender;
 
-    /**
-     * 메시지 내용 (TEXT만 필수)
-     */
-    @Column(length = 2000)
+    @Column(name = "CONTENT", length = 2000)
     private String content;
 
-    /**
-     * 메시지 타입 (TEXT, IMAGE, FILE)
-     */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column(name = "TYPE", nullable = false, length = 50)
     private ChatMessageType type;
 
-    /**
-     * 저장된 첨부파일명
-     */
-    @Column(name = "stored_file_name", length = 500)
+    @Column(name = "STORED_FILE_NAME", length = 500)
     private String storedFileName;
 
-    /**
-     * 첨부파일 MIME 타입
-     */
-    @Column(name = "content_type", length = 100)
+    @Column(name = "CONTENT_TYPE", length = 100)
     private String contentType;
 
-    /**
-     * 전송 시각
-     */
-    @Column(name = "sent_at", nullable = false, updatable = false)
+    @Column(name = "SENT_AT", nullable = false, updatable = false)
     private LocalDateTime sentAt;
 
-    // ===== 콜백 =====
+    /**
+     * 해당 메시지를 읽은 사용자 목록
+     */
+    @Builder.Default
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatRead> reads = new ArrayList<>();
 
     @PrePersist
     protected void onSend() {
         this.sentAt = LocalDateTime.now();
     }
-
-    // ===== 유틸 =====
 
     public boolean isFileMessage() {
         return type == ChatMessageType.IMAGE || type == ChatMessageType.FILE;

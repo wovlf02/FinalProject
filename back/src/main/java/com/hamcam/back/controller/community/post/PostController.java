@@ -166,4 +166,14 @@ public class PostController {
     public ResponseEntity<FavoritePostListResponse> getFavoritePosts() {
         return ResponseEntity.ok(postService.getFavoritePosts());
     }
+
+    /**
+     * 게시글 조회수 증가
+     */
+    @PostMapping("/{postId}/view")
+    public ResponseEntity<MessageResponse> increaseViewCount(@PathVariable Long postId) {
+        postService.increaseViewCount(postId);
+        return ResponseEntity.ok(new MessageResponse("조회수가 증가되었습니다."));
+    }
+
 }

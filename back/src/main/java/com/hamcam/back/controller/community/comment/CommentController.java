@@ -4,15 +4,11 @@ import com.hamcam.back.dto.community.comment.request.CommentCreateRequest;
 import com.hamcam.back.dto.community.comment.request.CommentUpdateRequest;
 import com.hamcam.back.dto.community.comment.response.CommentListResponse;
 import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.dto.community.comment.response.CommentResponse;
 import com.hamcam.back.dto.community.reply.request.ReplyCreateRequest;
 import com.hamcam.back.service.community.comment.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/community")

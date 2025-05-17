@@ -30,11 +30,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable
     );
 
-    Page<Post> findAll(Pageable pageable); // ✅ OK
-
+    /**
+     * 전체 게시글 조회 (페이징)
+     */
+    Page<Post> findAll(Pageable pageable);
 
     /**
-     * 인기 게시글 조회 (좋아요 수 + 조회수 합산 기준 내림차순 정렬)
+     * 인기 게시글 조회 (좋아요 수 + 조회수 기준 내림차순)
      */
     @Query("SELECT p FROM Post p ORDER BY (p.likeCount + p.viewCount) DESC")
     Page<Post> findPopularPosts(Pageable pageable);
@@ -50,20 +52,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     """)
     Page<Object[]> getUserPostRanking(Pageable pageable);
 
-
+    /**
+     * 카테고리 없이 키워드 및 좋아요 수로 필터링된 게시글 검색 (Oracle 호환)
+     */
     @Query("""
-    SELECT p FROM Post p
-    WHERE 
-        (:keyword IS NULL OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%')) 
-        OR LOWER(p.content) LIKE LOWER(CONCAT('%', :keyword, '%')))
-        AND p.likeCount >= :minLikes
-    ORDER BY p.createdAt DESC
-""")
+        SELECT p FROM Post p
+        WHERE 
+            (:keyword IS NULL OR p.title LIKE CONCAT('%', :keyword, '%') 
+             OR p.content LIKE CONCAT('%', :keyword, '%'))
+            AND p.likeCount >= :minLikes
+        ORDER BY p.createdAt DESC
+    """)
     Page<Post> searchFilteredPostsWithoutCategory(
             @Param("keyword") String keyword,
             @Param("minLikes") int minLikes,
             Pageable pageable
     );
-
-
 }

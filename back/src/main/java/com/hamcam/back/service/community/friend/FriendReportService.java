@@ -1,10 +1,6 @@
 package com.hamcam.back.service.community.friend;
 
-import com.hamcam.back.dto.community.report.request.ReportRequest;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.community.ReportStatus;
-import com.hamcam.back.entity.friend.FriendReport;
-import com.hamcam.back.entity.friend.FriendReportStatus;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.friend.FriendReportRepository;
@@ -13,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 /**
  * 친구 및 일반 사용자 신고 서비스

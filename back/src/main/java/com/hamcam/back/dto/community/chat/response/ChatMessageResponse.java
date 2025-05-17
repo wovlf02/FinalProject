@@ -58,4 +58,9 @@ public class ChatMessageResponse {
      * 메시지 전송 시각
      */
     private LocalDateTime sentAt;
+
+    /**
+     * ✅ 아직 이 메시지를 읽지 않은 참여자 수
+     */
+    private int unreadCount;
 }
