@@ -34,13 +34,6 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false, name = "email_verified")
-    @Builder.Default
-    private boolean emailVerified = false;
-
-    @Column(name = "refresh_token")
-    private String refreshToken;
-
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
 
@@ -54,12 +47,6 @@ public class User {
 
     @Column(nullable = false, length = 50)
     private String studyHabit; // ✅ 공부 습관
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean isDeleted = false; // ✅ 소프트 삭제용
-
-    private LocalDateTime deletedAt;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -86,13 +73,5 @@ public class User {
      */
     public void updatePassword(String newPassword) {
         this.password = newPassword;
-    }
-
-    /**
-     * 소프트 삭제 처리
-     */
-    public void softDelete() {
-        this.isDeleted = true;
-        this.deletedAt = LocalDateTime.now();
     }
 }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 
 const PersonalStudy = () => {
     const [unitName, setUnitName] = useState('');
@@ -17,7 +17,7 @@ const PersonalStudy = () => {
 
     const handleStart = () => {
         // 단원명, 공부시간(초)을 함께 전달
-        navigate('/study', { state: { initialTime: minutes * 60 + seconds, unitName } });
+        navigate('/study', {state: {initialTime: minutes * 60 + seconds, unitName}});
     };
 
     // 집중 메시지 토글
@@ -32,33 +32,45 @@ const PersonalStudy = () => {
     };
 
     return (
-        <div style={{ padding: '2rem', textAlign: 'center', maxWidth: 400, margin: '0 auto' }}>
+        <div style={{padding: '2rem', textAlign: 'center', maxWidth: 400, margin: '0 auto'}}>
             <h1>개인 공부 설정</h1>
-            <div style={{ marginBottom: '1.5rem', color: '#d32f2f', fontWeight: 'bold', fontSize: '1.1rem' }}>
+            <div style={{marginBottom: '1.5rem', color: '#d32f2f', fontWeight: 'bold', fontSize: '1.1rem'}}>
                 {warningMsg}
             </div>
-            <div style={{ marginBottom: '1rem' }}>
+            <div style={{marginBottom: '1rem'}}>
                 <label>
-                    <span style={{ display: 'block', marginBottom: '0.5rem' }}>단원명:</span>
+                    <span style={{display: 'block', marginBottom: '0.5rem'}}>단원명:</span>
                     <input
                         type="text"
                         value={unitName}
                         onChange={e => setUnitName(e.target.value)}
                         placeholder="예: 3단원 함수"
-                        style={{ width: '90%', padding: '8px', fontSize: '1rem', borderRadius: '5px', border: '1px solid #ccc' }}
+                        style={{
+                            width: '90%',
+                            padding: '8px',
+                            fontSize: '1rem',
+                            borderRadius: '5px',
+                            border: '1px solid #ccc'
+                        }}
                     />
                 </label>
             </div>
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{marginBottom: '1.5rem'}}>
                 <label>
-                    <span style={{ display: 'block', marginBottom: '0.5rem' }}>학습 시간:</span>
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                    <span style={{display: 'block', marginBottom: '0.5rem'}}>학습 시간:</span>
+                    <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8}}>
                         <input
                             type="number"
                             min="0"
                             value={minutes}
                             onChange={e => setMinutes(Number(e.target.value))}
-                            style={{ width: '60px', padding: '8px', fontSize: '1rem', borderRadius: '5px', border: '1px solid #ccc' }}
+                            style={{
+                                width: '60px',
+                                padding: '8px',
+                                fontSize: '1rem',
+                                borderRadius: '5px',
+                                border: '1px solid #ccc'
+                            }}
                         />
                         <span>분</span>
                         <input
@@ -67,7 +79,13 @@ const PersonalStudy = () => {
                             max="59"
                             value={seconds}
                             onChange={handleSecondsChange}
-                            style={{ width: '60px', padding: '8px', fontSize: '1rem', borderRadius: '5px', border: '1px solid #ccc' }}
+                            style={{
+                                width: '60px',
+                                padding: '8px',
+                                fontSize: '1rem',
+                                borderRadius: '5px',
+                                border: '1px solid #ccc'
+                            }}
                         />
                         <span>초</span>
                     </div>
@@ -106,7 +124,7 @@ const PersonalStudy = () => {
                 </button>
             </div>
             {showFocusMsg && (
-                <div style={{ marginTop: '1rem', color: '#388e3c', fontWeight: 'bold' }}>
+                <div style={{marginTop: '1rem', color: '#388e3c', fontWeight: 'bold'}}>
                     {focusMsg}
                 </div>
             )}

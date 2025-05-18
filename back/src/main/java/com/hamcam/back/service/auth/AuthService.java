@@ -1,27 +1,23 @@
 package com.hamcam.back.service.auth;
 
+import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.dto.auth.request.*;
 import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.config.auth.JwtProvider;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -33,9 +29,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    private final SecurityUtil securityUtil;
 
     public Boolean checkUsername(UsernameCheckRequest request) {
         return !userRepository.existsByUsername(request.getUsername());
@@ -50,7 +44,7 @@ public class AuthService {
     }
 
     public String sendVerificationCode(EmailSendRequest request) {
-        String code = String.valueOf((int)(Math.random() * 900000) + 100000);
+        String code = String.valueOf((int) (Math.random() * 900000) + 100000);
         redisTemplate.opsForValue().set("EMAIL:CODE:" + request.getEmail(), code, Duration.ofMinutes(3));
         mailService.sendVerificationCode(request.getEmail(), code, request.getType());
         return "인증코드가 이메일로 발송되었습니다.";
@@ -67,52 +61,34 @@ public class AuthService {
     }
 
     /**
-     * 회원가입 (프로필 이미지 업로드 지원)
+     * 회원가입
+     * - 프로필 이미지 저장은 Controller에서 처리 후, URL만 DTO로 전달됨
      */
-    public void register(RegisterRequest request, MultipartFile profileImage) {
+    public void register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new CustomException("이미 존재하는 아이디입니다. 다른 아이디를 선택해 주세요.");
         }
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomException("이미 존재하는 이메일입니다. 다른 이메일을 사용해 주세요.");
         }
 
-        String phone = request.getPhone() != null ? request.getPhone() : null;
-
+        String phone = request.getPhone();
         if (phone != null && !isValidPhone(phone)) {
             throw new CustomException("유효하지 않은 전화번호 형식입니다.");
-        }
-
-        // 프로필 이미지 업로드 처리
-        String profileImageUrl = null;
-        if (profileImage != null && !profileImage.isEmpty()) {
-            try {
-                Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-                if (!Files.exists(uploadPath)) {
-                    Files.createDirectories(uploadPath);
-                }
-                String originalFileName = profileImage.getOriginalFilename();
-                String fileName = UUID.randomUUID() + "_" + originalFileName;
-                Path filePath = uploadPath.resolve(fileName);
-                profileImage.transferTo(filePath.toFile());
-                profileImageUrl = "/uploads/" + fileName;
-            } catch (IOException e) {
-                e.printStackTrace(); // 실제 에러 로그 출력
-                throw new CustomException("프로필 이미지 업로드에 실패했습니다.");
-            }
         }
 
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
+                .name(request.getName())
                 .nickname(request.getNickname())
                 .grade(request.getGrade())
-                .studyHabit(request.getStudyHabit())
                 .subjects(request.getSubjects())
+                .studyHabit(request.getStudyHabit())
                 .phone(phone)
-                .name(request.getName())
-                .profileImageUrl(profileImageUrl)
+                .profileImageUrl(request.getProfileImageUrl()) // ✅ Controller에서 저장된 URL 사용
                 .build();
 
         userRepository.save(user);
@@ -197,28 +173,16 @@ public class AuthService {
         return sendVerificationCode(new EmailSendRequest(request.getEmail(), "reset-pw"));
     }
 
-    public Boolean verifyPasswordResetCode(EmailVerifyRequest request) {
-        return verifyCode(request);
-    }
+    public void updatePassword(UpdatePasswordRequest request) {
+        User user = securityUtil.getCurrentUser();
 
-    public void updatePassword(PasswordChangeRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new CustomException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
+        }
+
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
     }
 
-    public void withdraw(PasswordConfirmRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new CustomException("비밀번호가 일치하지 않습니다.");
-        }
-
-        user.softDelete();
-    }
-
-    // 전화번호 유효성 검사
     private boolean isValidPhone(String phone) {
         return phone.matches("^\\d{10,15}$");
     }

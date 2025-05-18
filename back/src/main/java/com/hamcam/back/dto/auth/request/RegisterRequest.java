@@ -44,5 +44,5 @@ public class RegisterRequest {
     @Pattern(regexp = "^\\d{10,15}$", message = "전화번호는 숫자만 포함되어야 하며 10자리 이상 15자리 이하여야 합니다.")
     private String phone; // ✅ 필드 유지
 
-    // ❌ profileImageUrl 제거 (서버에서 생성 후 저장)
+    private String profileImageUrl;
 }

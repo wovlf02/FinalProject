@@ -39,7 +39,7 @@ const Post = () => {
                     </button>
                 ))}
             </div>
-            <PostList posts={filteredPosts} setPosts={setPosts} />
+            <PostList posts={filteredPosts} setPosts={setPosts}/>
             {showModal && (
                 <PostModal
                     onClose={() => setShowModal(false)}

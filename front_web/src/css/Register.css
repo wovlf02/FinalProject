@@ -1,70 +1,73 @@
 .register-container {
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 32px 28px 24px 28px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 32px 28px 24px 28px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
 }
 
 .register-title {
-  text-align: center;
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 32px;
-  color: #333;
-  letter-spacing: 2px;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 32px;
+    color: #333;
+    letter-spacing: 2px;
 }
 
 .register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
 }
 
 .register-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .register-row label {
-  font-size: 1.05rem;
-  color: #555;
-  margin-bottom: 2px;
-  font-weight: 500;
+    font-size: 1.05rem;
+    color: #555;
+    margin-bottom: 2px;
+    font-weight: 500;
 }
+
 .register-row label span {
-  color: #ff4d4f;
-  margin-left: 2px;
+    color: #ff4d4f;
+    margin-left: 2px;
 }
 
 .register-row input {
-  padding: 10px 12px;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.2s;
-  background: #f9f9f9;
+    padding: 10px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    background: #f9f9f9;
 }
+
 .register-row input:focus {
-  border-color: #4f8cff;
-  background: #fff;
+    border-color: #4f8cff;
+    background: #fff;
 }
 
 .register-btn {
-  margin-top: 18px;
-  padding: 12px 0;
-  background: linear-gradient(90deg, #4f8cff, #6fc3ff);
-  color: #fff;
-  font-size: 1.15rem;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
+    margin-top: 18px;
+    padding: 12px 0;
+    background: linear-gradient(90deg, #4f8cff, #6fc3ff);
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
 }
+
 .register-btn:hover {
-  background: linear-gradient(90deg, #357ae8, #4f8cff);
+    background: linear-gradient(90deg, #357ae8, #4f8cff);
 }

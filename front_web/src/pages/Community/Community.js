@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import '../../css/Community.css';
 import peopleIcon from '../../icons/people.png';
 import bellOffIcon from '../../icons/bell_off.png';
@@ -121,8 +121,6 @@ const Community = () => {
             isGroup: true,
         },
     ];
-
-
 
 
     const dummyPosts = [
@@ -263,13 +261,13 @@ const Community = () => {
                         return (
                             <div key={room.id} className="chatroom-card">
                                 <div className="chatroom-left">
-                                    <img src={profileSrc} alt="profile" className="chatroom-avatar" />
+                                    <img src={profileSrc} alt="profile" className="chatroom-avatar"/>
                                     <div className="chatroom-info">
                                         <div className="chatroom-name">
                                             {room.isGroup ? (
                                                 <>
                                                     {room.roomName}
-                                                    <img src={peopleIcon} alt="group" className="group-icon" />
+                                                    <img src={peopleIcon} alt="group" className="group-icon"/>
                                                     <span className="member-count">{room.memberCount}</span>
                                                 </>
                                             ) : (
@@ -310,7 +308,7 @@ const Community = () => {
                         <div key={post.id} className="community-post-card">
                             <div className="post-card-top">
                                 <div className="post-writer">
-                                    <img src={post.profileImage} alt="profile" className="post-profile" />
+                                    <img src={post.profileImage} alt="profile" className="post-profile"/>
                                     <span className="post-author">{post.name}</span>
                                 </div>
                                 <div className="post-top-meta">
@@ -339,7 +337,7 @@ const Community = () => {
                     {dummyFriends.map((friend) => (
                         <div key={friend.id} className="friend-card">
                             <div className="friend-content">
-                                <img src={friend.profileImage} alt="profile" className="friend-profile" />
+                                <img src={friend.profileImage} alt="profile" className="friend-profile"/>
                                 <div className="friend-info">
                                     <div className="friend-nickname">{friend.nickname}</div>
                                     <div className="friend-email">{friend.email}</div>

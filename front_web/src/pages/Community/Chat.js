@@ -1,7 +1,7 @@
 import React from 'react';
 import '../../css/Chat.css';
 import ChatRoom from './ChatRoom';
-import { FaBell, FaChevronDown } from 'react-icons/fa';
+import {FaBell, FaChevronDown} from 'react-icons/fa';
 import searchIcon from '../../icons/search.png'; // ✅ 아이콘 이미지 import
 import user1 from '../../icons/user1.png';
 import user2 from '../../icons/user2.png';
@@ -9,8 +9,8 @@ import user3 from '../../icons/user3.png';
 
 const Chat = () => {
     const onlineUsers = [
-        { id: 1, name: '유저1', avatar: user1 },
-        { id: 2, name: '유저2', avatar: user2 },
+        {id: 1, name: '유저1', avatar: user1},
+        {id: 2, name: '유저2', avatar: user2},
     ];
 
     const chatRooms = [
@@ -44,14 +44,14 @@ const Chat = () => {
         <div className="chat-container">
             <div className="chat-topbar">
                 <div className="chat-search-wrapper">
-                    <img src={searchIcon} className="chat-search-icon" alt="search" />
-                    <input className="chat-search" placeholder="검색" />
+                    <img src={searchIcon} className="chat-search-icon" alt="search"/>
+                    <input className="chat-search" placeholder="검색"/>
                 </div>
-                <FaBell className="chat-icon" />
+                <FaBell className="chat-icon"/>
                 <div className="chat-profile">
-                    <img src={user3} className="chat-avatar" alt="user3" />
+                    <img src={user3} className="chat-avatar" alt="user3"/>
                     <span className="chat-name">홍길동</span>
-                    <FaChevronDown className="chat-icon small" />
+                    <FaChevronDown className="chat-icon small"/>
                 </div>
             </div>
 
@@ -67,8 +67,8 @@ const Chat = () => {
                         <div className="online-list">
                             {onlineUsers.map(user => (
                                 <div key={user.id} className="online-user">
-                                    <img src={user.avatar} alt={user.name} />
-                                    <span className="green-dot" />
+                                    <img src={user.avatar} alt={user.name}/>
+                                    <span className="green-dot"/>
                                 </div>
                             ))}
                         </div>
@@ -78,7 +78,7 @@ const Chat = () => {
                         <h4>Messages</h4>
                         {chatRooms.map(room => (
                             <div key={room.id} className="chat-room-item wide">
-                                <img src={room.avatar} alt={room.name} />
+                                <img src={room.avatar} alt={room.name}/>
                                 <div className="chat-room-info">
                                     <div className="chat-room-top">
                                         <span className="chat-room-name">{room.name}</span>
@@ -97,7 +97,7 @@ const Chat = () => {
                 </div>
 
                 {/* 우측 채팅 */}
-                <ChatRoom />
+                <ChatRoom/>
             </div>
         </div>
     );

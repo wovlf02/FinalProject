@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import '../../css/ChatRoom.css';
-import { FaPaperPlane, FaSmile, FaPaperclip, FaMicrophone } from 'react-icons/fa';
+import {FaPaperPlane, FaSmile, FaPaperclip, FaMicrophone} from 'react-icons/fa';
 import user1 from '../../icons/user1.png';
 import user2 from '../../icons/user2.png';
 import user3 from '../../icons/user3.png';
@@ -62,14 +62,14 @@ const ChatRoom = () => {
     };
 
     useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+        scrollRef.current?.scrollIntoView({behavior: 'smooth'});
     }, [messages]);
 
     return (
         <div className="chat-room">
             {/* 상단 헤더 */}
             <div className="chat-room-header">
-                <img src={user2} alt="user2" />
+                <img src={user2} alt="user2"/>
                 <div className="chat-room-header-info">
                     <h4>user2 & user3</h4>
                     <span className="status">그룹채팅</span>
@@ -86,9 +86,9 @@ const ChatRoom = () => {
                             <div className="message-content-wrap">
                                 {/* 닉네임 + 프로필 라인 (윗줄) */}
                                 <div className={`message-meta ${isMe ? 'right' : 'left'}`}>
-                                    {!isMe && <img src={msg.senderImage} className="message-avatar" alt={msg.sender} />}
+                                    {!isMe && <img src={msg.senderImage} className="message-avatar" alt={msg.sender}/>}
                                     <span className="message-nickname">{msg.senderName}</span>
-                                    {isMe && <img src={msg.senderImage} className="message-avatar" alt="me" />}
+                                    {isMe && <img src={msg.senderImage} className="message-avatar" alt="me"/>}
                                 </div>
 
                                 {/* 말풍선 라인 (아랫줄) */}
@@ -100,15 +100,15 @@ const ChatRoom = () => {
                         </div>
                     );
                 })}
-                <div ref={scrollRef} />
+                <div ref={scrollRef}/>
             </div>
 
 
             {/* 입력창 */}
             <div className="chat-room-input">
-                <FaSmile className="input-icon" />
-                <FaPaperclip className="input-icon" />
-                <FaMicrophone className="input-icon" />
+                <FaSmile className="input-icon"/>
+                <FaPaperclip className="input-icon"/>
+                <FaMicrophone className="input-icon"/>
                 <input
                     type="text"
                     placeholder="메시지를 입력하세요"
@@ -117,7 +117,7 @@ const ChatRoom = () => {
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 />
                 <button onClick={handleSend} className="send-btn">
-                    <FaPaperPlane />
+                    <FaPaperPlane/>
                 </button>
             </div>
         </div>
