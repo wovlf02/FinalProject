@@ -1,12 +1,16 @@
 package com.hamcam.back.service.auth;
 
 import com.hamcam.back.dto.auth.request.*;
+import com.hamcam.back.dto.auth.response.LoginResponse;
+import com.hamcam.back.dto.auth.response.TokenResponse;
+import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
+import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -154,7 +158,7 @@ public class AuthService {
         return verifyCode(request);
     }
 
-    public void updatePassword(PasswordChangeRequest request) {
+    public void updatePassword(UpdatePasswordRequest request) {
         User user = securityUtil.getCurrentUser();
         user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
     }
@@ -165,7 +169,5 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException("비밀번호가 일치하지 않습니다.");
         }
-
-        user.softDelete();
     }
 }

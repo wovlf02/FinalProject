@@ -7,16 +7,16 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 친구 요청 엔티티 (Oracle Express 기반)
+ * 친구 요청 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(
-        name = "FRIEND_REQUEST",
-        uniqueConstraints = @UniqueConstraint(name = "UK_SENDER_RECEIVER", columnNames = {"SENDER_ID", "RECEIVER_ID"}),
+        name = "friend_request",
+        uniqueConstraints = @UniqueConstraint(name = "uk_sender_receiver", columnNames = {"sender_id", "receiver_id"}),
         indexes = {
-                @Index(name = "IDX_SENDER", columnList = "SENDER_ID"),
-                @Index(name = "IDX_RECEIVER", columnList = "RECEIVER_ID"),
-                @Index(name = "IDX_STATUS", columnList = "STATUS")
+                @Index(name = "idx_sender", columnList = "sender_id"),
+                @Index(name = "idx_receiver", columnList = "receiver_id"),
+                @Index(name = "idx_status", columnList = "status")
         }
 )
 @Getter
@@ -26,47 +26,62 @@ import java.time.LocalDateTime;
 @Builder
 public class FriendRequest {
 
+    /**
+     * 기본키 - AUTO_INCREMENT
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "friend_request_seq_generator")
-    @SequenceGenerator(
-            name = "friend_request_seq_generator",
-            sequenceName = "FRIEND_REQUEST_SEQ",
-            allocationSize = 1
-    )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 요청 보낸 사용자 */
+    /**
+     * 요청 보낸 사용자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SENDER_ID", nullable = false)
+    @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
-    /** 요청 받은 사용자 */
+    /**
+     * 요청 받은 사용자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RECEIVER_ID", nullable = false)
+    @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
 
-    /** 요청 생성 시각 */
-    @Column(name = "REQUESTED_AT", nullable = false, updatable = false)
+    /**
+     * 요청 생성 시각
+     */
+    @Column(name = "requested_at", nullable = false, updatable = false)
     private LocalDateTime requestedAt;
 
-    /** 응답 시각 */
-    @Column(name = "RESPONDED_AT")
+    /**
+     * 응답 시각
+     */
+    @Column(name = "responded_at")
     private LocalDateTime respondedAt;
 
-    /** 요청 상태 */
+    /**
+     * 요청 상태 (PENDING, ACCEPTED, REJECTED)
+     */
     @Enumerated(EnumType.STRING)
-    @Column(name = "STATUS", nullable = false, length = 20)
+    @Column(nullable = false, length = 20)
     private FriendRequestStatus status;
 
-    /** 논리 삭제 여부 */
+    /**
+     * 논리 삭제 여부
+     */
     @Builder.Default
-    @Column(name = "IS_DELETED", nullable = false)
+    @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
-    /** 삭제 시각 */
-    @Column(name = "DELETED_AT")
+    /**
+     * 삭제 시각
+     */
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * 요청 생성 시 기본값 자동 설정
+     */
     @PrePersist
     protected void onCreate() {
         if (this.requestedAt == null) this.requestedAt = LocalDateTime.now();

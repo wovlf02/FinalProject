@@ -9,14 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 커뮤니티 게시글 엔티티 (Oracle Express 기반)
+ * 커뮤니티 게시글 엔티티 (MySQL 호환)
  */
 @Entity
-@Table(name = "POST",
+@Table(name = "post",
         indexes = {
-                @Index(name = "IDX_POST_WRITER", columnList = "WRITER_ID"),
-                @Index(name = "IDX_POST_CREATED", columnList = "CREATED_AT"),
-                @Index(name = "IDX_POST_IS_DELETED", columnList = "IS_DELETED")
+                @Index(name = "idx_post_writer", columnList = "writer_id"),
+                @Index(name = "idx_post_created", columnList = "created_at"),
+                @Index(name = "idx_post_is_deleted", columnList = "is_deleted")
         }
 )
 @Getter
@@ -26,46 +26,74 @@ import java.util.List;
 @Builder
 public class Post {
 
+    /**
+     * 게시글 ID (AUTO_INCREMENT)
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "post_seq_generator")
-    @SequenceGenerator(
-            name = "post_seq_generator",
-            sequenceName = "POST_SEQ",
-            allocationSize = 1
-    )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "TITLE", nullable = false, length = 200)
+    /**
+     * 제목
+     */
+    @Column(nullable = false, length = 200)
     private String title;
 
-    @Lob // Oracle에서는 TEXT 대신 CLOB
-    @Column(name = "CONTENT", nullable = false)
+    /**
+     * 본문 내용 (MySQL에선 TEXT 타입으로 매핑됨)
+     */
+    @Lob
+    @Column(nullable = false)
     private String content;
 
+    /**
+     * 작성자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "WRITER_ID", nullable = false)
+    @JoinColumn(name = "writer_id", nullable = false)
     private User writer;
 
-    @Column(name = "CREATED_AT", nullable = false, updatable = false)
+    /**
+     * 작성일
+     */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "UPDATED_AT")
+    /**
+     * 수정일
+     */
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "LIKE_COUNT", nullable = false)
+    /**
+     * 좋아요 수
+     */
+    @Column(name = "like_count", nullable = false)
     private int likeCount;
 
-    @Column(name = "VIEW_COUNT", nullable = false)
+    /**
+     * 조회수
+     */
+    @Column(name = "view_count", nullable = false)
     private int viewCount;
 
-    @Column(name = "COMMENT_COUNT", nullable = false)
+    /**
+     * 댓글 수
+     */
+    @Column(name = "comment_count", nullable = false)
     private int commentCount;
 
+    /**
+     * 삭제 여부 (소프트 삭제)
+     */
     @Builder.Default
-    @Column(name = "IS_DELETED", nullable = false)
+    @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
-    @Column(name = "DELETED_AT")
+    /**
+     * 삭제 시각
+     */
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     // ===== 연관관계 =====

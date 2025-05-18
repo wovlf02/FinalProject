@@ -1,6 +1,9 @@
 package com.hamcam.back.controller.auth;
 
 import com.hamcam.back.dto.auth.request.*;
+import com.hamcam.back.dto.auth.response.LoginResponse;
+import com.hamcam.back.dto.auth.response.TokenResponse;
+import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.auth.AuthService;
@@ -200,7 +203,7 @@ public class AuthController {
      * 비밀번호 재설정 - 새 비밀번호 저장
      */
     @PutMapping("/password/update")
-    public ApiResponse<Void> updatePassword(@RequestBody @Valid PasswordChangeRequest request) {
+    public ApiResponse<Void> updatePassword(@RequestBody @Valid UpdatePasswordRequest request) {
         authService.updatePassword(request);
         return ApiResponse.ok();
     }

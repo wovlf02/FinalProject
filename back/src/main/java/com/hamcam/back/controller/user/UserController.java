@@ -1,5 +1,6 @@
 package com.hamcam.back.controller.user;
 
+import com.hamcam.back.dto.auth.request.PasswordConfirmRequest;
 import com.hamcam.back.dto.auth.response.UserProfileResponse;
 import com.hamcam.back.dto.user.request.*;
 import com.hamcam.back.entity.auth.User;
@@ -80,15 +81,6 @@ public class UserController {
     @PatchMapping("/username")
     public ApiResponse<Void> updateUsername(@RequestBody @Valid UpdateUsernameRequest request) {
         userService.updateUsername(request.getUsername());
-        return ApiResponse.ok();
-    }
-
-    /**
-     * 대학교 변경
-     */
-    @PatchMapping("/university")
-    public ApiResponse<Void> updateUniversity(@RequestBody @Valid UpdateUniversityRequest request) {
-        userService.updateUniversity(request.getUniversityId());
         return ApiResponse.ok();
     }
 

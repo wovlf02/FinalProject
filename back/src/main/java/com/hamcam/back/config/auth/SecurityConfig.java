@@ -1,6 +1,7 @@
 package com.hamcam.back.config.auth;
 
 import com.hamcam.back.repository.auth.UserRepository;
+import com.hamcam.back.security.auth.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

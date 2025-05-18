@@ -23,6 +23,9 @@ import java.util.List;
 @Builder
 public class User {
 
+    /**
+     * MySQL에서는 AUTO_INCREMENT를 사용하는 IDENTITY 전략이 일반적입니다.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -45,6 +48,9 @@ public class User {
     @Column(nullable = false)
     private Integer grade;
 
+    /**
+     * ElementCollection은 MySQL에서도 지원되며, user_subjects 테이블로 매핑됩니다.
+     */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "user_subjects", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "subject")
@@ -53,6 +59,9 @@ public class User {
     @Column(nullable = false, length = 50)
     private String studyHabit;
 
+    /**
+     * DATETIME 타입으로 자동 처리됩니다.
+     */
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -129,7 +138,7 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatParticipant> chatParticipations = new ArrayList<>();
 
-    // ===== 콜백 & 유틸 =====
+    // ===== 콜백 =====
 
     @PrePersist
     protected void onCreate() {

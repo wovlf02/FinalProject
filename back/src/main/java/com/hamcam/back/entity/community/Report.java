@@ -7,18 +7,18 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 신고 엔티티 (Oracle Express 기반)
+ * 신고 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(
-        name = "REPORT",
+        name = "report",
         indexes = {
-                @Index(name = "IDX_REPORT_REPORTER", columnList = "REPORTER_ID"),
-                @Index(name = "IDX_REPORT_POST", columnList = "POST_ID"),
-                @Index(name = "IDX_REPORT_COMMENT", columnList = "COMMENT_ID"),
-                @Index(name = "IDX_REPORT_REPLY", columnList = "REPLY_ID"),
-                @Index(name = "IDX_REPORT_TARGET_USER", columnList = "TARGET_USER_ID"),
-                @Index(name = "IDX_REPORT_STATUS", columnList = "STATUS")
+                @Index(name = "idx_report_reporter", columnList = "reporter_id"),
+                @Index(name = "idx_report_post", columnList = "post_id"),
+                @Index(name = "idx_report_comment", columnList = "comment_id"),
+                @Index(name = "idx_report_reply", columnList = "reply_id"),
+                @Index(name = "idx_report_target_user", columnList = "target_user_id"),
+                @Index(name = "idx_report_status", columnList = "status")
         }
 )
 @Getter
@@ -28,45 +28,70 @@ import java.time.LocalDateTime;
 @Builder
 public class Report {
 
+    /**
+     * 기본키 - AUTO_INCREMENT
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "report_seq_generator")
-    @SequenceGenerator(
-            name = "report_seq_generator",
-            sequenceName = "REPORT_SEQ",
-            allocationSize = 1
-    )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "REASON", nullable = false, length = 500)
+    /**
+     * 신고 사유
+     */
+    @Column(nullable = false, length = 500)
     private String reason;
 
+    /**
+     * 신고 상태 (PENDING, APPROVED, REJECTED 등)
+     */
     @Enumerated(EnumType.STRING)
-    @Column(name = "STATUS", nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private ReportStatus status;
 
-    @Column(name = "REPORTED_AT", nullable = false, updatable = false)
+    /**
+     * 신고 일시
+     */
+    @Column(name = "reported_at", nullable = false, updatable = false)
     private LocalDateTime reportedAt;
 
+    /**
+     * 신고자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "REPORTER_ID", nullable = false)
+    @JoinColumn(name = "reporter_id", nullable = false)
     private User reporter;
 
+    /**
+     * 신고 대상: 게시글
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "POST_ID")
+    @JoinColumn(name = "post_id")
     private Post post;
 
+    /**
+     * 신고 대상: 댓글
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "COMMENT_ID")
+    @JoinColumn(name = "comment_id")
     private Comment comment;
 
+    /**
+     * 신고 대상: 대댓글
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "REPLY_ID")
+    @JoinColumn(name = "reply_id")
     private Reply reply;
 
+    /**
+     * 신고 대상: 사용자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "TARGET_USER_ID")
+    @JoinColumn(name = "target_user_id")
     private User targetUser;
 
+    /**
+     * 생성 시 신고 일시 및 초기 상태 설정
+     */
     @PrePersist
     protected void onCreate() {
         this.reportedAt = LocalDateTime.now();

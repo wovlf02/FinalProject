@@ -12,6 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -31,8 +33,10 @@ public class UserService {
                 user.getUsername(),
                 user.getEmail(),
                 user.getNickname(),
+                user.getGrade(),
+                user.getStudyHabit(),
                 user.getProfileImageUrl(),
-                user.getCreatedAt().toString()
+                user.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
         );
     }
 

@@ -9,16 +9,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 대댓글 엔티티 (Oracle Express 기반)
+ * 대댓글 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(
-        name = "REPLY",
+        name = "reply",
         indexes = {
-                @Index(name = "IDX_REPLY_POST", columnList = "POST_ID"),
-                @Index(name = "IDX_REPLY_COMMENT", columnList = "COMMENT_ID"),
-                @Index(name = "IDX_REPLY_WRITER", columnList = "WRITER_ID"),
-                @Index(name = "IDX_REPLY_IS_DELETED", columnList = "IS_DELETED")
+                @Index(name = "idx_reply_post", columnList = "post_id"),
+                @Index(name = "idx_reply_comment", columnList = "comment_id"),
+                @Index(name = "idx_reply_writer", columnList = "writer_id"),
+                @Index(name = "idx_reply_is_deleted", columnList = "is_deleted")
         }
 )
 @Getter
@@ -28,72 +28,98 @@ import java.util.List;
 @Builder
 public class Reply {
 
+    /**
+     * 기본키 - AUTO_INCREMENT
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "reply_seq_generator")
-    @SequenceGenerator(
-            name = "reply_seq_generator",
-            sequenceName = "REPLY_SEQ",
-            allocationSize = 1
-    )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * 대댓글 내용 (TEXT)
+     */
     @Lob
-    @Column(name = "CONTENT", nullable = false)
+    @Column(nullable = false)
     private String content;
 
+    /**
+     * 작성자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "WRITER_ID", nullable = false)
+    @JoinColumn(name = "writer_id", nullable = false)
     private User writer;
 
+    /**
+     * 소속 댓글
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "COMMENT_ID", nullable = false)
+    @JoinColumn(name = "comment_id", nullable = false)
     private Comment comment;
 
+    /**
+     * 소속 게시글
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "POST_ID", nullable = false)
+    @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
-    @Column(name = "CREATED_AT", nullable = false, updatable = false)
+    /**
+     * 생성일
+     */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "UPDATED_AT")
+    /**
+     * 수정일
+     */
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    /**
+     * 좋아요 수
+     */
     @Builder.Default
-    @Column(name = "LIKE_COUNT", nullable = false)
+    @Column(name = "like_count", nullable = false)
     private int likeCount = 0;
 
+    /**
+     * 좋아요 목록
+     */
     @Builder.Default
     @OneToMany(mappedBy = "reply", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Like> likes = new ArrayList<>();
 
+    /**
+     * 삭제 여부 (소프트 삭제)
+     */
     @Builder.Default
-    @Column(name = "IS_DELETED", nullable = false)
+    @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
-    @Column(name = "DELETED_AT")
+    /**
+     * 삭제 시각
+     */
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * 생성 시 자동 시간 설정
+     */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
     }
 
+    /**
+     * 수정 시 자동 시간 갱신
+     */
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 
     // ===== 비즈니스 로직 =====
-
-    public void incrementLikeCount() {
-        this.likeCount++;
-    }
-
-    public void decrementLikeCount() {
-        if (this.likeCount > 0) this.likeCount--;
-    }
 
     public void increaseLikeCount() {
         this.likeCount++;
