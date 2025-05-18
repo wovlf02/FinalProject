@@ -1,120 +1,136 @@
 .statistics-container {
-  max-width: 1200px;
-  margin-left: 160px;    /* 사이드바 너비만큼 띄우기 */
-  margin-right: auto;
-  padding: 32px 24px;
-  background: #f7fafd;
-  min-height: 100vh;
+    max-width: 1200px;
+    margin-left: 160px; /* 사이드바 너비만큼 띄우기 */
+    margin-right: auto;
+    padding: 32px 24px;
+    background: #f7fafd;
+    min-height: 100vh;
 }
+
 @media (max-width: 900px) {
-  .statistics-container {
-    margin-left: 0;
-    max-width: 100%;
-    padding: 24px 12px;
-  }
+    .statistics-container {
+        margin-left: 0;
+        max-width: 100%;
+        padding: 24px 12px;
+    }
 }
 
 .statistics-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
 }
+
 .statistics-header h2 {
-  font-size: 22px;
-  font-weight: 700;
+    font-size: 22px;
+    font-weight: 700;
 }
+
 .statistics-profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 16px;
-  font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16px;
+    font-weight: 500;
 }
+
 .statistics-profile-img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
 }
+
 .statistics-grid {
-  display: grid;
-  grid-template-columns: 2fr 2fr 2fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 24px;
+    display: grid;
+    grid-template-columns: 2fr 2fr 2fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 24px;
 }
+
 .statistics-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-  padding: 28px 32px;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    padding: 28px 32px;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
 }
+
 .statistics-card-title {
-  font-size: 17px;
-  font-weight: 600;
-  margin-bottom: 8px;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 8px;
 }
+
 .statistics-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
 }
+
 .statistics-bar-label {
-  width: 38px;
-  font-size: 15px;
-  color: #222;
+    width: 38px;
+    font-size: 15px;
+    color: #222;
 }
+
 .statistics-bar-bg {
-  flex: 1;
-  background: #e5e7eb;
-  border-radius: 8px;
-  height: 8px;
-  margin: 0 8px;
-  overflow: hidden;
+    flex: 1;
+    background: #e5e7eb;
+    border-radius: 8px;
+    height: 8px;
+    margin: 0 8px;
+    overflow: hidden;
 }
+
 .statistics-bar-fill {
-  background: #2563eb;
-  height: 100%;
-  border-radius: 8px;
-  transition: width 0.3s;
+    background: #2563eb;
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.3s;
 }
+
 .statistics-bar-value {
-  width: 38px;
-  text-align: right;
-  font-size: 14px;
-  color: #2563eb;
-  font-weight: 600;
+    width: 38px;
+    text-align: right;
+    font-size: 14px;
+    color: #2563eb;
+    font-weight: 600;
 }
+
 .statistics-weak-box > div {
-  margin-bottom: 16px;
+    margin-bottom: 16px;
 }
+
 .statistics-badge-red {
-  display: inline-block;
-  background: #fee2e2;
-  color: #dc2626;
-  border-radius: 6px;
-  padding: 2px 10px;
-  font-size: 13px;
-  margin-top: 6px;
+    display: inline-block;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 13px;
+    margin-top: 6px;
 }
+
 .statistics-badge-yellow {
-  display: inline-block;
-  background: #fef9c3;
-  color: #d4a700;
-  border-radius: 6px;
-  padding: 2px 10px;
-  font-size: 13px;
-  margin-top: 6px;
+    display: inline-block;
+    background: #fef9c3;
+    color: #d4a700;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 13px;
+    margin-top: 6px;
 }
+
 .statistics-pattern-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  font-size: 15px;
-  color: #222;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #222;
 }

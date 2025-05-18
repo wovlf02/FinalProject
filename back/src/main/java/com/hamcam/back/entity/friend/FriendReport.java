@@ -7,11 +7,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 친구 신고 엔티티 (MySQL 기반)
+ * 친구 신고 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(
-        name = "friend_report", // ✅ 테이블 소문자화
+        name = "friend_report",
         uniqueConstraints = @UniqueConstraint(name = "uk_reporter_reported", columnNames = {"reporter_id", "reported_id"}),
         indexes = {
                 @Index(name = "idx_reporter", columnList = "reporter_id"),
@@ -26,8 +26,11 @@ import java.time.LocalDateTime;
 @Builder
 public class FriendReport {
 
+    /**
+     * 기본키 - MySQL에서는 AUTO_INCREMENT 사용
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 자동 증가 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
@@ -47,7 +50,7 @@ public class FriendReport {
     /**
      * 신고 사유
      */
-    @Column(name = "reason", nullable = false, length = 500)
+    @Column(nullable = false, length = 500)
     private String reason;
 
     /**
@@ -57,21 +60,21 @@ public class FriendReport {
     private LocalDateTime reportedAt;
 
     /**
-     * 신고 상태
+     * 신고 상태 (PENDING, RESOLVED, REJECTED 등)
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private FriendReportStatus status;
 
     /**
-     * 관리자 처리자
+     * 신고 처리한 관리자
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resolved_by")
     private User resolvedBy;
 
     /**
-     * 삭제 여부
+     * 논리 삭제 여부
      */
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
@@ -83,6 +86,9 @@ public class FriendReport {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * 생성 시 기본값 설정
+     */
     @PrePersist
     protected void onCreate() {
         if (this.reportedAt == null) {

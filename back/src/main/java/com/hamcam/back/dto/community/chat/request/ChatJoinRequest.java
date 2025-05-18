@@ -1,19 +1,29 @@
 package com.hamcam.back.dto.community.chat.request;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
- * 채팅방 입장 또는 퇴장 요청 DTO
- * <p>
- * 채팅방 참여자의 입장/퇴장을 서버에 전달할 때 사용됨.
- * 입장자 수 조정 또는 자동 삭제 로직에 활용됨.
- * </p>
+ * [ChatJoinRequest]
+ *
+ * 채팅방 입장 또는 퇴장 시 사용하는 요청 DTO입니다.
+ * WebSocket 연결 또는 REST API 요청을 통해 roomId와 userId를 서버에 전달합니다.
  */
-@Data
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ChatJoinRequest {
 
     /**
      * 입장 또는 퇴장하는 사용자 ID
      */
     private Long userId;
+
+    /**
+     * 입장 또는 퇴장 대상 채팅방 ID
+     */
+    private Long roomId;
 }

@@ -7,39 +7,33 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * 게시글 요약 응답 DTO
- * <p>
- * 게시글 리스트(목록 조회, 검색 결과, 즐겨찾기 목록 등)에서 사용됩니다.
- * </p>
+ * [PostSummaryResponse]
+ *
+ * 게시판 목록, 검색 결과, 즐겨찾기 목록 등에 사용되는 게시글 요약 DTO입니다.
+ * 목록 테이블 표시용으로 필요한 필드만 포함합니다.
  */
 @Getter
 @Builder
 public class PostSummaryResponse {
 
-    private Long postId;             // 게시글 ID
-    private String title;            // 게시글 제목
-    private String content;          // 게시글 본문 (미리보기용)
-    private String writerNickname;  // 작성자 닉네임
-    private int likeCount;           // 좋아요 수
-    private int viewCount;           // 조회수
-    private int commentCount;        // 댓글 수
-    private int imageCount;          // 첨부파일 개수
-    private LocalDateTime createdAt; // 작성일시
+    private Long postId;              // 게시글 ID
+    private String category;          // 게시글 카테고리
+    private String title;             // 게시글 제목
+    private String writerNickname;    // 작성자 닉네임
+    private LocalDateTime createdAt;  // 작성일시
+    private int viewCount;            // 조회수
 
     /**
-     * Post 엔티티로부터 응답 DTO 생성
+     * Post 엔티티로부터 DTO 생성
      */
     public static PostSummaryResponse from(Post post) {
         return PostSummaryResponse.builder()
                 .postId(post.getId())
+                .category(post.getCategory().name()) // enum → 문자열
                 .title(post.getTitle())
-                .content(post.getContent())
                 .writerNickname(post.getWriter().getNickname())
-                .likeCount(post.getLikeCount())
-                .viewCount(post.getViewCount())
-                .commentCount(post.getCommentCount())
-                .imageCount(post.getAttachments() != null ? post.getAttachments().size() : 0)
                 .createdAt(post.getCreatedAt())
+                .viewCount(post.getViewCount())
                 .build();
     }
 }

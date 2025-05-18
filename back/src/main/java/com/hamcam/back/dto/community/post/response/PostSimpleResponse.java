@@ -7,21 +7,21 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * 게시글 요약 응답 DTO (게시판 목록, 검색 결과 등에 사용)
+ * [PostSimpleResponse]
+ *
+ * 게시판 목록, 검색 결과 등에 사용되는 게시글 요약 응답 DTO입니다.
+ * 테이블 형태로 렌더링되는 정보를 간결하게 포함합니다.
  */
 @Getter
 @Builder
 public class PostSimpleResponse {
 
     private Long postId;             // 게시글 ID
+    private String category;         // 게시글 카테고리 (예: "INFO", "QUESTION")
     private String title;            // 게시글 제목
-    private String content;          // 게시글 본문 (미리보기용)
     private String writerNickname;  // 작성자 닉네임
-    private int likeCount;           // 좋아요 수
-    private int viewCount;           // 조회수
-    private int commentCount;        // 댓글 수
-    private int imageCount;          // 첨부파일 개수
     private LocalDateTime createdAt; // 작성일시
+    private int viewCount;           // 조회수
 
     /**
      * Post 엔티티로부터 응답 DTO 생성
@@ -29,16 +29,11 @@ public class PostSimpleResponse {
     public static PostSimpleResponse from(Post post) {
         return PostSimpleResponse.builder()
                 .postId(post.getId())
+                .category(post.getCategory().name())
                 .title(post.getTitle())
-                .content(post.getContent())
                 .writerNickname(post.getWriter().getNickname())
-                .likeCount(post.getLikeCount())
-                .viewCount(post.getViewCount())
-                .commentCount(post.getCommentCount())
-                .imageCount(post.getAttachments() != null ? post.getAttachments().size() : 0)
                 .createdAt(post.getCreatedAt())
+                .viewCount(post.getViewCount())
                 .build();
     }
-
-
 }

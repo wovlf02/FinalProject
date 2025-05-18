@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 게시글 댓글 엔티티 (MySQL 기반)
+ * 게시글 댓글 엔티티 (MySQL 호환)
  */
 @Entity
-@Table(name = "comments", // ✅ 소문자 테이블명
+@Table(name = "comments",
         indexes = {
                 @Index(name = "idx_comment_post", columnList = "post_id"),
                 @Index(name = "idx_comment_writer", columnList = "writer_id")
@@ -26,11 +26,11 @@ import java.util.List;
 public class Comment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /** 댓글 내용 */
-    @Column(name = "content", nullable = false, length = 1000)
+    @Column(nullable = false, length = 1000)
     private String content;
 
     /** 댓글 작성자 */

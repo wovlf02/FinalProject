@@ -1,15 +1,28 @@
 package com.hamcam.back.dto.community.post.request;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
- * 실시간 문제풀이방 → 게시글 자동 완성 요청 DTO
- * <p>
- * 문제 풀이 기반으로 게시글을 생성할 때 사용됩니다.
- * 예: 문제 ID에 대한 풀이 요약을 본문으로 생성
- * </p>
+ * [ProblemReferenceRequest]
+ *
+ * 실시간 문제풀이방에서 게시글 자동 생성을 요청할 때 사용하는 DTO입니다.
+ * 문제 제목과 알고리즘 분류 등을 기반으로 GPT 또는 템플릿을 활용한 제목/본문 자동 완성을 지원합니다.
+ *
+ * 예시 요청:
+ * {
+ *   "problemId": 101,
+ *   "userId": 7,
+ *   "problemTitle": "DFS 탐색",
+ *   "category": "DFS"
+ * }
  */
-@Data
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProblemReferenceRequest {
 
     /**
@@ -18,19 +31,17 @@ public class ProblemReferenceRequest {
     private Long problemId;
 
     /**
-     * 요청자 사용자 ID
+     * 요청한 사용자 ID
      */
     private Long userId;
 
     /**
-     * 문제 제목
-     * 게시글 자동 완성 시 제목 추천에 사용됨
+     * 문제 제목 (자동 완성 게시글 제목에 사용됨)
      */
     private String problemTitle;
 
     /**
-     * 문제 분류 또는 카테고리
-     * (예: 구현, DFS, DP 등 → 본문 내용 생성에 사용됨)
+     * 문제 분류 또는 알고리즘 유형 (e.g. 구현, DFS, 정렬)
      */
     private String category;
 }

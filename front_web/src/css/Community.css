@@ -1,215 +1,368 @@
-.community-container {
-  margin-left: 160px;
-  width: 100%;
-  max-width: 1100px;
-  padding: 48px 48px 40px 48px;
-  background: #f7fafd;
-  min-height: 100vh;
-  box-sizing: border-box;
+/* 전체 레이아웃 */
+.community-home {
+    padding: 3vh 4vw 3vh 15vw; /* 화면 비율 기반 */
+    box-sizing: border-box;
 }
 
-@media (max-width: 900px) {
-  .community-container {
-    margin-left: 0;
-    width: 100%;
-    padding: 20px 8px;
-    max-width: 100%;
-  }
+.community-subtitle {
+    margin-bottom: 20px;
+    color: #666;
+    font-size: 14px;
 }
 
-.community-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 36px;
-  min-width: 0;
+.community-columns {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1.5vw;
+    justify-content: space-between;
 }
 
-.community-header h2 {
-  font-size: 2.2rem;
-  font-weight: 800;
-  margin: 0;
-  letter-spacing: -1px;
+/* 4개의 동일한 너비 컬럼 */
+.community-column {
+    flex: 1 1 22%;
+    background: #fff;
+    border-radius: 0.6rem;
+    padding: 1.5rem;
+    box-shadow: 0 0 0.625rem rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-width: 200px;
 }
 
-.community-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+
+/* 헤더 */
+.community-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
-.community-search-input {
-  border: 1.5px solid #e0e4ea;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-size: 16px;
-  outline: none;
-  width: 220px;
-  margin-right: 8px;
+.community-column-header h3 {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
 }
 
-.community-write-btn {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 32px;
-  font-size: 1.18rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(37,99,235,0.06);
-  transition: background 0.15s, color 0.15s;
-}
-.community-write-btn:hover {
-  background: #174ea6;
+.community-column-header button {
+    background-color: #f0f0f0;
+    color: #333;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
-.community-tabs {
-  display: flex;
-  gap: 18px;
-  margin-bottom: 32px;
+.community-column-header button:hover {
+    background-color: #e0e0e0;
 }
 
-.community-tab-btn {
-  background: #f5f6fa;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 28px;
-  font-size: 1.07rem;
-  color: #222;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.15s, color 0.15s;
-}
-.community-tab-btn.selected,
-.community-tab-btn:hover {
-  background: #2563eb;
-  color: #fff;
+/* 공지사항 카드 */
+.notice-card {
+    border: 1px solid #e0e4e8;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
+.notice-card h4 {
+    font-size: 15px;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.notice-card p {
+    font-size: 13px;
+    color: #444;
+}
+
+.notice-card .post-date {
+    font-size: 12px;
+    color: #888;
+    margin-top: 6px;
+}
+
+/* 게시글 카드 */
 .community-post-card {
-  background: #fff;
-  border: 1.5px solid #e0e4ea;
-  border-radius: 14px;
-  padding: 32px 32px 24px 32px;
-  font-size: 1.08rem;
-  box-shadow: 0 4px 16px rgba(60,60,60,0.04);
-  margin-bottom: 18px;
-  transition: box-shadow 0.2s;
-}
-.community-post-card:hover {
-  box-shadow: 0 8px 24px rgba(37,99,235,0.11);
+    display: flex;
+    flex-direction: column;
+    background-color: #f9fafc;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e0e4e8;
 }
 
-.community-post-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 32px;
+.post-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
-.community-post-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 8px;
+.post-writer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.community-post-content {
-  color: #444;
-  font-size: 1.05rem;
-  margin-bottom: 16px;
+.post-profile {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
-.community-post-category {
-  font-weight: 600;
-  color: #2563eb;
-  font-size: 13px;
+.post-author {
+    font-size: 15px;
+    font-weight: bold;
 }
 
-.community-post-meta {
-  text-align: right;
-  min-width: 80px;
-  color: #888;
-  font-size: 13px;
+.community-post-card h4 {
+    margin: 0 0 6px;
+    font-size: 16px;
 }
 
-.community-post-stats {
-  margin-top: 12px;
-  display: flex;
-  gap: 16px;
-  justify-content: flex-end;
+.post-top-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #888;
 }
 
-.community-empty {
-  color: #888;
-  margin: 32px 0;
-  text-align: center;
+.post-date,
+.post-time {
+    font-size: 13px;
 }
 
-.community-pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  margin: 24px 0 0 0;
+.post-menu {
+    font-size: 20px;
+    cursor: pointer;
+    user-select: none;
+    margin-left: 8px;
 }
 
-.community-page-btn {
-  border: none;
-  border-radius: 6px;
-  padding: 7px 16px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  background: #fff;
-  color: #222;
-  transition: background 0.15s, color 0.15s;
-}
-.community-page-btn.active {
-  font-weight: 700;
-  background: #2563eb;
-  color: #fff;
+.post-menu:hover {
+    color: #555;
 }
 
-.community-modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+.post-stats {
+    font-size: 13px;
+    color: #666;
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
 }
-.community-modal {
-  background: #fff;
-  padding: 28px;
-  border-radius: 12px;
-  min-width: 320px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+
+/* 친구 카드 */
+.friend-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.06);
+    border: 1px solid #dfe3e8;
 }
-.community-modal-input {
-  width: 100%;
-  margin: 8px 0;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1.5px solid #e0e4ea;
-  font-size: 15px;
-  box-sizing: border-box;
+
+.friend-profile {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 14px;
 }
-.community-modal-btn-row {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+
+.friend-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
 }
-.community-modal-btn {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 18px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
+
+.friend-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.friend-nickname {
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.friend-email {
+    font-size: 13px;
+    color: #777;
+}
+
+.friend-status {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.friend-status.online .status-dot {
+    background-color: #28c76f;
+}
+
+.friend-status.offline .status-dot {
+    background-color: #ff5b5b;
+}
+
+.chat-button {
+    background-color: #1c78dd;
+    color: #fff;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* 채팅방 카드 */
+.chatroom-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f9fafd;
+    border: 1px solid #e0e4e8;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+    height: 100px;
+}
+
+.chatroom-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.chatroom-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.chatroom-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chatroom-name {
+    font-weight: bold;
+    font-size: 15px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chatroom-last-message {
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chatroom-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.chatroom-top-icons {
+    display: flex;
+    gap: 4px;
+    height: 20px;
+    align-items: center;
+}
+
+.chatroom-time {
+    font-size: 13px;
+    color: #555;
+    text-align: right;
+}
+
+.chatroom-unread {
+    background-color: #ff4d4f;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.chatroom-pin {
+    font-size: 15px;
+    color: #f25c54;
+}
+
+.chatroom-notify-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.8;
+}
+
+/* 유틸 */
+.group-icon {
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.member-count {
+    margin-left: 4px;
+    font-size: 12px;
+    color: #888;
+}
+
+/* 공통 카드 배경 색상 통일 */
+.community-post-card,
+.friend-card,
+.chatroom-card,
+.notice-card {
+    background-color: #f9fafc !important;
+}
+
+.community-post-card:hover,
+.friend-card:hover,
+.chatroom-card:hover,
+.notice-card:hover {
+    background-color: #f0f2f5;
+    box-shadow: 0 0.15rem 0.4rem rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+
+.notice-card {
+    border-left: 5px solid #f0ad4e !important; /* ✅ 우선순위 보장 */
 }

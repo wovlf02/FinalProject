@@ -5,12 +5,14 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 채팅 메시지 엔티티 (MySQL 기반)
  */
 @Entity
-@Table(name = "chat_message", // ✅ 테이블명 소문자 권장
+@Table(name = "chat_message",
         indexes = {
                 @Index(name = "idx_chat_room_sent_at", columnList = "chat_room_id, sent_at")
         }
@@ -22,44 +24,48 @@ import java.time.LocalDateTime;
 @Builder
 public class ChatMessage {
 
+    /**
+     * MySQL에서는 SEQUENCE 대신 IDENTITY 사용
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL에서는 IDENTITY 사용
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * 채팅방
+     * 해당 메시지가 속한 채팅방
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_room_id", nullable = false)
     private ChatRoom chatRoom;
 
     /**
-     * 메시지 보낸 사용자
+     * 메시지를 보낸 사용자
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
     /**
-     * 메시지 내용
+     * 텍스트 내용 (최대 2000자)
      */
-    @Column(nullable = false, length = 2000)
+    @Column(length = 2000)
     private String content;
 
     /**
-     * 메시지 타입 (TEXT, IMAGE, FILE)
+     * 메시지 타입 (TEXT, IMAGE, FILE 등)
      */
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String type;
+    private ChatMessageType type;
 
     /**
-     * 첨부파일 저장명 (파일 메시지인 경우)
+     * 첨부 파일 저장 이름
      */
     @Column(name = "stored_file_name", length = 500)
     private String storedFileName;
 
     /**
-     * MIME 타입 (파일 메시지인 경우)
+     * 첨부 파일의 MIME 타입
      */
     @Column(name = "content_type", length = 100)
     private String contentType;
@@ -71,16 +77,11 @@ public class ChatMessage {
     private LocalDateTime sentAt;
 
     /**
-     * 삭제 여부 (소프트 삭제)
+     * 메시지를 읽은 사용자 목록
      */
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted;
-
-    /**
-     * 삭제된 시각
-     */
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    @Builder.Default
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatRead> reads = new ArrayList<>();
 
     /**
      * 전송 시각 자동 설정
@@ -88,23 +89,19 @@ public class ChatMessage {
     @PrePersist
     protected void onSend() {
         this.sentAt = LocalDateTime.now();
-        this.isDeleted = false;
     }
 
     /**
-     * 소프트 삭제 처리
+     * 파일 메시지 여부 확인
      */
-    public void softDelete() {
-        this.isDeleted = true;
-        this.deletedAt = LocalDateTime.now();
+    public boolean isFileMessage() {
+        return type == ChatMessageType.IMAGE || type == ChatMessageType.FILE;
     }
 
     /**
-     * 첨부파일 메시지일 경우 다운로드 URL 반환
+     * 첨부 파일 접근 경로 반환
      */
     public String getFileUrl() {
-        return this.storedFileName != null
-                ? "/uploads/chat/" + this.storedFileName
-                : null;
+        return storedFileName != null ? "/uploads/chat/" + storedFileName : null;
     }
 }

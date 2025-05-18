@@ -14,8 +14,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
+ * [ReportService]
+ *
  * 커뮤니티 리소스 신고 서비스
- * - 게시글, 댓글, 대댓글, 사용자 신고 처리 및 중복 방지
+ * - 게시글, 댓글, 대댓글, 사용자 신고 처리
+ * - 동일 리소스에 대한 중복 신고 방지
+ * - 본인 신고 방지
  */
 @Service
 @RequiredArgsConstructor
@@ -28,7 +32,10 @@ public class ReportService {
     private final SecurityUtil securityUtil;
 
     /**
-     * 게시글 신고
+     * 게시글 신고 처리
+     *
+     * @param postId  신고할 게시글 ID
+     * @param request 신고 요청 DTO
      */
     public void reportPost(Long postId, ReportRequest request) {
         Post post = postRepository.findById(postId)
@@ -43,7 +50,10 @@ public class ReportService {
     }
 
     /**
-     * 댓글 신고
+     * 댓글 신고 처리
+     *
+     * @param commentId 신고할 댓글 ID
+     * @param request   신고 요청 DTO
      */
     public void reportComment(Long commentId, ReportRequest request) {
         Comment comment = commentRepository.findById(commentId)
@@ -58,7 +68,10 @@ public class ReportService {
     }
 
     /**
-     * 대댓글 신고
+     * 대댓글 신고 처리
+     *
+     * @param replyId 신고할 대댓글 ID
+     * @param request 신고 요청 DTO
      */
     public void reportReply(Long replyId, ReportRequest request) {
         Reply reply = replyRepository.findById(replyId)
@@ -73,7 +86,10 @@ public class ReportService {
     }
 
     /**
-     * 사용자 신고
+     * 사용자 신고 처리
+     *
+     * @param userId  신고할 사용자 ID
+     * @param request 신고 요청 DTO
      */
     public void reportUser(Long userId, ReportRequest request) {
         User target = securityUtil.getUserById(userId);
@@ -91,7 +107,14 @@ public class ReportService {
     }
 
     /**
-     * 신고 생성 공통 메서드
+     * 신고 엔티티 생성 공통 메서드
+     *
+     * @param reporter   신고자
+     * @param reason     신고 사유
+     * @param post       게시글 (선택)
+     * @param comment    댓글 (선택)
+     * @param reply      대댓글 (선택)
+     * @param targetUser 신고 대상 사용자 (선택)
      */
     private void createReport(User reporter, String reason,
                               Post post, Comment comment, Reply reply, User targetUser) {

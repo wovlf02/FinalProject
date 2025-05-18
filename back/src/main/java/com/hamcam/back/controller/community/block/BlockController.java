@@ -21,13 +21,13 @@ public class BlockController {
     @PostMapping("/posts/{postId}/block")
     public ResponseEntity<MessageResponse> blockPost(@PathVariable Long postId) {
         blockService.blockPost(postId);
-        return ResponseEntity.ok(new MessageResponse("해당 게시글을 차단했습니다."));
+        return ResponseEntity.ok(MessageResponse.of("게시글을 차단했습니다."));
     }
 
     @DeleteMapping("/posts/{postId}/block")
     public ResponseEntity<MessageResponse> unblockPost(@PathVariable Long postId) {
         blockService.unblockPost(postId);
-        return ResponseEntity.ok(new MessageResponse("해당 게시글의 차단이 해제되었습니다."));
+        return ResponseEntity.ok(MessageResponse.of("게시글 차단을 해제했습니다."));
     }
 
     @GetMapping("/posts/blocked")
@@ -40,13 +40,13 @@ public class BlockController {
     @PostMapping("/comments/{commentId}/block")
     public ResponseEntity<MessageResponse> blockComment(@PathVariable Long commentId) {
         blockService.blockComment(commentId);
-        return ResponseEntity.ok(new MessageResponse("해당 댓글을 차단했습니다."));
+        return ResponseEntity.ok(MessageResponse.of("댓글을 차단했습니다."));
     }
 
     @DeleteMapping("/comments/{commentId}/block")
     public ResponseEntity<MessageResponse> unblockComment(@PathVariable Long commentId) {
         blockService.unblockComment(commentId);
-        return ResponseEntity.ok(new MessageResponse("해당 댓글의 차단이 해제되었습니다."));
+        return ResponseEntity.ok(MessageResponse.of("댓글 차단을 해제했습니다."));
     }
 
     @GetMapping("/comments/blocked")
@@ -59,13 +59,13 @@ public class BlockController {
     @PostMapping("/replies/{replyId}/block")
     public ResponseEntity<MessageResponse> blockReply(@PathVariable Long replyId) {
         blockService.blockReply(replyId);
-        return ResponseEntity.ok(new MessageResponse("해당 대댓글을 차단했습니다."));
+        return ResponseEntity.ok(MessageResponse.of("대댓글을 차단했습니다."));
     }
 
     @DeleteMapping("/replies/{replyId}/block")
     public ResponseEntity<MessageResponse> unblockReply(@PathVariable Long replyId) {
         blockService.unblockReply(replyId);
-        return ResponseEntity.ok(new MessageResponse("해당 대댓글의 차단이 해제되었습니다."));
+        return ResponseEntity.ok(MessageResponse.of("대댓글 차단을 해제했습니다."));
     }
 
     @GetMapping("/replies/blocked")

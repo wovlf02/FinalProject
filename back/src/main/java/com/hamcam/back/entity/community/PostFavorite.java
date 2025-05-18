@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 게시글 즐겨찾기 엔티티 (MySQL 기반)
+ * 게시글 즐겨찾기 엔티티 (MySQL 호환)
  */
 @Entity
 @Getter
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Table(
-        name = "post_favorite", // ✅ 테이블 소문자
+        name = "post_favorite",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_user_post", columnNames = {"user_id", "post_id"})
         },
@@ -28,8 +28,11 @@ import java.time.LocalDateTime;
 )
 public class PostFavorite {
 
+    /**
+     * 기본키 - AUTO_INCREMENT
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
@@ -40,7 +43,7 @@ public class PostFavorite {
     private User user;
 
     /**
-     * 즐겨찾기된 게시글
+     * 즐겨찾기 대상 게시글
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
@@ -53,18 +56,21 @@ public class PostFavorite {
     private LocalDateTime createdAt;
 
     /**
-     * 즐겨찾기 논리 삭제 여부
+     * 삭제 여부 (소프트 삭제)
      */
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
     /**
-     * 삭제된 시각 (soft delete 용도)
+     * 삭제 시각
      */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * 생성 시각 자동 설정
+     */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

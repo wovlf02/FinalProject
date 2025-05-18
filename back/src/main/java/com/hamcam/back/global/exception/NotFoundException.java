@@ -19,9 +19,9 @@ public class NotFoundException extends RuntimeException {
 
     /**
      * ErrorCode 기반 생성자
-     * USER_NOT_FOUND, POST_NOT_FOUND 등 구체적인 에러코드를 전달
+     * 예: ErrorCode.USER_NOT_FOUND, ErrorCode.POST_NOT_FOUND 등
      *
-     * @param errorCode ErrorCode (예: ErrorCode.USER_NOT_FOUND)
+     * @param errorCode ErrorCode Enum 객체
      */
     public NotFoundException(ErrorCode errorCode) {
         super(errorCode.getMessage());
@@ -29,11 +29,11 @@ public class NotFoundException extends RuntimeException {
     }
 
     /**
-     * ErrorCode + 커스텀 메시지 기반 생성자
-     * 기본 메시지 외에 상세 메시지를 로그용으로 전달할 수 있음
+     * ErrorCode와 사용자 지정 메시지를 함께 전달
+     * 로그 등 디버깅 목적의 상세 메시지를 추가로 포함시킬 수 있습니다.
      *
-     * @param errorCode ErrorCode
-     * @param detailMessage 로그 또는 디버깅용 상세 메시지
+     * @param errorCode ErrorCode Enum 객체
+     * @param detailMessage 상세 설명 메시지 (ex: "ID 3번 유저가 존재하지 않음")
      */
     public NotFoundException(ErrorCode errorCode, String detailMessage) {
         super(detailMessage);

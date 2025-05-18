@@ -7,11 +7,12 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 좋아요 엔티티 (게시글, 댓글, 대댓글에 대한 유저 좋아요)
+ * 좋아요 엔티티 (MySQL 호환)
+ * - 게시글, 댓글, 대댓글 중 하나에만 연결 가능
  */
 @Entity
 @Table(
-        name = "likes", // ✅ 소문자 테이블명
+        name = "likes",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_like_user_post", columnNames = {"user_id", "post_id"}),
                 @UniqueConstraint(name = "uk_like_user_comment", columnNames = {"user_id", "comment_id"}),
@@ -31,40 +32,56 @@ import java.time.LocalDateTime;
 @Builder
 public class Like {
 
+    /**
+     * 기본키 - AUTO_INCREMENT 적용
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** 좋아요 누른 사용자 */
+    /**
+     * 좋아요 누른 사용자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /** 게시글 */
+    /**
+     * 게시글 좋아요
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
 
-    /** 댓글 */
+    /**
+     * 댓글 좋아요
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id")
     private Comment comment;
 
-    /** 대댓글 */
+    /**
+     * 대댓글 좋아요
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reply_id")
     private Reply reply;
 
-    /** 좋아요 시각 */
+    /**
+     * 좋아요 시각
+     */
     @Column(name = "liked_at", nullable = false, updatable = false)
     private LocalDateTime likedAt;
 
+    /**
+     * 좋아요 시각 자동 설정
+     */
     @PrePersist
     protected void onLike() {
         this.likedAt = LocalDateTime.now();
     }
 
-    // ===== 유효성/타입 보조 메서드 =====
+    // ===== 유효성 및 타입 판별 메서드 =====
 
     public boolean isPostLike() {
         return post != null && comment == null && reply == null;
@@ -93,6 +110,9 @@ public class Like {
         return LikeType.UNKNOWN;
     }
 
+    /**
+     * 좋아요 대상 유형
+     */
     public enum LikeType {
         POST, COMMENT, REPLY, UNKNOWN
     }

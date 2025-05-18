@@ -1,0 +1,226 @@
+.community-container {
+    margin-left: 160px;
+    width: 100%;
+    max-width: 1100px;
+    padding: 48px 48px 40px 48px;
+    background: #f7fafd;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+    .community-container {
+        margin-left: 0;
+        width: 100%;
+        padding: 20px 8px;
+        max-width: 100%;
+    }
+}
+
+.community-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 36px;
+    min-width: 0;
+}
+
+.community-header h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -1px;
+}
+
+.community-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.community-search-input {
+    border: 1.5px solid #e0e4ea;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 16px;
+    outline: none;
+    width: 220px;
+    margin-right: 8px;
+}
+
+.community-write-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 32px;
+    font-size: 1.18rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
+    transition: background 0.15s, color 0.15s;
+}
+
+.community-write-btn:hover {
+    background: #174ea6;
+}
+
+.community-tabs {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 32px;
+}
+
+.community-tab-btn {
+    background: #f5f6fa;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 28px;
+    font-size: 1.07rem;
+    color: #222;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s;
+}
+
+.community-tab-btn.selected,
+.community-tab-btn:hover {
+    background: #2563eb;
+    color: #fff;
+}
+
+.community-post-card {
+    background: #fff;
+    border: 1.5px solid #e0e4ea;
+    border-radius: 14px;
+    padding: 32px 32px 24px 32px;
+    font-size: 1.08rem;
+    box-shadow: 0 4px 16px rgba(60, 60, 60, 0.04);
+    margin-bottom: 18px;
+    transition: box-shadow 0.2s;
+}
+
+.community-post-card:hover {
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.11);
+}
+
+.community-post-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 32px;
+}
+
+.community-post-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.community-post-content {
+    color: #444;
+    font-size: 1.05rem;
+    margin-bottom: 16px;
+}
+
+.community-post-category {
+    font-weight: 600;
+    color: #2563eb;
+    font-size: 13px;
+}
+
+.community-post-meta {
+    text-align: right;
+    min-width: 80px;
+    color: #888;
+    font-size: 13px;
+}
+
+.community-post-stats {
+    margin-top: 12px;
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+}
+
+.community-empty {
+    color: #888;
+    margin: 32px 0;
+    text-align: center;
+}
+
+.community-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin: 24px 0 0 0;
+}
+
+.community-page-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    background: #fff;
+    color: #222;
+    transition: background 0.15s, color 0.15s;
+}
+
+.community-page-btn.active {
+    font-weight: 700;
+    background: #2563eb;
+    color: #fff;
+}
+
+.community-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.community-modal {
+    background: #fff;
+    padding: 28px;
+    border-radius: 12px;
+    min-width: 320px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
+}
+
+.community-modal-input {
+    width: 100%;
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1.5px solid #e0e4ea;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+.community-modal-btn-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.community-modal-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+}

@@ -1,0 +1,68 @@
+/* 전체 페이지 레이아웃 */
+.notice-page {
+    padding: 2vw 3vw 2vw 12vw; /* 좌측 고정 네브바 고려 */
+    background-color: #f9f9fb;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* 제목 */
+.notice-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 2vh;
+}
+
+/* 공지 목록 래퍼 */
+.notice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2vh;
+    max-width: 800px;
+    width: 100%;
+}
+
+/* 개별 공지 카드 */
+.notice-card {
+    background-color: #fff;
+    border-radius: 0.8rem;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.05);
+    border-left: 0.3rem solid transparent;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.notice-card:hover {
+    transform: translateY(-0.2rem);
+    box-shadow: 0 0.4rem 1rem rgba(0, 0, 0, 0.06);
+}
+
+/* 고정된 공지사항 스타일 */
+.notice-card.pinned {
+    background-color: #fff7e6;
+    border-left-color: #f2a654;
+}
+
+/* 공지 제목 */
+.notice-card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.6rem;
+}
+
+/* 공지 본문 */
+.notice-card-content {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 0.8rem;
+    line-height: 1.5;
+}
+
+/* 날짜 */
+.notice-card-date {
+    font-size: 0.9rem;
+    color: #999;
+    text-align: right;
+}

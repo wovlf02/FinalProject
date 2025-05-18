@@ -1,17 +1,19 @@
 package com.hamcam.back.dto.community.attachment.response;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.util.List;
 
 /**
- * 첨부파일 목록 응답 DTO
- * <p>
- * 게시글, 댓글, 대댓글에 첨부된 파일들의 목록을 반환할 때 사용됩니다.
- * </p>
+ * [AttachmentListResponse]
+ *
+ * 게시글, 댓글, 대댓글 등에 포함된 첨부파일 목록을 클라이언트에 반환할 때 사용하는 응답 DTO입니다.
+ * 각 첨부파일에 대한 상세 정보는 AttachmentResponse로 구성됩니다.
  */
-@Data
+@Getter
+@Builder
 @AllArgsConstructor
 public class AttachmentListResponse {
 

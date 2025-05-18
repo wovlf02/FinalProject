@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 첨부파일 엔티티 (MySQL 기반)
+ * 첨부파일 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(name = "attachment",
@@ -23,8 +23,11 @@ import java.time.LocalDateTime;
 @Builder
 public class Attachment {
 
+    /**
+     * MySQL에서는 IDENTITY 전략 사용
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
@@ -40,13 +43,13 @@ public class Attachment {
     private String storedFileName;
 
     /**
-     * MIME 타입 (예: image/png, application/pdf)
+     * MIME 타입
      */
     @Column(name = "content_type", length = 100)
     private String contentType;
 
     /**
-     * 미리보기 가능 여부 (이미지 등)
+     * 미리보기 가능 여부
      */
     @Column(name = "preview_available", nullable = false)
     private boolean previewAvailable;
@@ -71,31 +74,34 @@ public class Attachment {
     private Post post;
 
     /**
-     * 채팅 첨부파일
+     * 채팅 메시지 첨부파일
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_message_id")
     private ChatMessage chatMessage;
 
     /**
-     * 업로드 기본 경로
+     * 파일 기본 접근 경로
      */
     public static final String DEFAULT_BASE_URL = "/uploads";
 
+    /**
+     * 생성 시 자동 시간 설정
+     */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
     /**
-     * 파일 접근 경로 반환
+     * 파일 접근 URL 반환
      */
     public String getFileUrl() {
         return (storedFileName != null) ? DEFAULT_BASE_URL + "/" + storedFileName : null;
     }
 
     /**
-     * 게시글 또는 채팅 중 하나에만 연결되었는지 유효성 확인
+     * 유효한 첨부파일인지 검사 (게시글 또는 채팅 메시지 중 하나에만 연결)
      */
     public boolean isValidAttachment() {
         return (post != null && chatMessage == null) || (post == null && chatMessage != null);

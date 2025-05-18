@@ -1,14 +1,14 @@
 .video-box {
     position: relative;
     width: 45%;
-  }
-  
-  .video {
+}
+
+.video {
     width: 100%;
     border-radius: 10px;
-  }
-  
-  .name-tag {
+}
+
+.name-tag {
     position: absolute;
     bottom: 8px;
     left: 8px;
@@ -17,5 +17,5 @@
     padding: 5px 10px;
     border-radius: 5px;
     font-size: 14px;
-  }
+}
   

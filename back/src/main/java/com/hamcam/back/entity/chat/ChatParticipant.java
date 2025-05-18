@@ -7,10 +7,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 채팅방 참여자 엔티티 (MySQL 기반)
+ * 채팅방 참여자 엔티티 - MySQL 호환
  */
 @Entity
-@Table(name = "chat_participant", // ✅ 소문자 테이블명
+@Table(name = "chat_participant",
         indexes = {
                 @Index(name = "idx_participant_user_room", columnList = "user_id, chat_room_id")
         }
@@ -22,8 +22,11 @@ import java.time.LocalDateTime;
 @Builder
 public class ChatParticipant {
 
+    /**
+     * MySQL에서는 IDENTITY 전략 사용
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL용 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
@@ -41,63 +44,36 @@ public class ChatParticipant {
     private User user;
 
     /**
-     * 입장 시각
-     */
-    @Column(name = "joined_at", nullable = false, updatable = false)
-    private LocalDateTime joinedAt;
-
-    /**
-     * 퇴장 시각 (null이면 현재 참여 중)
-     */
-    @Column(name = "left_at")
-    private LocalDateTime leftAt;
-
-    /**
-     * 마지막 읽은 메시지 ID
+     * 마지막으로 읽은 메시지 ID
      */
     @Column(name = "last_read_message_id")
     private Long lastReadMessageId;
 
     /**
-     * 채팅방 알림 끔 여부
+     * 알림 꺼짐 여부 (기본값: false)
      */
     @Column(name = "is_muted", nullable = false)
     @Builder.Default
     private boolean isMuted = false;
 
     /**
-     * 채팅방 상단 고정 여부
+     * 상단 고정 여부 (기본값: false)
      */
     @Column(name = "is_pinned", nullable = false)
     @Builder.Default
     private boolean isPinned = false;
 
     /**
-     * 입장 시각 및 상태 초기화
+     * 입장 시각
+     */
+    @Column(name = "joined_at", nullable = false, updatable = false)
+    private LocalDateTime joinedAt;
+
+    /**
+     * 입장 시각 자동 설정
      */
     @PrePersist
     protected void onJoin() {
         this.joinedAt = LocalDateTime.now();
-    }
-
-    /**
-     * 퇴장 처리
-     */
-    public void leave() {
-        this.leftAt = LocalDateTime.now();
-    }
-
-    /**
-     * 알림 설정 토글
-     */
-    public void toggleMute() {
-        this.isMuted = !this.isMuted;
-    }
-
-    /**
-     * 상단 고정 토글
-     */
-    public void togglePin() {
-        this.isPinned = !this.isPinned;
     }
 }

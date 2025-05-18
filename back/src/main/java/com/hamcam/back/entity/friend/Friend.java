@@ -7,11 +7,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 친구 관계 엔티티 (MySQL 기반)
+ * 친구 관계 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(
-        name = "friend", // ✅ 테이블 소문자
+        name = "friend",
         uniqueConstraints = @UniqueConstraint(name = "uk_user_friend", columnNames = {"user_id", "friend_id"}),
         indexes = {
                 @Index(name = "idx_friend_user", columnList = "user_id"),
@@ -26,8 +26,11 @@ import java.time.LocalDateTime;
 @Builder
 public class Friend {
 
+    /**
+     * 기본키 - MySQL용 AUTO_INCREMENT
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
@@ -45,7 +48,7 @@ public class Friend {
     private User friend;
 
     /**
-     * 친구 등록 일시
+     * 친구 등록 시각
      */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -58,11 +61,14 @@ public class Friend {
     private boolean isDeleted = false;
 
     /**
-     * 친구 삭제 일시
+     * 친구 삭제 시각
      */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * 생성 시 자동 시간 설정
+     */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -71,11 +77,17 @@ public class Friend {
 
     // ===== 비즈니스 로직 =====
 
+    /**
+     * 친구 삭제 처리 (소프트 삭제)
+     */
     public void softDelete() {
         this.isDeleted = true;
         this.deletedAt = LocalDateTime.now();
     }
 
+    /**
+     * 친구 복구 처리
+     */
     public void restore() {
         this.isDeleted = false;
         this.deletedAt = null;

@@ -1,18 +1,22 @@
 package com.hamcam.back.controller.auth;
 
+import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.dto.auth.request.*;
-import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.dto.auth.response.TokenResponse;
+import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
 import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.auth.AuthService;
+import com.hamcam.back.service.user.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,10 +25,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * 인증 및 회원 관련 API를 제공하는 컨트롤러입니다.
@@ -36,6 +39,9 @@ import java.util.stream.Collectors;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
+    private final JwtProvider jwtProvider;
+    private final UserRepository userRepository;
 
     /**
      * 아이디 중복 확인
@@ -88,26 +94,19 @@ public class AuthController {
 
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<String> register(
-            @RequestPart("username") String username,
-            @RequestPart("password") String rawPassword,
-            @RequestPart("email") String email,
-            @RequestPart("nickname") String nickname,
-            @RequestPart("grade") String gradeStr,
-            @RequestPart("subjects") String subjectsStr, // <-- 수정됨
-            @RequestPart("studyHabit") String studyHabit,
+            @RequestParam("username") String username,
+            @RequestParam("password") String rawPassword,
+            @RequestParam("email") String email,
+            @RequestParam("name") String name,
+            @RequestParam("nickname") String nickname,
+            @RequestParam("grade") Integer grade,
+            @RequestParam("subjects") List<String> subjects,
+            @RequestParam("studyHabit") String studyHabit,
+            @RequestParam("phone") String phone,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
     ) {
         try {
-            // grade 파싱
-            Integer grade = Integer.parseInt(gradeStr);
-
-            // subjects 파싱 (예: "수학,영어")
-            List<String> subjects = Arrays.stream(subjectsStr.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-
-            // 프로필 이미지 처리
+            // 1. 프로필 이미지 저장
             String profileImageUrl = null;
             if (profileImage != null && !profileImage.isEmpty()) {
                 String originalFilename = profileImage.getOriginalFilename();
@@ -119,18 +118,21 @@ public class AuthController {
                 profileImageUrl = "/uploads/profile/" + storedName;
             }
 
-            // DTO 생성
+            // 2. DTO 생성
             RegisterRequest request = RegisterRequest.builder()
                     .username(username)
                     .password(rawPassword)
                     .email(email)
+                    .name(name)
                     .nickname(nickname)
                     .grade(grade)
                     .subjects(subjects)
                     .studyHabit(studyHabit)
+                    .phone(phone)
                     .profileImageUrl(profileImageUrl)
                     .build();
 
+            // 3. 회원가입 서비스 호출
             authService.register(request);
             return ApiResponse.ok("회원가입이 완료되었습니다.");
 
@@ -144,30 +146,86 @@ public class AuthController {
         }
     }
 
+
     /**
      * 로그인 요청 - JWT 발급
      */
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
-        return ApiResponse.ok(authService.login(request));
+    public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+        // 1. 로그인 검증
+        authService.login(request);
+
+        // 2. 토큰 생성 후 쿠키로 전달
+        var user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        String accessToken = jwtProvider.generateAccessToken(user);
+
+        ResponseCookie accessCookie = ResponseCookie.from(JwtProvider.ACCESS_COOKIE, accessToken)
+                .httpOnly(true)
+                .secure(true) // 배포 환경에서는 true
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofHours(1))
+                .build();
+
+        response.setHeader("Set-Cookie", accessCookie.toString());
+
+        return ResponseEntity.ok().build(); // ✅ 응답 바디 없음
     }
 
     /**
      * 로그아웃 - refresh 제거 및 access 블랙리스트 처리
      */
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(@RequestBody @Valid TokenRequest request) {
-        authService.logout(request);
-        return ApiResponse.ok();
+    public ResponseEntity<Void> logout(@CookieValue(name = JwtProvider.ACCESS_COOKIE, required = false) String accessToken,
+                                       HttpServletResponse response) {
+        if (accessToken == null) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN); // 혹은 204 OK
+        }
+
+        authService.logout(accessToken);
+
+        // ✅ 쿠키 삭제: Set-Cookie with Max-Age 0
+        ResponseCookie deleteCookie = ResponseCookie.from(JwtProvider.ACCESS_COOKIE, "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(0)
+                .build();
+
+        response.setHeader("Set-Cookie", deleteCookie.toString());
+
+        return ResponseEntity.ok().build();
     }
+
 
     /**
      * access 토큰 재발급 (Sliding 방식)
      */
     @PostMapping("/reissue")
-    public ApiResponse<TokenResponse> reissue(@RequestBody @Valid TokenRequest request) {
-        return ApiResponse.ok(authService.reissue(request));
+    public ResponseEntity<Void> reissue(@CookieValue(name = JwtProvider.REFRESH_COOKIE, required = false) String refreshToken,
+                                        HttpServletResponse response) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        TokenResponse token = authService.reissue(refreshToken);
+
+        ResponseCookie accessCookie = ResponseCookie.from(JwtProvider.ACCESS_COOKIE, token.getAccessToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofHours(1))
+                .build();
+
+        response.setHeader("Set-Cookie", accessCookie.toString());
+
+        return ResponseEntity.ok().build();
     }
+
+
 
     /**
      * 아이디 찾기 - 인증 코드 발송
@@ -194,18 +252,10 @@ public class AuthController {
     }
 
     /**
-     * 비밀번호 재설정 - 인증 코드 검증
-     */
-    @PostMapping("/password/verify-code")
-    public ApiResponse<Boolean> verifyPasswordResetCode(@RequestBody @Valid EmailVerifyRequest request) {
-        return ApiResponse.ok(authService.verifyPasswordResetCode(request));
-    }
-
-    /**
      * 비밀번호 재설정 - 새 비밀번호 저장
      */
     @PutMapping("/password/update")
-    public ApiResponse<Void> updatePassword(@RequestBody @Valid PasswordChangeRequest request) {
+    public ApiResponse<Void> updatePassword(@RequestBody @Valid UpdatePasswordRequest request) {
         authService.updatePassword(request);
         return ApiResponse.ok();
     }
@@ -215,7 +265,7 @@ public class AuthController {
      */
     @DeleteMapping("/withdraw")
     public ApiResponse<Void> withdraw(@RequestBody @Valid PasswordConfirmRequest request) {
-        authService.withdraw(request);
+        userService.withdraw(request);
         return ApiResponse.ok();
     }
 }

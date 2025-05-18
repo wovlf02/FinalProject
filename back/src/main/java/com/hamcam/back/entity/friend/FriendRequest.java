@@ -7,11 +7,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 친구 요청 엔티티 (MySQL 기반)
+ * 친구 요청 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(
-        name = "friend_request", // ✅ 테이블명 소문자
+        name = "friend_request",
         uniqueConstraints = @UniqueConstraint(name = "uk_sender_receiver", columnNames = {"sender_id", "receiver_id"}),
         indexes = {
                 @Index(name = "idx_sender", columnList = "sender_id"),
@@ -26,8 +26,11 @@ import java.time.LocalDateTime;
 @Builder
 public class FriendRequest {
 
+    /**
+     * 기본키 - AUTO_INCREMENT
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 자동 증가 키
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
@@ -57,10 +60,10 @@ public class FriendRequest {
     private LocalDateTime respondedAt;
 
     /**
-     * 요청 상태
+     * 요청 상태 (PENDING, ACCEPTED, REJECTED)
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(nullable = false, length = 20)
     private FriendRequestStatus status;
 
     /**
@@ -76,6 +79,9 @@ public class FriendRequest {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * 요청 생성 시 기본값 자동 설정
+     */
     @PrePersist
     protected void onCreate() {
         if (this.requestedAt == null) this.requestedAt = LocalDateTime.now();

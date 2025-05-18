@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 신고 엔티티 (MySQL 기반)
+ * 신고 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(
@@ -28,40 +28,70 @@ import java.time.LocalDateTime;
 @Builder
 public class Report {
 
+    /**
+     * 기본키 - AUTO_INCREMENT
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 키 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "reason", nullable = false, length = 500)
+    /**
+     * 신고 사유
+     */
+    @Column(nullable = false, length = 500)
     private String reason;
 
+    /**
+     * 신고 상태 (PENDING, APPROVED, REJECTED 등)
+     */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private ReportStatus status;
 
+    /**
+     * 신고 일시
+     */
     @Column(name = "reported_at", nullable = false, updatable = false)
     private LocalDateTime reportedAt;
 
+    /**
+     * 신고자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reporter_id", nullable = false)
     private User reporter;
 
+    /**
+     * 신고 대상: 게시글
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
 
+    /**
+     * 신고 대상: 댓글
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id")
     private Comment comment;
 
+    /**
+     * 신고 대상: 대댓글
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reply_id")
     private Reply reply;
 
+    /**
+     * 신고 대상: 사용자
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_user_id")
     private User targetUser;
 
+    /**
+     * 생성 시 신고 일시 및 초기 상태 설정
+     */
     @PrePersist
     protected void onCreate() {
         this.reportedAt = LocalDateTime.now();
@@ -88,9 +118,6 @@ public class Report {
         return targetUser != null && post == null && comment == null && reply == null;
     }
 
-    /**
-     * 올바른 단일 대상이 설정되어 있는지 확인
-     */
     public boolean isValidTarget() {
         int count = 0;
         if (post != null) count++;

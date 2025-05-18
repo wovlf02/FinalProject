@@ -1,8 +1,11 @@
 package com.hamcam.back.service.util;
 
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -12,6 +15,7 @@ import org.springframework.stereotype.Service;
  * 인증 이메일을 발송하는 서비스입니다.
  * Naver SMTP를 통해 인증코드가 포함된 HTML 메일을 발송합니다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MailService {
@@ -42,8 +46,10 @@ public class MailService {
             helper.setText(content, true);
 
             mailSender.send(message);
+            log.info("✅ 이메일 전송 성공: to={}, subject={}", to, subject);
         } catch (MessagingException e) {
-            throw new RuntimeException("이메일 전송에 실패했습니다.", e);
+            log.error("❌ 이메일 전송 실패: {}", e.getMessage(), e);
+            throw new CustomException(ErrorCode.EMAIL_SEND_FAILED);
         }
     }
 
@@ -52,10 +58,10 @@ public class MailService {
      */
     private String getSubjectByType(String type) {
         return switch (type) {
-            case "register" -> "[Smart Campus] 회원가입 인증코드 안내";
-            case "find-id" -> "[Smart Campus] 아이디 찾기 인증코드 안내";
-            case "reset-pw" -> "[Smart Campus] 비밀번호 재설정 인증코드 안내";
-            default -> "[Smart Campus] 인증코드 안내";
+            case "register" -> "[Hamcam] 회원가입 인증코드 안내";
+            case "find-id" -> "[Hamcam] 아이디 찾기 인증코드 안내";
+            case "reset-pw" -> "[Hamcam] 비밀번호 재설정 인증코드 안내";
+            default -> "[Hamcam] 인증코드 안내";
         };
     }
 
@@ -63,14 +69,15 @@ public class MailService {
      * 인증 이메일 HTML 본문 구성
      */
     private String buildEmailContent(String code, String type) {
-        return """
+        String action = convertTypeToKorean(type);
+        return String.format("""
                 <div style="padding: 20px; font-family: 'Arial', sans-serif; border: 1px solid #ddd;">
-                    <h2 style="color: #3478ff;">Smart Campus 인증코드 안내</h2>
+                    <h2 style="color: #3478ff;">Hamcam 인증코드 안내</h2>
                     <p>아래 인증코드를 입력하여 %s를 완료해 주세요.</p>
                     <div style="font-size: 24px; font-weight: bold; margin-top: 10px; color: #222;">%s</div>
                     <p style="font-size: 12px; color: #777; margin-top: 20px;">※ 인증코드는 3분 동안 유효합니다.</p>
                 </div>
-                """.formatted(convertTypeToKorean(type), code);
+                """, action, code);
     }
 
     /**

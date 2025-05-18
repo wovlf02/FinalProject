@@ -7,11 +7,11 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 친구 차단 엔티티 (MySQL 기반)
+ * 친구 차단 엔티티 (MySQL 호환)
  */
 @Entity
 @Table(
-        name = "friend_block", // ✅ 테이블명 소문자
+        name = "friend_block",
         uniqueConstraints = @UniqueConstraint(name = "uk_blocker_blocked", columnNames = {"blocker_id", "blocked_id"}),
         indexes = {
                 @Index(name = "idx_blocker", columnList = "blocker_id"),
@@ -26,8 +26,11 @@ import java.time.LocalDateTime;
 @Builder
 public class FriendBlock {
 
+    /**
+     * 기본키 - MySQL에서는 AUTO_INCREMENT 사용
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ✅ MySQL 기본 전략
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
@@ -51,7 +54,7 @@ public class FriendBlock {
     private LocalDateTime blockedAt;
 
     /**
-     * 차단 해제 여부
+     * 논리 삭제 여부 (차단 해제 여부)
      */
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
@@ -63,6 +66,9 @@ public class FriendBlock {
     @Column(name = "unblocked_at")
     private LocalDateTime unblockedAt;
 
+    /**
+     * 생성 시 차단 시각 자동 설정
+     */
     @PrePersist
     protected void onCreate() {
         this.blockedAt = LocalDateTime.now();

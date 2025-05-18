@@ -1,20 +1,18 @@
 package com.hamcam.back.service.community.chat;
 
 import com.hamcam.back.dto.community.chat.request.DirectChatRequest;
+import com.hamcam.back.dto.community.chat.response.ChatParticipantDto;
 import com.hamcam.back.dto.community.chat.response.ChatRoomListResponse;
 import com.hamcam.back.dto.community.chat.response.ChatRoomResponse;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.chat.ChatParticipant;
-import com.hamcam.back.entity.chat.ChatRoom;
-import com.hamcam.back.entity.chat.ChatRoomType;
+import com.hamcam.back.entity.chat.*;
 import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatParticipantRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
-import com.hamcam.back.security.auth.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,19 +27,26 @@ public class DirectChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final UserRepository userRepository;
+    private final SecurityUtil securityUtil;
 
+    /**
+     * 상대방과의 1:1 채팅방이 존재하면 반환, 없으면 새로 생성
+     */
     public ChatRoomResponse startOrGetDirectChat(DirectChatRequest request) {
-        Long myId = getCurrentUserId();
-        Long otherId = request.getTargetUserId();
+        User me = securityUtil.getCurrentUser();
+        User other = userRepository.findById(request.getTargetUserId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        return findExistingDirectRoom(myId, otherId)
+        return findExistingDirectRoom(me, other)
                 .map(this::toResponse)
-                .orElseGet(() -> createNewDirectChat(myId, otherId));
+                .orElseGet(() -> createNewDirectChat(me, other));
     }
 
+    /**
+     * 내가 참여 중인 모든 1:1 채팅방 목록 조회
+     */
     public List<ChatRoomListResponse> getMyDirectChatRooms() {
-        Long myId = getCurrentUserId();
-        User me = User.builder().id(myId).build();
+        User me = securityUtil.getCurrentUser();
 
         return chatParticipantRepository.findByUser(me).stream()
                 .map(ChatParticipant::getChatRoom)
@@ -51,21 +56,29 @@ public class DirectChatService {
                         .roomName(room.getName())
                         .roomType(room.getType().name())
                         .participantCount(chatParticipantRepository.countByChatRoom(room))
+                        .profileImageUrl(room.getRepresentativeImageUrl())
                         .build())
                 .collect(Collectors.toList());
     }
 
-    public ChatRoomResponse getDirectChatWithUser(Long userId) {
-        Long myId = getCurrentUserId();
-        return findExistingDirectRoom(myId, userId)
+    /**
+     * 특정 사용자와의 1:1 채팅방 조회 (없으면 예외)
+     */
+    public ChatRoomResponse getDirectChatWithUser(Long otherUserId) {
+        User me = securityUtil.getCurrentUser();
+        User other = userRepository.findById(otherUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return findExistingDirectRoom(me, other)
                 .map(this::toResponse)
-                .orElseThrow(() -> new IllegalArgumentException("상대방과의 1:1 채팅방이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
     }
 
-    private Optional<ChatRoom> findExistingDirectRoom(Long userA, Long userB) {
-        User user = User.builder().id(userA).build();
-        List<ChatRoom> myRooms = chatParticipantRepository.findByUser(user)
-                .stream()
+    /**
+     * 기존 1:1 채팅방 존재 여부 확인
+     */
+    private Optional<ChatRoom> findExistingDirectRoom(User userA, User userB) {
+        List<ChatRoom> myRooms = chatParticipantRepository.findByUser(userA).stream()
                 .map(ChatParticipant::getChatRoom)
                 .filter(room -> room.getType() == ChatRoomType.DIRECT)
                 .toList();
@@ -73,56 +86,55 @@ public class DirectChatService {
         for (ChatRoom room : myRooms) {
             List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
             if (participants.size() == 2 &&
-                    participants.stream().anyMatch(p -> p.getUser().getId().equals(userB))) {
+                    participants.stream().anyMatch(p -> p.getUser().getId().equals(userB.getId()))) {
                 return Optional.of(room);
             }
         }
+
         return Optional.empty();
     }
 
-    private ChatRoomResponse createNewDirectChat(Long myId, Long otherId) {
-        ChatRoom newRoom = ChatRoom.builder()
+    /**
+     * 새로운 1:1 채팅방 생성
+     */
+    private ChatRoomResponse createNewDirectChat(User me, User other) {
+        ChatRoom room = ChatRoom.builder()
                 .name("DirectChat")
                 .type(ChatRoomType.DIRECT)
-                .referenceId(null)
                 .createdAt(LocalDateTime.now())
                 .build();
-        chatRoomRepository.save(newRoom);
 
-        chatParticipantRepository.save(ChatParticipant.builder()
-                .chatRoom(newRoom)
-                .user(User.builder().id(myId).build())
-                .joinedAt(LocalDateTime.now())
-                .build());
+        chatRoomRepository.save(room);
 
-        chatParticipantRepository.save(ChatParticipant.builder()
-                .chatRoom(newRoom)
-                .user(User.builder().id(otherId).build())
-                .joinedAt(LocalDateTime.now())
-                .build());
+        List<ChatParticipant> participants = List.of(
+                ChatParticipant.builder().chatRoom(room).user(me).joinedAt(LocalDateTime.now()).build(),
+                ChatParticipant.builder().chatRoom(room).user(other).joinedAt(LocalDateTime.now()).build()
+        );
 
-        return toResponse(newRoom);
+        chatParticipantRepository.saveAll(participants);
+
+        return toResponse(room);
     }
 
+    /**
+     * 채팅방 → 응답 DTO 변환
+     */
     private ChatRoomResponse toResponse(ChatRoom room) {
+        List<ChatParticipantDto> participants = chatParticipantRepository.findByChatRoom(room).stream()
+                .map(p -> new ChatParticipantDto(
+                        p.getUser().getId(),
+                        p.getUser().getNickname(),
+                        p.getUser().getProfileImageUrl()
+                ))
+                .toList();
+
         return ChatRoomResponse.builder()
                 .roomId(room.getId())
                 .roomName(room.getName())
                 .roomType(room.getType().name())
-                .referenceId(room.getReferenceId())
                 .createdAt(room.getCreatedAt())
+                .representativeImageUrl(room.getRepresentativeImageUrl())
+                .participants(participants)
                 .build();
-    }
-
-    private Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) throw new CustomException("로그인 정보가 없습니다.");
-
-        Object principal = auth.getPrincipal();
-        if (principal instanceof CustomUserDetails userDetails) {
-            return userDetails.getUserId();
-        }
-
-        throw new CustomException("사용자 정보를 불러올 수 없습니다.");
     }
 }

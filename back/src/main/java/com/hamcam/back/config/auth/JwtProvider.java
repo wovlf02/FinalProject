@@ -14,9 +14,6 @@ import java.security.Key;
 import java.util.Date;
 import java.time.Duration;
 
-/**
- * JWT 토큰을 생성하고 파싱 및 검증하는 유틸 클래스입니다.
- */
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
@@ -27,6 +24,10 @@ public class JwtProvider {
     private final StringRedisTemplate redisTemplate;
 
     private Key key;
+
+    // 쿠키 키 상수 (HttpOnly 쿠키에서 사용할 이름)
+    public static final String ACCESS_COOKIE = "accessToken";
+    public static final String REFRESH_COOKIE = "refreshToken";
 
     private static final long ACCESS_EXP = 1000L * 60 * 60;         // 1시간
     private static final long REFRESH_EXP = 1000L * 60 * 60 * 24 * 14; // 14일
@@ -77,9 +78,9 @@ public class JwtProvider {
     }
 
     /**
-     * Redis에 저장된 AccessToken과 비교하며 유효성 검증
+     * 쿠키 기반 REST 인증: Redis에 저장된 AccessToken과 비교하여 유효성 검증
      */
-    public boolean validateToken(String token) {
+    public boolean validateAccessTokenWithRedis(String token) {
         try {
             Claims claims = parseClaims(token);
             String userId = claims.getSubject();
@@ -98,7 +99,21 @@ public class JwtProvider {
     }
 
     /**
-     * 토큰에서 만료 시간 추출
+     * WebSocket용: Redis 확인 없이 JWT 자체 유효성만 검사
+     */
+    public boolean validateTokenWithoutRedis(String token) {
+        try {
+            parseClaims(token);
+            return true;
+        } catch (ExpiredJwtException e) {
+            throw new CustomException("토큰이 만료되었습니다.");
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException("유효하지 않은 토큰입니다.");
+        }
+    }
+
+    /**
+     * 토큰 만료 시간 확인
      */
     public long getExpiration(String token) {
         Date expiration = parseClaims(token).getExpiration();
