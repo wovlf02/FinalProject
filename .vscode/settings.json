@@ -1,3 +1,5 @@
 {
-    "java.compile.nullAnalysis.mode": "automatic"
+    "java.compile.nullAnalysis.mode": "automatic",
+    "files.encoding": "utf8",
+    "terminal.integrated.encoding": "utf8"
 }

@@ -24,4 +24,19 @@ public class LoginResponse {
      * Refresh Token (14일 유효)
      */
     private String refreshToken;
+
+    /**
+     * 사용자 아이디
+     */
+    private String username;
+
+    /**
+     * 사용자 이메일
+     */
+    private String email;
+
+    /**
+     * 사용자 이름
+     */
+    private String name;
 }

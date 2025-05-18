@@ -9,6 +9,7 @@ import java.util.List;
  * 회원가입 최종 요청 DTO입니다.
  */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -28,20 +29,20 @@ public class RegisterRequest {
     @NotBlank(message = "이름은 필수 입력 값입니다.")
     private String name;
 
-    @NotBlank(message = "전화번호는 필수 입력 값입니다.")
-    private String phone;
+    @NotBlank(message = "닉네임은 필수 입력 값입니다.")
+    private String nickname;
 
     @NotNull(message = "학년은 필수 입력 값입니다.")
     private Integer grade;
 
-    @NotBlank(message = "공부 습관은 필수 입력 값입니다.")
-    private String studyHabit;
-
-    @NotBlank(message = "닉네임은 필수 입력 값입니다.")
-    private String nickname;
-
     @NotNull(message = "과목은 최소 1개 이상 선택해야 합니다.")
     private List<String> subjects;
 
-    private String profileImageUrl; // 선택 항목 -> 미선택 시 기본 프로필로 처리
+    @NotBlank(message = "공부 습관은 필수 입력 값입니다.")
+    private String studyHabit;
+
+    @Pattern(regexp = "^\\d{10,15}$", message = "전화번호는 숫자만 포함되어야 하며 10자리 이상 15자리 이하여야 합니다.")
+    private String phone; // ✅ 필드 유지
+
+    // ❌ profileImageUrl 제거 (서버에서 생성 후 저장)
 }
