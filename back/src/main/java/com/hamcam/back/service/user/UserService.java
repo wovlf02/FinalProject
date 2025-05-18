@@ -36,7 +36,9 @@ public class UserService {
                 user.getGrade(),
                 user.getStudyHabit(),
                 user.getProfileImageUrl(),
-                user.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                user.getCreatedAt() != null
+                        ? user.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                        : null
         );
     }
 
@@ -51,7 +53,7 @@ public class UserService {
             throw new CustomException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
         }
 
-        userRepository.delete(user);
+        userRepository.delete(user); // ✅ 완전 삭제 (soft delete 아님)
     }
 
     /**
@@ -59,6 +61,10 @@ public class UserService {
      */
     @Transactional
     public void updateNickname(String newNickname) {
+        if (userRepository.existsByNickname(newNickname)) {
+            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+        }
+
         User user = securityUtil.getCurrentUser();
         user.setNickname(newNickname);
     }
@@ -68,6 +74,10 @@ public class UserService {
      */
     @Transactional
     public void updateEmail(String newEmail) {
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
+        }
+
         User user = securityUtil.getCurrentUser();
         user.setEmail(newEmail);
     }
@@ -86,10 +96,10 @@ public class UserService {
      */
     @Transactional
     public void updateUsername(String newUsername) {
-        // 중복 검사 필요 시, 아래 주석 해제
         if (userRepository.existsByUsername(newUsername)) {
-            throw new CustomException(ErrorCode.LOGIN_USER_NOT_FOUND); // or USERNAME_DUPLICATED
+            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
         }
+
         User user = securityUtil.getCurrentUser();
         user.setUsername(newUsername);
     }

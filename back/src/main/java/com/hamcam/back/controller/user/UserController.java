@@ -4,6 +4,8 @@ import com.hamcam.back.dto.auth.request.PasswordConfirmRequest;
 import com.hamcam.back.dto.auth.response.UserProfileResponse;
 import com.hamcam.back.dto.user.request.*;
 import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.service.user.UserService;
@@ -22,6 +24,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+/**
+ * [UserController]
+ * 사용자 프로필 관련 API 컨트롤러
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/users")
@@ -32,7 +38,7 @@ public class UserController {
     private final SecurityUtil securityUtil;
 
     /**
-     * 내 정보 조회 (/me)
+     * 내 정보 조회
      */
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getMyInfo() {
@@ -43,7 +49,7 @@ public class UserController {
      * 회원 탈퇴
      */
     @PostMapping("/withdraw")
-    public ResponseEntity<Void> withdraw(@RequestBody PasswordConfirmRequest request) {
+    public ResponseEntity<Void> withdraw(@RequestBody @Valid PasswordConfirmRequest request) {
         userService.withdraw(request);
         return ResponseEntity.ok().build();
     }
@@ -90,18 +96,22 @@ public class UserController {
     @PatchMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<String> updateProfileImage(@RequestPart("profileImage") MultipartFile file) {
         try {
+            // 저장 경로 및 파일명 지정
             String storedFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
             Path uploadDir = Paths.get("uploads/profile");
             Files.createDirectories(uploadDir);
+
             Path filePath = uploadDir.resolve(storedFileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             String imageUrl = "/uploads/profile/" + storedFileName;
+
+            // DB 반영
             userService.updateProfileImage(imageUrl);
 
             return ApiResponse.ok(imageUrl);
         } catch (IOException e) {
-            throw new RuntimeException("프로필 이미지 업로드 중 오류 발생", e);
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }
 }

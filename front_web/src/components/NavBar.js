@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../css/Navbar.css';
+import api from '../api/api';
 
-const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab }) => {
+const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab, user }) => {
   return (
       <div className="side-menu">
         <div className="side-menu-logo">로고</div>
         <ul className="side-menu-list">
           {menuItems.map((item) => (
               <React.Fragment key={item.name}>
-                <li className={`side-menu-list-item`}>
+                <li className="side-menu-list-item">
                   <button
                       onClick={() => handleNavigation(item.name, item.path)}
                       className={`side-menu-button${
@@ -19,7 +20,6 @@ const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab }) 
                     {item.name}
                   </button>
                 </li>
-                {/* 커뮤니티 하위 메뉴 렌더링 */}
                 {item.name === '커뮤니티' && selectedTab === '커뮤니티' && (
                     <ul className="side-submenu-list">
                       {item.subItems.map((sub) => (
@@ -44,6 +44,19 @@ const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab }) 
               </React.Fragment>
           ))}
         </ul>
+
+        {/* ✅ 사용자 프로필 영역 */}
+        {user && (
+            <div className="side-user-profile">
+              <img
+                  src={`http://localhost:8080${user.profileImageUrl || '/uploads/profile/base_profile.png'}`}
+                  alt="프로필"
+                  className="side-user-image"
+              />
+              <div className="side-user-nickname">{user.nickname}</div>
+            </div>
+        )}
+
         <div className="side-menu-bottom">
           <button
               className={`side-menu-button${selectedTab === '마이페이지' ? ' active' : ''}`}
@@ -61,10 +74,10 @@ const NavBar = () => {
   const location = useLocation();
   const [selectedTab, setSelectedTab] = useState('');
   const [selectedSubTab, setSelectedSubTab] = useState('');
+  const [user, setUser] = useState(null);
 
   const hideSidebarPaths = ['/unit-evaluation/start'];
 
-  // ✅ 이 부분을 useEffect 위로 옮김
   const menuItems = [
     { name: '대시보드', path: '/dashboard' },
     { name: '공부 시작', path: '/StudyStart' },
@@ -74,10 +87,10 @@ const NavBar = () => {
       name: '커뮤니티',
       path: '/community',
       subItems: [
-          { name: '공지사항', path: '/community/notice'},
-          { name: '채팅', path: '/community/chat' },
-          { name: '게시판', path: '/community/post' },
-          { name: '친구', path: '/community/friend' },
+        { name: '공지사항', path: '/community/notice' },
+        { name: '채팅', path: '/community/chat' },
+        { name: '게시판', path: '/community/post' },
+        { name: '친구', path: '/community/friend' },
       ],
     },
   ];
@@ -98,6 +111,26 @@ const NavBar = () => {
     }
   }, [location.pathname]);
 
+  // ✅ 로그인 사용자 정보 불러오기
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = await sessionStorage.getItem('accessToken');
+        if (!token) return;
+
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.sub;
+
+        const res = await api.get(`/auth/${userId}`);
+        setUser(res.data);
+      } catch (error) {
+        console.error('프로필 조회 실패:', error);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
   if (hideSidebarPaths.includes(location.pathname)) return null;
 
   const handleNavigation = (name, path, subName = '') => {
@@ -112,9 +145,9 @@ const NavBar = () => {
           handleNavigation={handleNavigation}
           selectedTab={selectedTab}
           selectedSubTab={selectedSubTab}
+          user={user}
       />
   );
 };
-
 
 export default NavBar;

@@ -1,19 +1,33 @@
 package com.hamcam.back.dto.community.post.request;
 
-import lombok.Data;
+import com.hamcam.back.entity.community.PostCategory;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
- * 게시글 자동 완성 요청 DTO
- * <p>
- * 사용자가 문제 기반으로 자동으로 게시글 내용을 채우고자 할 때 사용됩니다.
- * 예: 문제 풀이 요약 → 게시글 본문 생성
- * </p>
+ * [PostAutoFillRequest]
+ *
+ * 문제 기반 게시글 자동 작성 요청 DTO입니다.
+ * 문제 ID와 분류 정보를 바탕으로 게시글 제목/내용을 자동 생성합니다.
+ *
+ * 예시 요청:
+ * {
+ *   "problemId": 101,
+ *   "userId": 5,
+ *   "problemTitle": "DFS 탐색 문제",
+ *   "category": "QUESTION"
+ * }
  */
-@Data
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PostAutoFillRequest {
 
     /**
-     * 자동 완성 대상 문제 ID
+     * 문제 ID (추천 게시글 생성 대상)
      */
     private Long problemId;
 
@@ -23,12 +37,12 @@ public class PostAutoFillRequest {
     private Long userId;
 
     /**
-     * 문제 제목 (자동 완성용 텍스트에 활용)
+     * 문제 제목
      */
     private String problemTitle;
 
     /**
-     * 문제 분류 또는 카테고리 (예: 구현, DFS, DP 등)
+     * 게시글 카테고리 (예: QUESTION, INFO, STUDY, ANONYMOUS)
      */
-    private String category;
+    private PostCategory category;
 }

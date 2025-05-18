@@ -40,6 +40,13 @@ public class Post {
     private String title;
 
     /**
+     * 카테고리
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false, length = 20)
+    private PostCategory category;
+
+    /**
      * 본문 내용 (MySQL에선 TEXT 타입으로 매핑됨)
      */
     @Lob

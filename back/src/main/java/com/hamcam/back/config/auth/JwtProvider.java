@@ -25,6 +25,10 @@ public class JwtProvider {
 
     private Key key;
 
+    // 쿠키 키 상수 (HttpOnly 쿠키에서 사용할 이름)
+    public static final String ACCESS_COOKIE = "accessToken";
+    public static final String REFRESH_COOKIE = "refreshToken";
+
     private static final long ACCESS_EXP = 1000L * 60 * 60;         // 1시간
     private static final long REFRESH_EXP = 1000L * 60 * 60 * 24 * 14; // 14일
 
@@ -74,9 +78,9 @@ public class JwtProvider {
     }
 
     /**
-     * REST용: Redis에 저장된 AccessToken과 비교하여 유효성 검증
+     * 쿠키 기반 REST 인증: Redis에 저장된 AccessToken과 비교하여 유효성 검증
      */
-    public boolean validateToken(String token) {
+    public boolean validateAccessTokenWithRedis(String token) {
         try {
             Claims claims = parseClaims(token);
             String userId = claims.getSubject();
@@ -95,7 +99,7 @@ public class JwtProvider {
     }
 
     /**
-     * WebSocket용: Redis 비교 없이 JWT 자체 유효성만 검사
+     * WebSocket용: Redis 확인 없이 JWT 자체 유효성만 검사
      */
     public boolean validateTokenWithoutRedis(String token) {
         try {

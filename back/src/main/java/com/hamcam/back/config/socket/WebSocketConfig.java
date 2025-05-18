@@ -2,15 +2,16 @@ package com.hamcam.back.config.socket;
 
 import com.hamcam.back.handler.ChatWebSocketHandler;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.WebSocketHandler;
-import org.springframework.web.socket.config.annotation.*;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 /**
- * 순수 WebSocket 설정 클래스 (STOMP 미사용)
- * 클라이언트는 ws://.../ws/chat 으로 연결합니다.
+ * WebSocket 설정 클래스 (STOMP 미사용)
+ * <p>
+ * 클라이언트는 ws://서버주소/ws/chat 로 연결되며,
+ * SockJS를 통해 fallback 및 브라우저 호환성을 제공합니다.
  */
 @Configuration
 @EnableWebSocket
@@ -22,7 +23,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(chatWebSocketHandler, "/ws/chat")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+                .setAllowedOriginPatterns("*") // CORS 허용
+                .withSockJS(); // SockJS fallback 지원
     }
 }

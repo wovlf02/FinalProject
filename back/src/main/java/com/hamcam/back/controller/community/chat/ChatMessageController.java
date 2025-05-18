@@ -13,8 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 채팅 메시지 컨트롤러
- * - REST 방식 메시지 처리 전용
+ * [ChatMessageController]
+ *
+ * 채팅 메시지 REST API 컨트롤러
+ * WebSocket 외 REST 방식으로도 채팅 메시지를 처리할 수 있도록 지원
  */
 @RestController
 @RequestMapping("/api/chat/rooms")
@@ -25,11 +27,14 @@ public class ChatMessageController {
     private final SecurityUtil securityUtil;
 
     /**
-     * 채팅방 메시지 목록 조회 (페이지네이션 기반)
+     * [채팅 메시지 목록 조회]
+     *
+     * - 채팅방 ID와 페이지 정보를 기반으로 채팅 메시지를 조회
+     * - 가장 최근 메시지부터 내림차순으로 조회
      *
      * @param roomId 채팅방 ID
-     * @param page 페이지 번호 (기본값: 0)
-     * @param size 한 페이지당 메시지 수 (기본값: 30)
+     * @param page   페이지 번호 (0부터 시작)
+     * @param size   한 페이지당 메시지 수
      * @return 채팅 메시지 목록
      */
     @GetMapping("/{roomId}/messages")
@@ -43,10 +48,13 @@ public class ChatMessageController {
     }
 
     /**
-     * REST 방식 메시지 전송 (텍스트 또는 파일 메시지 전용)
+     * [REST 메시지 전송]
      *
-     * @param roomId 채팅방 ID
-     * @param request 채팅 메시지 요청
+     * - 텍스트 또는 파일 메시지를 REST 방식으로 전송 (WebSocket 미사용 시)
+     * - 인증된 사용자 정보는 SecurityContext에서 추출
+     *
+     * @param roomId  채팅방 ID
+     * @param request 메시지 요청 본문
      * @return 저장된 메시지 응답
      */
     @PostMapping("/{roomId}/messages")
@@ -54,7 +62,7 @@ public class ChatMessageController {
             @PathVariable Long roomId,
             @RequestBody @Valid ChatMessageRequest request
     ) {
-        User sender = securityUtil.getCurrentUser(); // ✅ 인증 사용자 추출
+        User sender = securityUtil.getCurrentUser(); // JWT 기반 인증 사용자 추출
         ChatMessageResponse response = chatMessageService.sendMessage(roomId, sender, request);
         return ResponseEntity.ok(response);
     }

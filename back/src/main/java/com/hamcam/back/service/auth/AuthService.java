@@ -1,12 +1,11 @@
 package com.hamcam.back.service.auth;
 
+import com.hamcam.back.config.auth.JwtProvider;
+import com.hamcam.back.dto.auth.request.*;
+import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.dto.auth.request.*;
-import com.hamcam.back.dto.auth.response.LoginResponse;
-import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.global.exception.CustomException;
-import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
@@ -45,7 +44,8 @@ public class AuthService {
 
     public String sendVerificationCode(EmailSendRequest request) {
         String code = String.valueOf((int) (Math.random() * 900000) + 100000);
-        redisTemplate.opsForValue().set("EMAIL:CODE:" + request.getEmail(), code, Duration.ofMinutes(3));
+        String key = "EMAIL:CODE:" + request.getEmail();
+        redisTemplate.opsForValue().set(key, code, Duration.ofMinutes(3));
         mailService.sendVerificationCode(request.getEmail(), code, request.getType());
         return "인증코드가 이메일로 발송되었습니다.";
     }
@@ -53,29 +53,28 @@ public class AuthService {
     public Boolean verifyCode(EmailVerifyRequest request) {
         String key = "EMAIL:CODE:" + request.getEmail();
         String stored = redisTemplate.opsForValue().get(key);
-        return stored != null && stored.equals(request.getCode());
+        if (stored != null && stored.equals(request.getCode())) {
+            redisTemplate.delete(key);
+            return true;
+        }
+        return false;
     }
 
     public void deleteTempData(EmailRequest request) {
         redisTemplate.delete("EMAIL:CODE:" + request.getEmail());
     }
 
-    /**
-     * 회원가입
-     * - 프로필 이미지 저장은 Controller에서 처리 후, URL만 DTO로 전달됨
-     */
     public void register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new CustomException("이미 존재하는 아이디입니다. 다른 아이디를 선택해 주세요.");
+            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
         }
-
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new CustomException("이미 존재하는 이메일입니다. 다른 이메일을 사용해 주세요.");
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         String phone = request.getPhone();
         if (phone != null && !isValidPhone(phone)) {
-            throw new CustomException("유효하지 않은 전화번호 형식입니다.");
+            throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
         User user = User.builder()
@@ -88,86 +87,91 @@ public class AuthService {
                 .subjects(request.getSubjects())
                 .studyHabit(request.getStudyHabit())
                 .phone(phone)
-                .profileImageUrl(request.getProfileImageUrl()) // ✅ Controller에서 저장된 URL 사용
+                .profileImageUrl(request.getProfileImageUrl())
                 .build();
 
         userRepository.save(user);
     }
 
-    public LoginResponse login(LoginRequest request) {
+    /**
+     * 로그인: ID/PW 검증만 수행. 토큰 생성은 컨트롤러에서.
+     */
+    public void login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new CustomException("비밀번호가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
         }
 
-        String accessToken = jwtProvider.generateAccessToken(user);
-        String refreshToken = jwtProvider.generateRefreshToken(user);
-
-        redisTemplate.opsForValue().set("RT:" + user.getId(), refreshToken, Duration.ofDays(14));
-
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .name(user.getName())
-                .build();
+        // ✅ 토큰 생성은 Controller에서 수행
     }
 
-    public void logout(TokenRequest request) {
-        Long userId = jwtProvider.getUserIdFromToken(request.getAccessToken());
+    public void logout(String accessToken) {
+        Long userId = jwtProvider.getUserIdFromToken(accessToken);
+
+        // RefreshToken 삭제
         redisTemplate.delete("RT:" + userId);
-        long expiration = jwtProvider.getExpiration(request.getAccessToken());
-        redisTemplate.opsForValue().set("BL:" + request.getAccessToken(), "logout", Duration.ofMillis(expiration));
+
+        // AccessToken 블랙리스트 처리
+        long expiration = jwtProvider.getExpiration(accessToken);
+        redisTemplate.opsForValue().set("BL:" + accessToken, "logout", Duration.ofMillis(expiration));
     }
 
-    public TokenResponse reissue(TokenRequest request) {
-        if (!jwtProvider.validateToken(request.getRefreshToken())) {
-            throw new CustomException("유효하지 않은 refresh token 입니다.");
+
+    public TokenResponse reissue(String refreshToken) {
+        // 1. refreshToken 자체 유효성 검사 (만료 여부, 서명 등)
+        if (!jwtProvider.validateTokenWithoutRedis(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        Long userId = jwtProvider.getUserIdFromToken(request.getRefreshToken());
-        String redisRefresh = redisTemplate.opsForValue().get("RT:" + userId);
+        // 2. 사용자 ID 추출
+        Long userId = jwtProvider.getUserIdFromToken(refreshToken);
 
-        if (redisRefresh == null || !redisRefresh.equals(request.getRefreshToken())) {
-            throw new CustomException("저장된 refresh token과 일치하지 않습니다.");
+        // 3. Redis에서 refreshToken 조회 후 비교
+        String stored = redisTemplate.opsForValue().get("RT:" + userId);
+        if (stored == null || !stored.equals(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
+        // 4. 사용자 조회
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // 5. accessToken 새로 발급
         String newAccess = jwtProvider.generateAccessToken(user);
-        String newRefresh = jwtProvider.generateRefreshToken(user);
 
-        redisTemplate.opsForValue().set("RT:" + userId, newRefresh, Duration.ofDays(14));
+        // 6. refreshToken도 갱신 (Redis에만 저장, 클라이언트에 전달 X)
+        jwtProvider.generateRefreshToken(user);
 
-        return new TokenResponse(newAccess, newRefresh);
+        // 7. accessToken만 반환
+        return new TokenResponse(newAccess, null); // refreshToken은 null 또는 생략
     }
+
 
     public String sendFindUsernameCode(EmailRequest request) {
         if (!userRepository.existsByEmail(request.getEmail())) {
-            throw new CustomException("해당 이메일로 등록된 사용자가 없습니다.");
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
         return sendVerificationCode(new EmailSendRequest(request.getEmail(), "find-id"));
     }
 
     public String verifyFindUsernameCode(EmailVerifyRequest request) {
         if (!verifyCode(request)) {
-            throw new CustomException("인증코드가 올바르지 않습니다.");
+            throw new CustomException(ErrorCode.INVALID_INPUT);
         }
+
         return userRepository.findByEmail(request.getEmail())
                 .map(User::getUsername)
-                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
     public String requestPasswordReset(PasswordResetRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (!user.getEmail().equals(request.getEmail())) {
-            throw new CustomException("입력한 이메일이 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.EMAIL_MISMATCH);
         }
 
         return sendVerificationCode(new EmailSendRequest(request.getEmail(), "reset-pw"));

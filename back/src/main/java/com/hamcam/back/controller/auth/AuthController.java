@@ -1,17 +1,22 @@
 package com.hamcam.back.controller.auth;
 
+import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.dto.auth.request.*;
-import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
 import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.response.ApiResponse;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.auth.AuthService;
 import com.hamcam.back.service.user.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +40,8 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
+    private final JwtProvider jwtProvider;
+    private final UserRepository userRepository;
 
     /**
      * 아이디 중복 확인
@@ -86,15 +94,15 @@ public class AuthController {
 
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<String> register(
-            @RequestPart("username") String username,
-            @RequestPart("password") String rawPassword,
-            @RequestPart("email") String email,
-            @RequestPart("name") String name,
-            @RequestPart("nickname") String nickname,
-            @RequestPart("grade") Integer grade,
-            @RequestPart("subjects") List<String> subjects,
-            @RequestPart("studyHabit") String studyHabit,
-            @RequestPart("phone") String phone,
+            @RequestParam("username") String username,
+            @RequestParam("password") String rawPassword,
+            @RequestParam("email") String email,
+            @RequestParam("name") String name,
+            @RequestParam("nickname") String nickname,
+            @RequestParam("grade") Integer grade,
+            @RequestParam("subjects") List<String> subjects,
+            @RequestParam("studyHabit") String studyHabit,
+            @RequestParam("phone") String phone,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
     ) {
         try {
@@ -143,26 +151,81 @@ public class AuthController {
      * 로그인 요청 - JWT 발급
      */
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
-        return ApiResponse.ok(authService.login(request));
+    public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+        // 1. 로그인 검증
+        authService.login(request);
+
+        // 2. 토큰 생성 후 쿠키로 전달
+        var user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        String accessToken = jwtProvider.generateAccessToken(user);
+
+        ResponseCookie accessCookie = ResponseCookie.from(JwtProvider.ACCESS_COOKIE, accessToken)
+                .httpOnly(true)
+                .secure(true) // 배포 환경에서는 true
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofHours(1))
+                .build();
+
+        response.setHeader("Set-Cookie", accessCookie.toString());
+
+        return ResponseEntity.ok().build(); // ✅ 응답 바디 없음
     }
 
     /**
      * 로그아웃 - refresh 제거 및 access 블랙리스트 처리
      */
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(@RequestBody @Valid TokenRequest request) {
-        authService.logout(request);
-        return ApiResponse.ok();
+    public ResponseEntity<Void> logout(@CookieValue(name = JwtProvider.ACCESS_COOKIE, required = false) String accessToken,
+                                       HttpServletResponse response) {
+        if (accessToken == null) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN); // 혹은 204 OK
+        }
+
+        authService.logout(accessToken);
+
+        // ✅ 쿠키 삭제: Set-Cookie with Max-Age 0
+        ResponseCookie deleteCookie = ResponseCookie.from(JwtProvider.ACCESS_COOKIE, "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(0)
+                .build();
+
+        response.setHeader("Set-Cookie", deleteCookie.toString());
+
+        return ResponseEntity.ok().build();
     }
+
 
     /**
      * access 토큰 재발급 (Sliding 방식)
      */
     @PostMapping("/reissue")
-    public ApiResponse<TokenResponse> reissue(@RequestBody @Valid TokenRequest request) {
-        return ApiResponse.ok(authService.reissue(request));
+    public ResponseEntity<Void> reissue(@CookieValue(name = JwtProvider.REFRESH_COOKIE, required = false) String refreshToken,
+                                        HttpServletResponse response) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        TokenResponse token = authService.reissue(refreshToken);
+
+        ResponseCookie accessCookie = ResponseCookie.from(JwtProvider.ACCESS_COOKIE, token.getAccessToken())
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofHours(1))
+                .build();
+
+        response.setHeader("Set-Cookie", accessCookie.toString());
+
+        return ResponseEntity.ok().build();
     }
+
+
 
     /**
      * 아이디 찾기 - 인증 코드 발송

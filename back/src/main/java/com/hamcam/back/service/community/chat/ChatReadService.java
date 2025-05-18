@@ -5,6 +5,8 @@ import com.hamcam.back.entity.chat.ChatMessage;
 import com.hamcam.back.entity.chat.ChatParticipant;
 import com.hamcam.back.entity.chat.ChatRead;
 import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatParticipantRepository;
 import com.hamcam.back.repository.chat.ChatReadRepository;
@@ -23,22 +25,17 @@ public class ChatReadService {
     private final ChatReadRepository chatReadRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatParticipantRepository chatParticipantRepository;
+    private final SecurityUtil securityUtil;
 
     /**
      * 사용자가 특정 메시지를 읽었음을 기록하고,
      * 해당 메시지를 아직 읽지 않은 사용자 수를 반환합니다.
-     *
-     * @param reader    읽은 사용자
-     * @param roomId    채팅방 ID
-     * @param messageId 읽은 메시지 ID
-     * @return 읽지 않은 사람 수 (보낸 사람 제외)
      */
     @Transactional
     public int markAsRead(User reader, Long roomId, Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("메시지를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        // 보낸 사람 본인이면 읽음 처리할 필요 없음
         if (!message.getSender().getId().equals(reader.getId())) {
             boolean alreadyRead = chatReadRepository.existsByMessageAndUser(message, reader);
             if (!alreadyRead) {
@@ -53,15 +50,12 @@ public class ChatReadService {
     }
 
     /**
-     * 특정 메시지를 아직 읽지 않은 사용자 수를 반환합니다.
-     *
-     * @param messageId 메시지 ID
-     * @return 읽지 않은 사용자 수
+     * 메시지를 아직 읽지 않은 사용자 수를 반환합니다.
      */
     @Transactional(readOnly = true)
     public int getUnreadCountForMessage(Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("메시지를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
         Long roomId = message.getChatRoom().getId();
         int totalParticipants = chatParticipantRepository.countByChatRoomId(roomId);
@@ -70,10 +64,13 @@ public class ChatReadService {
         return (int) (totalParticipants - readCount - 1); // 보낸 사람 제외
     }
 
+    /**
+     * 사용자가 방에 입장했을 때 마지막 읽은 메시지 갱신
+     */
     @Transactional
     public void updateLastReadMessage(Long roomId, Long userId) {
         ChatParticipant participant = chatParticipantRepository.findByChatRoomIdAndUserId(roomId, userId)
-                .orElseThrow(() -> new CustomException("채팅방 참여 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomOrderBySentAtDesc(participant.getChatRoom());
         if (lastMessage != null) {
@@ -82,4 +79,18 @@ public class ChatReadService {
         }
     }
 
+    /**
+     * SecurityUtil 기반 유저로 바로 읽음 처리 (WebSocket 등에서 활용 가능)
+     */
+    @Transactional
+    public int markAsReadByAuth(Long roomId, Long messageId) {
+        User reader = securityUtil.getCurrentUser();
+        return markAsRead(reader, roomId, messageId);
+    }
+
+    @Transactional
+    public void updateLastReadMessageByAuth(Long roomId) {
+        Long userId = securityUtil.getCurrentUserId();
+        updateLastReadMessage(roomId, userId);
+    }
 }

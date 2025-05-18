@@ -6,6 +6,8 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
 import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.chat.ChatRoom;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +29,7 @@ public class ChatMessageService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final ChatReadService chatReadService; // ✅ 추가
+    private final ChatReadService chatReadService;
 
     /**
      * 채팅 메시지 저장 (WebSocket / REST 공통)
@@ -39,7 +41,7 @@ public class ChatMessageService {
      */
     public ChatMessageResponse sendMessage(Long roomId, User sender, ChatMessageRequest request) {
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
         ChatMessage message = createChatMessage(room, sender, request);
         chatMessageRepository.save(message);
@@ -57,7 +59,7 @@ public class ChatMessageService {
      */
     public List<ChatMessageResponse> getMessages(Long roomId, int page, int size) {
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sentAt"));
         List<ChatMessage> messages = chatMessageRepository.findByChatRoom(room, pageable);
@@ -75,7 +77,7 @@ public class ChatMessageService {
         try {
             messageType = ChatMessageType.valueOf(request.getType().toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-            throw new IllegalArgumentException("유효하지 않은 메시지 타입입니다: " + request.getType());
+            throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
         return ChatMessage.builder()
@@ -104,7 +106,7 @@ public class ChatMessageService {
                 .type(message.getType().name())
                 .storedFileName(message.getStoredFileName())
                 .sentAt(message.getSentAt())
-                .unreadCount(chatReadService.getUnreadCountForMessage(message.getId())) // ✅ 추가
+                .unreadCount(chatReadService.getUnreadCountForMessage(message.getId()))
                 .build();
     }
 }

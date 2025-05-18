@@ -5,22 +5,30 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 액세스 및 리프레시 토큰을 함께 담는 요청 DTO입니다.
- * 로그아웃, 토큰 재발급 시 클라이언트가 보유한 JWT를 전달합니다.
+ * [TokenRequest]
+ *
+ * 클라이언트가 보유 중인 Access Token과 Refresh Token을 서버로 전달하는 요청 DTO입니다.
+ * 로그아웃 또는 토큰 재발급 시 사용됩니다.
+ *
+ * 예시 요청:
+ * {
+ *   "accessToken": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+ *   "refreshToken": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ * }
  */
 @Getter
 @NoArgsConstructor
 public class TokenRequest {
 
     /**
-     * 현재 사용 중인 access 토큰
+     * 클라이언트가 보유한 Access Token (로그아웃 시 파기 대상)
      */
-    @NotBlank(message = "accessToken은 필수입니다.")
+    @NotBlank(message = "accessToken은 필수 입력 값입니다.")
     private String accessToken;
 
     /**
-     * refresh 토큰
+     * Refresh Token (재발급 검증 및 로그아웃 시 삭제 대상)
      */
-    @NotBlank(message = "refreshToken은 필수입니다.")
+    @NotBlank(message = "refreshToken은 필수 입력 값입니다.")
     private String refreshToken;
 }

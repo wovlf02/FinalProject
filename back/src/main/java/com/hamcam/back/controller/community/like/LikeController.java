@@ -28,10 +28,8 @@ public class LikeController {
     @PostMapping("/posts/{postId}/toggle")
     public ResponseEntity<MessageResponse> togglePostLike(@PathVariable Long postId) {
         boolean liked = likeService.togglePostLike(postId);
-        return ResponseEntity.ok(new MessageResponse(
-                liked ? "게시글에 좋아요를 눌렀습니다." : "게시글 좋아요를 취소했습니다.",
-                liked
-        ));
+        String message = liked ? "게시글에 좋아요를 눌렀습니다." : "게시글 좋아요를 취소했습니다.";
+        return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
 
     /** 게시글 좋아요 수 조회 */
@@ -52,10 +50,8 @@ public class LikeController {
     @PostMapping("/comments/{commentId}/toggle")
     public ResponseEntity<MessageResponse> toggleCommentLike(@PathVariable Long commentId) {
         boolean liked = likeService.toggleCommentLike(commentId);
-        return ResponseEntity.ok(new MessageResponse(
-                liked ? "댓글에 좋아요를 눌렀습니다." : "댓글 좋아요를 취소했습니다.",
-                liked
-        ));
+        String message = liked ? "댓글에 좋아요를 눌렀습니다." : "댓글 좋아요를 취소했습니다.";
+        return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
 
     /** 댓글 좋아요 수 조회 */
@@ -76,10 +72,8 @@ public class LikeController {
     @PostMapping("/replies/{replyId}/toggle")
     public ResponseEntity<MessageResponse> toggleReplyLike(@PathVariable Long replyId) {
         boolean liked = likeService.toggleReplyLike(replyId);
-        return ResponseEntity.ok(new MessageResponse(
-                liked ? "대댓글에 좋아요를 눌렀습니다." : "대댓글 좋아요를 취소했습니다.",
-                liked
-        ));
+        String message = liked ? "대댓글에 좋아요를 눌렀습니다." : "대댓글 좋아요를 취소했습니다.";
+        return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
 
     /** 대댓글 좋아요 수 조회 */

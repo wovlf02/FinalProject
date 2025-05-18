@@ -6,6 +6,7 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
 import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.chat.ChatRoom;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class WebSocketChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final SecurityUtil securityUtil; // ✅ 인증된 사용자 조회용
 
     /**
      * 텍스트/파일 메시지를 저장하고 응답으로 변환합니다.
@@ -30,8 +32,8 @@ public class WebSocketChatService {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 채팅방을 찾을 수 없습니다."));
 
-        // senderId만으로 entity 참조 (proxy)
-        User sender = User.builder().id(request.getSenderId()).build();
+        // ✅ 인증된 사용자 사용
+        User sender = securityUtil.getCurrentUser();
 
         // 문자열 type → enum 변환 (유효성 포함)
         ChatMessageType messageType;
@@ -66,7 +68,7 @@ public class WebSocketChatService {
                 .senderId(sender.getId())
                 .nickname(sender.getNickname() != null ? sender.getNickname() : "")
                 .profileUrl(sender.getProfileImageUrl() != null ? sender.getProfileImageUrl() : "")
-                .type(message.getType().name()) // enum → String 변환
+                .type(message.getType().name())
                 .content(message.getContent())
                 .storedFileName(message.getStoredFileName())
                 .sentAt(message.getSentAt())

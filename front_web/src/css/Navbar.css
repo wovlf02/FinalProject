@@ -130,3 +130,26 @@
     color: #555;
 }
 
+.side-user-profile {
+    margin-top: 30px;
+    padding: 12px;
+    text-align: center;
+    border-top: 1px solid #ddd;
+}
+
+.side-user-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 8px;
+    border: 2px solid #ccc;
+}
+
+.side-user-nickname {
+    font-size: 15px;
+    font-weight: bold;
+    color: #333;
+}
+
+

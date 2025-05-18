@@ -20,7 +20,7 @@ public class FileUploadService {
      * 채팅방 대표 이미지 파일을 저장하고 저장된 파일명을 반환합니다.
      *
      * @param file 업로드된 MultipartFile
-     * @return 저장된 파일명
+     * @return 저장된 상대 경로 (e.g., "/uploads/chatroom/uuid_filename.jpg")
      */
     public String storeChatRoomImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -29,7 +29,7 @@ public class FileUploadService {
 
         try {
             Path dirPath = Paths.get(CHATROOM_IMAGE_DIR);
-            if (!Files.exists(dirPath)) {
+            if (Files.notExists(dirPath)) {
                 Files.createDirectories(dirPath);
             }
 
@@ -43,7 +43,8 @@ public class FileUploadService {
 
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            return storedFilename;
+            // ✅ 웹 접근 경로 반환 (프론트와 연동 용이)
+            return "/uploads/chatroom/" + storedFilename;
 
         } catch (IOException e) {
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
@@ -53,12 +54,18 @@ public class FileUploadService {
     /**
      * 저장된 대표 이미지 파일을 삭제합니다.
      *
-     * @param storedFilename 저장된 파일명
+     * @param storedFilename 저장된 상대 경로 또는 파일명
      */
     public void deleteChatRoomImage(String storedFilename) {
         try {
             if (storedFilename == null || storedFilename.isBlank()) return;
-            Path filePath = Paths.get(CHATROOM_IMAGE_DIR).resolve(storedFilename).normalize();
+
+            // 웹 경로일 경우 실제 파일명만 추출
+            String fileName = storedFilename.contains("/") ?
+                    storedFilename.substring(storedFilename.lastIndexOf("/") + 1) :
+                    storedFilename;
+
+            Path filePath = Paths.get(CHATROOM_IMAGE_DIR).resolve(fileName).normalize();
             Files.deleteIfExists(filePath);
         } catch (Exception e) {
             throw new RuntimeException("대표 이미지 삭제 중 오류 발생", e);
@@ -72,7 +79,8 @@ public class FileUploadService {
      * @return boolean
      */
     public boolean isImagePreviewable(String filename) {
+        if (filename == null) return false;
         String lower = filename.toLowerCase();
-        return lower.matches(".*(jpg|jpeg|png|gif|bmp|webp)$");
+        return lower.matches(".*(jpg|jpeg|png|gif|bmp|webp)$") || lower.startsWith("image/");
     }
 }

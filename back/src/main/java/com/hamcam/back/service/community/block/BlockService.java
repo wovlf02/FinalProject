@@ -32,102 +32,120 @@ public class BlockService {
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
     private final UserRepository userRepository;
-    private final SecurityUtil securityUtil; // ✅ 추가
+    private final SecurityUtil securityUtil;
 
     // ================== 게시글 ==================
+
     public void blockPost(Long postId) {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
         Block block = blockRepository.findByUserAndPost(user, post)
                 .orElse(Block.builder().user(user).post(post).build());
 
-        block.restore();
-        blockRepository.save(block);
+        if (block.isDeleted()) {
+            block.restore();
+            blockRepository.save(block);
+        }
     }
 
     public void unblockPost(Long postId) {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
         blockRepository.findByUserAndPost(user, post)
                 .ifPresent(block -> {
-                    block.softDelete();
-                    blockRepository.save(block);
+                    if (!block.isDeleted()) {
+                        block.softDelete();
+                        blockRepository.save(block);
+                    }
                 });
     }
 
     public BlockedPostListResponse getBlockedPosts() {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         List<Block> blocks = blockRepository.findByUserAndPostIsNotNullAndIsDeletedFalse(user);
+
         return new BlockedPostListResponse(blocks.stream()
                 .map(block -> new BlockedTargetResponse(block.getPost().getId(), "POST"))
                 .collect(Collectors.toList()));
     }
 
     // ================== 댓글 ==================
+
     public void blockComment(Long commentId) {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
         Block block = blockRepository.findByUserAndComment(user, comment)
                 .orElse(Block.builder().user(user).comment(comment).build());
 
-        block.restore();
-        blockRepository.save(block);
+        if (block.isDeleted()) {
+            block.restore();
+            blockRepository.save(block);
+        }
     }
 
     public void unblockComment(Long commentId) {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
         blockRepository.findByUserAndComment(user, comment)
                 .ifPresent(block -> {
-                    block.softDelete();
-                    blockRepository.save(block);
+                    if (!block.isDeleted()) {
+                        block.softDelete();
+                        blockRepository.save(block);
+                    }
                 });
     }
 
     public BlockedCommentListResponse getBlockedComments() {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         List<Block> blocks = blockRepository.findByUserAndCommentIsNotNullAndIsDeletedFalse(user);
+
         return new BlockedCommentListResponse(blocks.stream()
                 .map(block -> new BlockedTargetResponse(block.getComment().getId(), "COMMENT"))
                 .collect(Collectors.toList()));
     }
 
     // ================== 대댓글 ==================
+
     public void blockReply(Long replyId) {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
 
         Block block = blockRepository.findByUserAndReply(user, reply)
                 .orElse(Block.builder().user(user).reply(reply).build());
 
-        block.restore();
-        blockRepository.save(block);
+        if (block.isDeleted()) {
+            block.restore();
+            blockRepository.save(block);
+        }
     }
 
     public void unblockReply(Long replyId) {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
 
         blockRepository.findByUserAndReply(user, reply)
                 .ifPresent(block -> {
-                    block.softDelete();
-                    blockRepository.save(block);
+                    if (!block.isDeleted()) {
+                        block.softDelete();
+                        blockRepository.save(block);
+                    }
                 });
     }
 
     public BlockedReplyListResponse getBlockedReplies() {
-        User user = securityUtil.getCurrentUser(); // ✅ 변경
+        User user = securityUtil.getCurrentUser();
         List<Block> blocks = blockRepository.findByUserAndReplyIsNotNullAndIsDeletedFalse(user);
+
         return new BlockedReplyListResponse(blocks.stream()
                 .map(block -> new BlockedTargetResponse(block.getReply().getId(), "REPLY"))
                 .collect(Collectors.toList()));

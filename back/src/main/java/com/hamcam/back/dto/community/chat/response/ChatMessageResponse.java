@@ -2,16 +2,22 @@ package com.hamcam.back.dto.community.chat.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 /**
- * 채팅 메시지 응답 DTO
+ * [ChatMessageResponse]
+ *
+ * 채팅 메시지 응답 DTO입니다.
+ * 텍스트, 이미지, 파일 메시지 등 다양한 메시지 유형에 대응하며,
+ * 프론트에서는 메시지 타입에 따라 렌더링 방식을 분기할 수 있습니다.
  */
-@Data
-@Builder
+@Getter
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ChatMessageResponse {
 
     /**
@@ -40,17 +46,17 @@ public class ChatMessageResponse {
     private String profileUrl;
 
     /**
-     * 메시지 내용 (텍스트 또는 파일명)
+     * 메시지 내용 (텍스트 메시지일 경우 본문, 파일일 경우 파일명)
      */
     private String content;
 
     /**
-     * 메시지 타입 (TEXT, FILE, IMAGE 등)
+     * 메시지 타입 (TEXT, IMAGE, FILE)
      */
     private String type;
 
     /**
-     * 서버에 저장된 파일명 (파일/이미지 메시지 전용)
+     * 저장된 파일명 (파일/이미지 메시지의 경우 사용)
      */
     private String storedFileName;
 
@@ -60,7 +66,7 @@ public class ChatMessageResponse {
     private LocalDateTime sentAt;
 
     /**
-     * ✅ 아직 이 메시지를 읽지 않은 참여자 수
+     * 아직 이 메시지를 읽지 않은 참여자 수
      */
     private int unreadCount;
 }

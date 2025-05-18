@@ -10,46 +10,54 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 채팅방 참여자(ChatParticipant) 관련 JPA Repository
- * <p>채팅방 입장/퇴장, 메시지 읽음 관련 로직에 사용됩니다.</p>
+ * [ChatParticipantRepository]
+ *
+ * 채팅방 참여자 관련 JPA Repository입니다.
+ * - 참여자 입장 여부 확인
+ * - 참여자 목록 및 수 조회
+ * - 메시지 읽음 처리 등에서 사용됩니다.
  */
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant, Long> {
 
     /**
-     * 사용자가 해당 채팅방에 참여 중인지 확인
+     * [사용자의 채팅방 참여 여부 확인]
+     * 주어진 채팅방과 사용자에 대해 참여 이력을 조회합니다.
      *
-     * @param chatRoom 대상 채팅방
-     * @param user     대상 사용자
-     * @return 참여자 엔티티 (Optional)
+     * @param chatRoom 채팅방 엔티티
+     * @param user 사용자 엔티티
+     * @return 참여 정보 (Optional)
      */
     Optional<ChatParticipant> findByChatRoomAndUser(ChatRoom chatRoom, User user);
 
     /**
-     * 채팅방에 참여 중인 사용자 전체 조회
+     * [채팅방 참여자 전체 조회]
+     * 특정 채팅방에 참여 중인 사용자 전체 목록을 반환합니다.
      *
-     * @param chatRoom 채팅방
-     * @return 참여자 목록
+     * @param chatRoom 대상 채팅방
+     * @return 해당 채팅방의 참여자 목록
      */
     List<ChatParticipant> findByChatRoom(ChatRoom chatRoom);
 
     /**
-     * 사용자가 참여 중인 채팅방 목록 조회
+     * [사용자의 참여 채팅방 목록 조회]
+     * 특정 사용자가 참여 중인 모든 채팅방(참여 정보) 목록을 반환합니다.
      *
      * @param user 사용자
-     * @return 참여 중인 ChatParticipant 목록
+     * @return 참여자 엔티티 목록
      */
     List<ChatParticipant> findByUser(User user);
 
     /**
-     * 채팅방의 참여자 수 조회 (Entity 기반)
+     * [채팅방의 참여자 수 조회 - 엔티티 기반]
      *
      * @param chatRoom 채팅방
-     * @return 참여자 수
+     * @return 참여 중인 사용자 수
      */
     int countByChatRoom(ChatRoom chatRoom);
 
     /**
-     * 채팅방의 참여자 수 조회 (ID 기반)
+     * [채팅방의 참여자 수 조회 - ID 기반]
+     * 채팅방 ID만으로 참여자 수를 조회합니다.
      *
      * @param roomId 채팅방 ID
      * @return 참여자 수
@@ -58,12 +66,17 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     int countByChatRoomId(Long roomId);
 
     /**
-     * 채팅방 ID와 사용자 ID로 참여자 조회 (읽음 처리 등에 사용)
+     * [채팅방 ID + 사용자 ID 기준 참여자 조회]
+     * 읽음 처리, 알림 등에서 활용되는 쿼리입니다.
+     *
+     * @param roomId 채팅방 ID
+     * @param userId 사용자 ID
+     * @return 참여자 정보 (Optional)
      */
     @Query("""
         SELECT cp FROM ChatParticipant cp
         WHERE cp.chatRoom.id = :roomId
           AND cp.user.id = :userId
     """)
-    Optional<ChatParticipant> findByChatRoomIdAndUserId(Long roomId, Long userId); // ✅ 추가
+    Optional<ChatParticipant> findByChatRoomIdAndUserId(Long roomId, Long userId);
 }

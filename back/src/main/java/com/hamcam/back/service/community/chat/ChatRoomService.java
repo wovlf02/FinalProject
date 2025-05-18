@@ -6,35 +6,21 @@ import com.hamcam.back.dto.community.chat.response.ChatParticipantDto;
 import com.hamcam.back.dto.community.chat.response.ChatRoomListResponse;
 import com.hamcam.back.dto.community.chat.response.ChatRoomResponse;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.chat.ChatMessage;
-import com.hamcam.back.entity.chat.ChatParticipant;
-import com.hamcam.back.entity.chat.ChatRoom;
-import com.hamcam.back.entity.chat.ChatRoomType;
+import com.hamcam.back.entity.chat.*;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
-import com.hamcam.back.repository.chat.ChatMessageRepository;
-import com.hamcam.back.repository.chat.ChatParticipantRepository;
-import com.hamcam.back.repository.chat.ChatRoomRepository;
-import com.hamcam.back.security.auth.CustomUserDetails;
+import com.hamcam.back.repository.chat.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * 채팅방 서비스
- * - 생성, 입장, 퇴장, 목록 및 상세 조회 등 전체 채팅방 흐름 처리
- */
 @Service
 @RequiredArgsConstructor
 public class ChatRoomService {
@@ -44,62 +30,38 @@ public class ChatRoomService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
-
-    private Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) throw new CustomException("로그인 정보가 없습니다.");
-
-        Object principal = auth.getPrincipal();
-        if (principal instanceof CustomUserDetails userDetails) {
-            return userDetails.getUserId();
-        }
-
-        throw new CustomException("사용자 정보를 불러올 수 없습니다.");
-    }
-
-    private User getCurrentUser() {
-        return userRepository.findById(getCurrentUserId())
-                .orElseThrow(() -> new CustomException("사용자 정보를 불러올 수 없습니다."));
-    }
+    private final SecurityUtil securityUtil;
 
     /**
      * 채팅방 생성
-     *
-     * @param request 생성 요청
-     * @return 생성된 채팅방 정보
      */
-    public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request) {
-        User creator = getCurrentUser(); // 현재 로그인 사용자
+    public ChatRoomResponse createChatRoom(User creator, ChatRoomCreateRequest request) {
         List<Long> inviteeIds = request.getInvitedUserIds();
-
         if (inviteeIds == null || inviteeIds.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_CHATROOM_INVITEE);
         }
 
         ChatRoomType type = (inviteeIds.size() == 1) ? ChatRoomType.DIRECT : ChatRoomType.GROUP;
 
-        // 1. 이미지가 존재하면 저장 처리
         String imageUrl = null;
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             imageUrl = fileUploadService.storeChatRoomImage(request.getImage());
         }
 
-        // 2. 채팅방 생성
         ChatRoom room = ChatRoom.builder()
                 .name(request.getRoomName())
                 .type(type)
-                .createdAt(LocalDateTime.now())
                 .representativeImageUrl(imageUrl)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         chatRoomRepository.save(room);
 
-        // 3. 채팅방 멤버 등록 (자기 자신 포함)
-        List<User> members = userRepository.findAllById(
-                Stream.concat(Stream.of(creator.getId()), inviteeIds.stream())
-                        .distinct()
-                        .toList()
-        );
+        List<Long> participantIds = Stream.concat(Stream.of(creator.getId()), inviteeIds.stream())
+                .distinct()
+                .toList();
+
+        List<User> members = userRepository.findAllById(participantIds);
 
         List<ChatParticipant> chatMembers = members.stream()
                 .map(user -> ChatParticipant.builder()
@@ -111,35 +73,23 @@ public class ChatRoomService {
 
         chatParticipantRepository.saveAll(chatMembers);
 
-        // 4. 응답 변환
-        return toResponse(room);
+        return ChatRoomResponse.fromEntity(room);
     }
 
-
-
     /**
-     * 사용자가 참여 중인 채팅방 목록 조회
-     *
-     * @param userId 사용자 ID
-     * @return 채팅방 목록 DTO 리스트
+     * [내 채팅방 목록 조회]
      */
-    public List<ChatRoomListResponse> getChatRoomsByUserId(Long userId) {
-        User user = User.builder().id(userId).build();
+    public List<ChatRoomListResponse> getMyChatRooms() {
+        User user = securityUtil.getCurrentUser();
         List<ChatParticipant> participants = chatParticipantRepository.findByUser(user);
 
-        List<ChatRoomListResponse> responseList = participants.stream().map(participant -> {
+        return participants.stream().map(participant -> {
             ChatRoom room = participant.getChatRoom();
             ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomOrderBySentAtDesc(room);
-
-            int unreadCount = chatMessageRepository.countUnreadMessages(
-                    room,
-                    user,
-                    participant.getLastReadMessageId()
-            );
-
+            int unreadCount = chatMessageRepository.countUnreadMessages(room, user, participant.getLastReadMessageId());
             int totalMessageCount = chatMessageRepository.countByChatRoom(room);
 
-            ChatRoomListResponse response = ChatRoomListResponse.builder()
+            return ChatRoomListResponse.builder()
                     .roomId(room.getId())
                     .roomName(room.getName())
                     .roomType(room.getType().name())
@@ -153,87 +103,55 @@ public class ChatRoomService {
                     .totalMessageCount(totalMessageCount)
                     .profileImageUrl(room.getRepresentativeImageUrl())
                     .build();
-
-            System.out.printf("🔔 채팅방 ID: %d | 마지막 읽은 ID: %s | 안읽은 메시지 수: %d\n",
-                    room.getId(),
-                    participant.getLastReadMessageId(),
-                    unreadCount
-            );
-
-            return response;
         }).toList();
-
-        return responseList;
     }
 
-
-
-
-
-    /**
-     * 채팅방 상세 조회
-     */
     public ChatRoomResponse getChatRoomById(Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         return toResponse(room);
     }
 
-    /**
-     * 채팅방 삭제
-     */
     public void deleteChatRoom(Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         chatRoomRepository.delete(room);
     }
 
-    /**
-     * 채팅방 입장
-     */
     @Transactional
     public void joinChatRoom(ChatJoinRequest request) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        User user = User.builder().id(request.getUserId()).build();
         boolean alreadyJoined = chatParticipantRepository.findByChatRoomAndUser(room, user).isPresent();
-
         if (!alreadyJoined) {
-            ChatParticipant participant = ChatParticipant.builder()
+            chatParticipantRepository.save(ChatParticipant.builder()
                     .chatRoom(room)
                     .user(user)
                     .joinedAt(LocalDateTime.now())
-                    .build();
-            chatParticipantRepository.save(participant);
+                    .build());
         }
     }
 
-    /**
-     * 채팅방 퇴장 (마지막 사용자가 퇴장 시 자동 삭제)
-     */
     @Transactional
     public void exitChatRoom(ChatJoinRequest request) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
-
-        User user = User.builder().id(request.getUserId()).build();
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         ChatParticipant participant = chatParticipantRepository.findByChatRoomAndUser(room, user)
-                .orElseThrow(() -> new IllegalArgumentException("입장한 사용자가 아닙니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCESS_DENIED));
 
         chatParticipantRepository.delete(participant);
-
         if (chatParticipantRepository.findByChatRoom(room).isEmpty()) {
             chatRoomRepository.delete(room);
         }
     }
 
-
-    // ================== DTO 변환 ==================
-
     private ChatRoomResponse toResponse(ChatRoom room) {
-        List<ChatParticipantDto> participants = chatParticipantRepository.findByChatRoom(room)
-                .stream()
+        List<ChatParticipantDto> participants = chatParticipantRepository.findByChatRoom(room).stream()
                 .map(p -> new ChatParticipantDto(
                         p.getUser().getId(),
                         p.getUser().getNickname(),
@@ -246,9 +164,8 @@ public class ChatRoomService {
                 .roomName(room.getName())
                 .roomType(room.getType().name())
                 .createdAt(room.getCreatedAt())
-                .representativeImageUrl(room.getRepresentativeImageUrl()) // ✅ 대표 이미지 추가
+                .representativeImageUrl(room.getRepresentativeImageUrl())
                 .participants(participants)
                 .build();
     }
-
 }

@@ -36,7 +36,7 @@ public class AttachmentService {
 
     public int uploadPostFiles(Long postId, MultipartFile[] files) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
         List<Attachment> attachments = saveFiles(files).stream()
                 .map(fileMeta -> Attachment.builder()
@@ -63,19 +63,19 @@ public class AttachmentService {
 
     public Resource downloadAttachment(Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
         try {
             Path path = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()).normalize();
             Resource resource = new UrlResource(path.toUri());
 
             if (!resource.exists()) {
-                throw new RuntimeException("파일이 존재하지 않습니다.");
+                throw new CustomException(ErrorCode.FILE_NOT_FOUND);
             }
 
             return resource;
         } catch (MalformedURLException e) {
-            throw new RuntimeException("파일 경로 오류", e);
+            throw new CustomException(ErrorCode.FILE_DOWNLOAD_FAILED);
         }
     }
 
@@ -83,7 +83,7 @@ public class AttachmentService {
 
     public void deleteAttachment(Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new IllegalArgumentException("삭제할 첨부파일이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
         Long currentUserId = securityUtil.getCurrentUserId();
         Long ownerId = attachment.getPost().getWriter().getId();
@@ -96,12 +96,11 @@ public class AttachmentService {
         try {
             Files.deleteIfExists(filePath);
         } catch (Exception e) {
-            throw new RuntimeException("파일 삭제 중 오류 발생", e);
+            throw new CustomException(ErrorCode.FILE_DELETE_FAILED);
         }
 
         attachmentRepository.delete(attachment);
     }
-
 
     // ===== 내부 유틸 =====
 
@@ -132,7 +131,7 @@ public class AttachmentService {
                     .map(file -> {
                         String original = file.getOriginalFilename();
                         if (original == null || !original.contains(".")) {
-                            throw new IllegalArgumentException("파일 이름이 유효하지 않습니다: 확장자가 없습니다.");
+                            throw new CustomException(ErrorCode.INVALID_INPUT);
                         }
 
                         String extension = original.substring(original.lastIndexOf('.') + 1);
@@ -142,7 +141,7 @@ public class AttachmentService {
                             Path target = dirPath.resolve(stored);
                             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
                         } catch (Exception e) {
-                            throw new RuntimeException("파일 저장 실패", e);
+                            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
                         }
 
                         return new FileMeta(original, stored, extension);
@@ -150,7 +149,7 @@ public class AttachmentService {
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            throw new RuntimeException("파일 저장 실패", e);
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }
 

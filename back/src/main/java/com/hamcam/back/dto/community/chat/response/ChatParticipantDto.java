@@ -1,17 +1,25 @@
 package com.hamcam.back.dto.community.chat.response;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
- * 채팅방 참여자 정보 DTO
+ * [ChatParticipantDto]
+ *
+ * 채팅방 참여자 정보를 나타내는 DTO입니다.
+ * 채팅방 내 유저 리스트를 표시할 때 사용되며,
+ * 사용자 ID, 닉네임, 프로필 이미지 URL을 포함합니다.
  */
-@Data
+@Getter
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ChatParticipantDto {
 
     /**
-     * 사용자 ID
+     * 사용자 고유 ID
      */
     private Long userId;
 
@@ -21,7 +29,7 @@ public class ChatParticipantDto {
     private String nickname;
 
     /**
-     * 프로필 이미지 URL
+     * 사용자 프로필 이미지 URL
      */
     private String profileImageUrl;
 }

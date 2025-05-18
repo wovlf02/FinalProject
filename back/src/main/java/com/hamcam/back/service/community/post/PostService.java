@@ -4,6 +4,7 @@ import com.hamcam.back.dto.community.post.request.*;
 import com.hamcam.back.dto.community.post.response.*;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.Post;
+import com.hamcam.back.entity.community.PostCategory;
 import com.hamcam.back.entity.community.PostFavorite;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
@@ -35,6 +36,14 @@ public class PostService {
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
     }
 
+    private PostCategory parseCategory(String categoryStr) {
+        try {
+            return PostCategory.valueOf(categoryStr.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+    }
+
     // ====================== 게시글 CRUD ======================
 
     public Long createPost(PostCreateRequest request, MultipartFile[] files) {
@@ -44,6 +53,7 @@ public class PostService {
                 .writer(writer)
                 .title(request.getTitle())
                 .content(request.getContent())
+                .category(request.getCategory())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -59,9 +69,19 @@ public class PostService {
     @Transactional
     public void updatePost(Long postId, PostUpdateRequest request, MultipartFile[] files) {
         Post post = getPostOrThrow(postId);
+
+        if (!post.getWriter().getId().equals(securityUtil.getCurrentUserId())) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setUpdatedAt(LocalDateTime.now());
+
+        if (request.getCategory() != null) {
+            post.setCategory(request.getCategory());
+        }
+
 
         if (request.getDeleteFileIds() != null) {
             request.getDeleteFileIds().forEach(attachmentService::deleteAttachment);
@@ -74,6 +94,9 @@ public class PostService {
 
     public void deletePost(Long postId) {
         Post post = getPostOrThrow(postId);
+        if (!post.getWriter().getId().equals(securityUtil.getCurrentUserId())) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
         postRepository.delete(post);
     }
 
@@ -109,6 +132,16 @@ public class PostService {
         return PostListResponse.from(result);
     }
 
+    public PostListResponse filterPostsByCategory(PostCategory category, String keyword, int minLikes, String sort) {
+        Sort sortOption = "popular".equals(sort)
+                ? Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"))
+                : Sort.by(Sort.Order.desc("createdAt"));
+        Pageable pageable = PageRequest.of(0, 20, sortOption);
+
+        Page<Post> result = postRepository.searchFilteredPosts(category, keyword, minLikes, pageable);
+        return PostListResponse.from(result);
+    }
+
     // ====================== 통계 / 랭킹 ======================
 
     public PopularPostListResponse getPopularPosts() {
@@ -126,7 +159,7 @@ public class PostService {
 
     public PostAutoFillResponse autoFillPost(ProblemReferenceRequest request) {
         String title = "추천 제목: " + request.getProblemTitle();
-        String content = "해당 문제는 " + request.getCategory() + "에 속하며, 해결 전략은 다음과 같습니다...";
+        String content = "이 문제는 " + request.getCategory() + "에 속하며, 해결 전략은 다음과 같습니다...";
         return PostAutoFillResponse.builder().title(title).content(content).build();
     }
 
@@ -168,11 +201,11 @@ public class PostService {
         return new FavoritePostListResponse(posts);
     }
 
+    // ====================== 조회수 증가 ======================
+
     public void increaseViewCount(Long postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        post.incrementViewCount(); // 또는 post.setViewCount(post.getViewCount() + 1);
+        Post post = getPostOrThrow(postId);
+        post.incrementViewCount();
         postRepository.save(post);
     }
-
 }
