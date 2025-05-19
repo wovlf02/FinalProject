@@ -31,9 +31,10 @@ public class Todo {
     @Column(nullable = false)
     private LocalDate todoDate;
 
-    /** 우선순위 (낮음: 1, 중간: 2, 높음: 3) */
+    /** 우선순위 (LOW, NORMAL, HIGH) */
+    @Enumerated(EnumType.STRING) // ✅ 문자열로 저장
     @Column(nullable = false)
-    private Integer priority;
+    private PriorityLevel priority;
 
     /** 완료 여부 */
     @Builder.Default
@@ -45,36 +46,26 @@ public class Todo {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-
-
     // ====================
     // ✅ 내부 로직 메서드
     // ====================
 
-    /**
-     * 할 일을 완료 상태로 설정합니다.
-     */
+    /** 할 일을 완료 상태로 설정 */
     public void markAsCompleted() {
         this.completed = true;
     }
 
-    /**
-     * 할 일을 미완료 상태로 설정합니다.
-     */
+    /** 할 일을 미완료 상태로 설정 */
     public void markAsIncomplete() {
         this.completed = false;
     }
 
-    /**
-     * 완료 상태를 토글합니다.
-     */
+    /** 완료 상태를 토글 */
     public void toggleCompletion() {
         this.completed = !this.completed;
     }
 
-    /**
-     * 할 일이 완료 상태인지 반환합니다.
-     */
+    /** 완료 상태 여부 반환 */
     public boolean isCompleted() {
         return this.completed;
     }

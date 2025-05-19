@@ -67,16 +67,20 @@ public class DashboardService {
 
     public TodoResponse createTodo(TodoRequest request) {
         User user = securityUtil.getCurrentUser();
+
         Todo todo = Todo.builder()
                 .user(user)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .todoDate(request.getTodoDate())
-                .priority(request.getPriority())
+                .todoDate(request.getDate()) // ✅ getDate() 그대로 사용
+                .priority(request.getPriority()) // ✅ enum 그대로 사용
                 .completed(false)
                 .build();
-        return toTodoResponse(todoRepository.save(todo));
+
+        Todo saved = todoRepository.save(todo);
+        return toTodoResponse(saved);
     }
+
 
     public void updateTodo(Long todoId, TodoUpdateRequest request) {
         Todo todo = getTodoOrThrow(todoId);
@@ -263,9 +267,9 @@ public class DashboardService {
                 .id(todo.getId())
                 .title(todo.getTitle())
                 .description(todo.getDescription())
-                .todoDate(todo.getTodoDate())
+                .date(todo.getTodoDate())
                 .priority(todo.getPriority())
-                .isCompleted(todo.isCompleted())
+                .completed(todo.isCompleted())
                 .build();
     }
 }
