@@ -1,0 +1,126 @@
+.friend-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e5e5;
+    margin-bottom: 16px;
+    transition: transform 0.2s;
+}
+
+.friend-card:hover {
+    transform: translateY(-2px);
+}
+
+/* 왼쪽: 프로필 */
+.friend-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.friend-profile-img {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #f1f1f1;
+}
+
+/* 중앙: 이름, 이메일, 상태 */
+.friend-center {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.friend-nickname {
+    font-weight: 600;
+    font-size: 15px;
+    color: #1f1f1f;
+}
+
+.friend-email {
+    font-size: 13px;
+    color: #777;
+}
+
+.friend-status {
+    font-size: 13px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.friend-status.online .status-dot {
+    background-color: #1dd1a1;
+}
+
+.friend-status.offline .status-dot {
+    background-color: #ff6b6b;
+}
+
+/* 오른쪽: 버튼 영역 */
+.friend-right {
+    display: flex;
+    gap: 8px;
+}
+
+/* 공통 버튼 스타일 */
+.friend-btn {
+    font-size: 13px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+/* 각 버튼 컬러 */
+.btn-chat {
+    background-color: #2563eb;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-block {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-unblock {
+    background-color: #6f42c1;
+    color: white;
+}
+
+.btn-accept {
+    background-color: #20c997;
+    color: white;
+}
+
+.btn-reject {
+    background-color: #ffc107;
+    color: white;
+}
+
+.friend-info-text {
+    font-size: 13px;
+    color: #999;
+    padding: 0 6px;
+}

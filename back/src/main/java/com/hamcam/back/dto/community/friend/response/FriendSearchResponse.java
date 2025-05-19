@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.community.friend.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hamcam.back.entity.auth.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

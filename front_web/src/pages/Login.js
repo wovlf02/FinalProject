@@ -11,19 +11,23 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            // ✅ 1. 로그인 요청 (토큰은 HttpOnly 쿠키로 처리됨)
-            await api.post('/auth/login', {
+            // ✅ 1. 로그인 요청 (HttpOnly 쿠키 방식)
+            const res = await api.post('/auth/login', {
                 username,
                 password,
             });
 
-            // ✅ 2. 로그인 성공 시 사용자 정보 요청
-            const userResponse = await api.get('/users/me');
-            const nickname = userResponse.data.nickname;
+            if (res.status === 200) {
+                // ✅ 2. 로그인 성공 후 사용자 정보 요청
+                const userRes = await api.get('/users/me');
+                const nickname = userRes.data?.nickname || '사용자';
 
-            // ✅ 3. 환영 메시지 출력
-            alert(`로그인 성공: ${nickname}님 환영합니다!`);
-            navigate('/dashboard');
+                // ✅ 3. 닉네임 기반 환영 메시지 출력
+                alert(`${nickname}님, 환영합니다!`);
+                navigate('/dashboard');
+            } else {
+                alert('로그인 실패: 서버 응답 오류');
+            }
         } catch (err) {
             alert('아이디 또는 비밀번호를 확인하세요.');
             console.error('로그인 에러:', err);

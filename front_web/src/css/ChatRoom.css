@@ -53,7 +53,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .message-wrapper.left {
@@ -68,7 +68,7 @@
 .message-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 4px;
 }
 
@@ -82,19 +82,35 @@
     justify-content: flex-end;
 }
 
-/* ─── 프로필 이미지 ───────────── */
 .message-avatar {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     object-fit: cover;
 }
 
-/* ─── 닉네임 ───────────── */
 .message-nickname {
     font-size: 13px;
-    font-weight: 600;
-    color: #444;
+    font-weight: bold;
+    color: #555;
+}
+
+/* ─── 말풍선 및 시간 포함 묶음 ───────────── */
+.message-content-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.message-content-group.right {
+    align-items: flex-end;
+}
+
+.message-bubble-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
 }
 
 /* ─── 말풍선 ───────────── */
@@ -102,57 +118,33 @@
     max-width: 260px;
     padding: 10px 14px;
     border-radius: 16px;
-    position: relative;
+    font-size: 14px;
     word-break: break-word;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.message-wrapper.left .message-bubble {
     background-color: #fff;
     border: 1px solid #e5e5e5;
-    border-top-left-radius: 0;
-    align-self: flex-start;
-}
-
-.message-wrapper.right .message-bubble {
-    background-color: #dbeafe;
-    border-top-right-radius: 0;
-    align-self: flex-end;
-}
-
-/* 말풍선 꼬리 */
-.message-wrapper.left .message-bubble::before {
-    content: '';
-    position: absolute;
-    left: -8px;
-    bottom: 12px;
-    border-top: 6px solid transparent;
-    border-bottom: 6px solid transparent;
-    border-right: 8px solid #ffffff;
-}
-
-.message-wrapper.right .message-bubble::before {
-    content: '';
-    position: absolute;
-    right: -8px;
-    bottom: 12px;
-    border-top: 6px solid transparent;
-    border-bottom: 6px solid transparent;
-    border-left: 8px solid #dbeafe;
-}
-
-/* ─── 메시지 텍스트 ───────────── */
-.message-content {
-    font-size: 14px;
     color: #222;
+}
+
+.message-bubble.me {
+    background-color: #dbeafe;
+    border: none;
 }
 
 /* ─── 메시지 시간 ───────────── */
 .message-time {
     font-size: 11px;
     color: #999;
-    margin-top: 4px;
-    text-align: right;
+    align-self: flex-end;
+    white-space: nowrap;
+}
+
+.message-time.left {
+    margin-left: 4px;
+}
+
+.message-time.right {
+    margin-right: 4px;
 }
 
 /* ─── 입력창 ───────────── */
@@ -192,4 +184,60 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+}
+
+/* ─── 첨부파일 메시지 ───────────── */
+.message-bubble a {
+    color: #3366BB;
+    text-decoration: underline;
+    font-size: 14px;
+}
+
+/* ─── 메시지 그룹 좌우 정렬 및 말풍선/시간 배치 개선 ───────────── */
+.message-meta {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+}
+
+.message-meta.right {
+    flex-direction: row-reverse;
+}
+
+.message-content-group.right .message-bubble-wrapper {
+    flex-direction: row-reverse;
+}
+
+.message-content-group.right .message-time {
+    text-align: left;
+    align-self: flex-start;
+    margin-left: 6px;
+}
+
+.message-content-group.left .message-time {
+    text-align: right;
+    align-self: flex-end;
+    margin-right: 6px;
+}
+
+.message-bubble-container {
+    position: relative;
+    display: inline-block;
+}
+
+.chat-unread-top-left {
+    position: absolute;
+    top: 0;
+    left: -40px;
+    font-size: 11px;
+    color: #666;
+}
+
+.message-time-bottom-left {
+    position: absolute;
+    bottom: 0;
+    left: -53px;
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
 }

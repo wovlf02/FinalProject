@@ -1,0 +1,186 @@
+/* ✅ 모달 전체 오버레이 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); /* 반투명 회색 배경 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ✅ 모달 콘텐츠 상자 */
+.modal-box {
+    background-color: #FFFDF9; /* 불투명 흰 배경 */
+    border-radius: 20px;
+    padding: 30px 24px;
+    width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ✅ 상단 헤더 */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: bold;
+    color: #382F2D;
+    margin: 0;
+}
+
+.modal-close {
+    background: #D9534F;
+    color: white;
+    border: none;
+    font-size: 16px;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+/* ✅ 대표 이미지 선택 영역 */
+.modal-avatar-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.modal-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #EEE;
+    margin-bottom: 8px;
+}
+
+.modal-image-upload {
+    font-size: 13px;
+    color: #7A6E66;
+    cursor: pointer;
+}
+
+/* ✅ 입력 필드 */
+.modal-input {
+    padding: 10px 14px;
+    font-size: 15px;
+    border: 1px solid #D0BFB2;
+    border-radius: 12px;
+    background: #FFFDF9;
+    width: 100%;
+    box-sizing: border-box;
+    color: #382F2D;
+    outline: none;
+}
+
+.modal-char-count {
+    font-size: 12px;
+    text-align: right;
+    color: #A08C7B;
+    margin-top: -8px;
+}
+
+/* ✅ 친구 리스트 */
+.friend-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid #E0D7D2;
+    border-radius: 12px;
+    background-color: #FFFDF9;
+}
+
+.friend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid #DDD3C8;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.friend-item.selected {
+    background-color: #EEDCD0;
+    border-color: #A3775C;
+}
+
+.friend-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #EEE;
+}
+
+.friend-item span {
+    flex: 1;
+    font-size: 14px;
+    color: #382F2D;
+}
+
+.friend-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #CCC;
+    background-color: transparent;
+}
+
+.friend-check.checked {
+    background-color: #A3775C;
+    border-color: #A3775C;
+}
+
+.friend-empty {
+    text-align: center;
+    width: 100%;
+    color: #A08C7B;
+    font-size: 14px;
+    padding: 10px 0;
+}
+
+/* ✅ 하단 상태 및 버튼 */
+.modal-selected-count {
+    font-size: 13px;
+    color: #7A6E66;
+    text-align: right;
+    margin-bottom: 8px;
+}
+
+.modal-submit {
+    background-color: #A3775C;
+    color: white;
+    padding: 14px 0;
+    font-size: 15px;
+    font-weight: bold;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    width: 100%;
+    text-align: center;
+}
+
+.modal-submit.disabled {
+    background-color: #D3C0B2;
+    cursor: not-allowed;
+}

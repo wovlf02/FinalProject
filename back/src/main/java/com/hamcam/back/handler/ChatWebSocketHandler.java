@@ -48,8 +48,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         }
 
         try {
-            if (!jwtProvider.validateTokenWithoutRedis(token)) {
-                session.close(CloseStatus.NOT_ACCEPTABLE.withReason("JWT 토큰이 유효하지 않습니다."));
+            // ✅ Redis 기반 토큰 유효성 검증
+            if (!jwtProvider.validateAccessTokenWithRedis(token)) {
+                session.close(CloseStatus.NOT_ACCEPTABLE.withReason("JWT 토큰이 유효하지 않거나 만료되었습니다."));
                 return;
             }
 
@@ -60,11 +61,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             sessionUserMap.put(session.getId(), user);
             log.info("🔌 WebSocket 연결됨 - 세션 ID: {}, 사용자: {} (ID: {})", session.getId(), user.getUsername(), user.getId());
 
-        } catch (Exception e) {
+        } catch (CustomException e) {
             log.error("❌ WebSocket 인증 실패: {}", e.getMessage());
-            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("WebSocket 인증 실패"));
+            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("인증 실패: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("❌ WebSocket 예외 발생", e);
+            session.close(CloseStatus.SERVER_ERROR.withReason("서버 오류 발생"));
         }
     }
+
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) {

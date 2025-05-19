@@ -1,0 +1,88 @@
+.chat-friend-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.06);
+    border: 1px solid #dfe3e8;
+    background-color: white;
+}
+
+.chat-friend-profile {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 14px;
+}
+
+.chat-friend-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.chat-friend-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.chat-friend-nickname {
+    font-weight: bold;
+    font-size: 15px;
+    color: #222;
+}
+
+.chat-friend-email {
+    font-size: 13px;
+    color: #777;
+}
+
+.chat-friend-status {
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.chat-status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.chat-friend-status.online .chat-status-dot {
+    background-color: #28c76f;
+}
+
+.chat-friend-status.offline .chat-status-dot {
+    background-color: #ff5b5b;
+}
+
+.chat-friend-button {
+    background-color: #1c78dd;
+    color: #fff;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.chat-friend-list-panel {
+    width: 400px;
+    background-color: #f9fafc;
+    border-right: 1px solid #f0f2f5;
+    padding: 20px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}

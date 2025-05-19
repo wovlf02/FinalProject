@@ -1,0 +1,146 @@
+.friend-page-container {
+    margin-left: 160px;
+    display: flex;
+    padding: 40px 60px;
+    background-color: #f9fafb;
+    min-height: 100vh;
+    box-sizing: border-box;
+    gap: 28px;
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+}
+
+/* 각 열 */
+.friend-column {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    box-sizing: border-box;
+    min-width: 320px;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+/* 제목 스타일 개선 */
+.friend-column h3 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1e293b;
+    margin-bottom: 20px;
+    border-left: 4px solid #2563eb;
+    padding-left: 10px;
+}
+
+/* 카드 공통 */
+.friend-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    transition: background-color 0.2s;
+    background-color: #fff;
+}
+
+.friend-card:hover {
+    background-color: #f3f4f6;
+}
+
+/* 좌측 사용자 정보 */
+.friend-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.friend-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #e2e8f0;
+}
+
+.friend-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.friend-nickname {
+    font-weight: 600;
+    font-size: 15px;
+    color: #111827;
+}
+
+.friend-email {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* 온라인 여부 */
+.friend-status {
+    font-size: 13px;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #4b5563;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-online {
+    background-color: #22c55e;
+}
+
+.status-offline {
+    background-color: #f43f5e;
+}
+
+/* 버튼 영역 */
+.friend-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.friend-btn {
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    color: white;
+    transition: background-color 0.2s ease;
+}
+
+.chat-btn { background-color: #2563eb; }
+.accept-btn { background-color: #22c55e; }
+.reject-btn { background-color: #ef4444; }
+.block-btn { background-color: #6b7280; }
+.unblock-btn { background-color: #6366f1; }
+.delete-btn { background-color: #f97316; }
+
+.friend-btn:hover {
+    opacity: 0.9;
+}
+
+/* 비어있을 때 메시지 */
+.friend-empty {
+    color: #9ca3af;
+    font-size: 15px;
+    text-align: center;
+    margin-top: 40px;
+}
