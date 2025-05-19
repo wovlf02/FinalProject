@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const DashboardDday = () => {
+const Dashboard_dday = () => {
   const [examName, setExamName] = useState(() => localStorage.getItem('examName') || '');
   const [examDate, setExamDate] = useState(() => {
     const saved = localStorage.getItem('examDate');
@@ -93,4 +93,4 @@ const DashboardDday = () => {
   );
 };
 
-export default DashboardDday;
+export default Dashboard_dday;

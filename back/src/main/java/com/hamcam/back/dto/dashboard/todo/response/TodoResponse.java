@@ -1,6 +1,8 @@
 package com.hamcam.back.dto.dashboard.todo.response;
 
+import com.hamcam.back.entity.dashboard.PriorityLevel;
 import lombok.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
@@ -27,17 +29,18 @@ public class TodoResponse {
     private String description;
 
     /**
-     * 할 일 날짜
+     * 날짜
      */
-    private LocalDate todoDate;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate date;
 
     /**
-     * 우선순위 (1: 낮음, 2: 중간, 3: 높음)
+     * 우선순위 (LOW, NORMAL, HIGH)
      */
-    private int priority;
+    private PriorityLevel priority;
 
     /**
      * 완료 여부
      */
-    private boolean isCompleted;
+    private boolean completed;
 }

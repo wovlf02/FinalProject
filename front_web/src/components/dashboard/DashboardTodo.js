@@ -1,117 +1,106 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import moment from 'moment';
 import api from '../../api/api';
 
-const DashboardTodoList = ({ selectedDate }) => {
+const DashboardTodo = ({selectedDate}) => {
     const [todos, setTodos] = useState([]);
     const [newTodo, setNewTodo] = useState('');
 
-    // ✅ 1. 날짜 변경 시 서버에서 해당 날짜의 Todo 불러오기
+    // ✅ 선택된 날짜 기준으로 할 일 목록 불러오기
     useEffect(() => {
         if (!selectedDate) return;
-        const fetchTodos = async () => {
-            try {
-                const date = moment(selectedDate).format('YYYY-MM-DD');
-                const res = await api.get(`/dashboard/todos`, {
-                    params: { date },
-                });
-                setTodos(res.data);
-            } catch (err) {
-                console.error('Todo 조회 실패:', err);
-            }
-        };
         fetchTodos();
     }, [selectedDate]);
 
-    // ✅ 2. 할 일 추가
+    const fetchTodos = async () => {
+        try {
+            const res = await api.get('/dashboard/todos', {
+                params: {date: moment(selectedDate).format('YYYY-MM-DD')},
+            });
+            setTodos(res.data);
+        } catch (error) {
+            console.error('할 일 조회 실패:', error);
+        }
+    };
+
+    // ✅ 할 일 추가
     const handleAddTodo = async (e) => {
         e.preventDefault();
         if (!newTodo.trim()) return;
         try {
-            const date = moment(selectedDate).format('YYYY-MM-DD');
-            await api.post(`/dashboard/todos`, {
+            await api.post('/dashboard/todos', {
                 title: newTodo,
                 description: '',
-                priority: 'NORMAL',
-                date,
+                date: moment(selectedDate).format('YYYY-MM-DD'),
+                priority: 'NORMAL', // 서버에서는 Enum (LOW/MEDIUM/HIGH/NORMAL 등) 문자열 허용해야 함
             });
             setNewTodo('');
-            await reloadTodos(); // 갱신
-        } catch (err) {
-            console.error('할 일 추가 실패:', err);
+            fetchTodos();
+        } catch (error) {
+            console.error('할 일 추가 실패:', error);
         }
     };
 
-    // ✅ 3. 할 일 완료 토글
+    // ✅ 완료 상태 토글
     const handleToggle = async (todoId) => {
         try {
             const res = await api.put(`/dashboard/todos/${todoId}/complete`);
             setTodos((prev) =>
                 prev.map((todo) => (todo.id === todoId ? res.data : todo))
             );
-        } catch (err) {
-            console.error('완료 체크 실패:', err);
+        } catch (error) {
+            console.error('완료 토글 실패:', error);
         }
     };
 
-    // ✅ 4. 할 일 삭제
+    // ✅ 할 일 삭제
     const handleDelete = async (todoId) => {
         try {
             await api.delete(`/dashboard/todos/${todoId}`);
             setTodos((prev) => prev.filter((todo) => todo.id !== todoId));
-        } catch (err) {
-            console.error('삭제 실패:', err);
-        }
-    };
-
-    // 🔁 새로고침
-    const reloadTodos = async () => {
-        try {
-            const date = moment(selectedDate).format('YYYY-MM-DD');
-            const res = await api.get(`/dashboard/todos`, {
-                params: { date },
-            });
-            setTodos(res.data);
-        } catch (err) {
-            console.error('할 일 새로고침 실패:', err);
+        } catch (error) {
+            console.error('삭제 실패:', error);
         }
     };
 
     return (
         <div className="dashboard-card dashboard-todo-card">
-            <div style={{ fontWeight: '600', marginBottom: '8px' }}>오늘의 할 일</div>
-            <form onSubmit={handleAddTodo} style={{ marginBottom: '8px' }}>
+            <div style={{color: '#222', fontWeight: 600, marginBottom: 8}}>
+                {moment(selectedDate).format('YYYY년 M월 D일')}의 할 일
+            </div>
+            <form onSubmit={handleAddTodo} style={{marginBottom: 8}}>
                 <input
                     type="text"
                     value={newTodo}
                     onChange={(e) => setNewTodo(e.target.value)}
-                    placeholder={`${moment(selectedDate).format('M월 D일')} 할 일을 입력하세요`}
-                    style={{ width: '70%', marginRight: 8 }}
+                    placeholder="할 일을 입력하세요"
+                    style={{width: '70%', marginRight: 8}}
                 />
                 <button type="submit">추가</button>
             </form>
-
             {todos.map((todo) => (
                 <div
                     key={todo.id}
                     className={`dashboard-todo-item${todo.completed ? ' done' : ''}`}
+                    style={{cursor: 'pointer'}}
                     onClick={() => handleToggle(todo.id)}
-                    style={{ cursor: 'pointer' }}
                 >
                     <input
                         type="checkbox"
                         checked={todo.completed}
                         readOnly
+                        style={{marginRight: 8}}
                         onClick={(e) => e.stopPropagation()}
-                        style={{ marginRight: 8 }}
                     />
-                    <span style={{ flex: 1 }}>{todo.title}</span>
+                    <span style={{flex: 1}}>{todo.title}</span>
                     <button
+                        className="dashboard-todo-delete-btn"
                         onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(todo.id);
                         }}
                         aria-label="삭제"
+                        title="삭제"
                     >
                         🗑️
                     </button>
@@ -121,4 +110,4 @@ const DashboardTodoList = ({ selectedDate }) => {
     );
 };
 
-export default DashboardTodoList;
+export default DashboardTodo;
