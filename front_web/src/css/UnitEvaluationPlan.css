@@ -1,0 +1,125 @@
+.plan-container {
+    margin-left: 160px;
+    padding: 48px 32px 32px 32px;
+    background: #f7fafd;
+    min-height: 100vh;
+    max-width: 800px;
+    box-sizing: border-box;
+}
+
+.plan-ai-bar {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.plan-ai-bar select {
+    padding: 7px 18px;
+    font-size: 1.05rem;
+    border-radius: 6px;
+    border: 1.5px solid #e0e4ea;
+    margin-right: 10px;
+}
+
+.plan-generate-btn {
+    background: #222;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 26px;
+    font-size: 1.08rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background 0.13s;
+}
+
+.plan-generate-btn:hover {
+    background: #2563eb;
+}
+
+.plan-summary-row {
+    display: flex;
+    gap: 22px;
+    margin-bottom: 30px;
+}
+
+.plan-summary-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #0001;
+    padding: 18px 26px;
+    flex: 1;
+    text-align: center;
+}
+
+.plan-summary-label {
+    color: #888;
+    font-size: 1.01rem;
+    margin-bottom: 8px;
+}
+
+.plan-summary-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #222;
+}
+
+.plan-days-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 32px;
+}
+
+.plan-day-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #0001;
+    padding: 22px 28px;
+    font-size: 1.09rem;
+}
+
+.plan-day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 1.13rem;
+}
+
+.plan-day-card ul {
+    margin: 0;
+    padding-left: 22px;
+}
+
+.plan-progress-section {
+    margin-top: 38px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #0001;
+    padding: 22px 28px;
+}
+
+.plan-progress-title {
+    font-weight: 700;
+    font-size: 1.13rem;
+    margin-bottom: 14px;
+}
+
+.plan-progress-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.plan-progress-list li {
+    margin-bottom: 10px;
+    font-size: 1.07rem;
+}
+
+.plan-progress-list input[type="checkbox"] {
+    margin-right: 8px;
+    transform: scale(1.15);
+}

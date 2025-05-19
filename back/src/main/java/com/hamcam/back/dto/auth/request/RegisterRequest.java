@@ -1,30 +1,31 @@
 package com.hamcam.back.dto.auth.request;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
 import java.util.List;
 
 /**
- * 회원가입 최종 요청 DTO입니다.
- * 기본 정보 + 학습 정보 + 프로필 정보를 포함합니다.
+ * [RegisterRequest]
+ *
+ * 회원가입 시 클라이언트로부터 전달되는 모든 정보를 담는 요청 DTO입니다.
+ * 필수 입력 필드와 선택 입력 필드를 구분하여 서버 유효성 검사를 수행합니다.
  */
 @Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RegisterRequest {
 
     /**
-     * 사용자 아이디
+     * 사용자 아이디 (중복 불가)
      */
     @NotBlank(message = "아이디는 필수 입력 값입니다.")
     private String username;
 
     /**
-     * 사용자 비밀번호
+     * 사용자 비밀번호 (최소 8자 이상)
      */
     @NotBlank(message = "비밀번호는 필수 입력 값입니다.")
     @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
@@ -38,31 +39,43 @@ public class RegisterRequest {
     private String email;
 
     /**
-     * 사용자 닉네임
+     * 사용자 실명 (선택사항일 경우 @NotBlank 제거 가능)
+     */
+    @NotBlank(message = "이름은 필수 입력 값입니다.")
+    private String name;
+
+    /**
+     * 닉네임 (중복 불가)
      */
     @NotBlank(message = "닉네임은 필수 입력 값입니다.")
     private String nickname;
 
     /**
-     * 학년 (1, 2, 3 중 선택)
+     * 학년 (1, 2, 3 중 하나)
      */
     @NotNull(message = "학년은 필수 입력 값입니다.")
     private Integer grade;
 
     /**
-     * 관심 과목 리스트 (예: 수학, 영어 등)
+     * 사용자가 선택한 과목 목록
      */
     @NotNull(message = "과목은 최소 1개 이상 선택해야 합니다.")
     private List<String> subjects;
 
     /**
-     * 공부 습관 (예: 새벽형, 야행성, 주말 집중형 등)
+     * 공부 습관 (집중형 / 루틴형 등)
      */
     @NotBlank(message = "공부 습관은 필수 입력 값입니다.")
     private String studyHabit;
 
     /**
-     * 프로필 이미지 URL (선택)
+     * 전화번호 (숫자만, 하이픈 제외)
+     */
+    @Pattern(regexp = "^\\d{10,15}$", message = "전화번호는 숫자만 포함되어야 하며 10자리 이상 15자리 이하여야 합니다.")
+    private String phone;
+
+    /**
+     * 프로필 이미지 URL (선택 사항)
      */
     private String profileImageUrl;
 }

@@ -6,8 +6,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
+ * [PasswordResetRequest]
+ *
  * 비밀번호 재설정 본인 확인 요청 DTO입니다.
- * 입력한 아이디와 이메일이 일치하는지 확인 후 인증코드를 발송합니다.
+ * 입력한 아이디와 이메일이 회원 정보와 일치하는지 확인 후
+ * 이메일로 인증 코드를 발송하기 위한 요청에 사용됩니다.
+ *
+ * 사용 예:
+ * - POST /api/auth/password/reset/request
  */
 @Getter
 @NoArgsConstructor

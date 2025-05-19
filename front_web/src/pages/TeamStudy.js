@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import '../css/TeamStudy.css';
 
 const TeamStudy = () => {
@@ -27,13 +27,13 @@ const TeamStudy = () => {
                 Authorization: `Bearer ${token}`
             }
         })
-        .then((response) => {
-            setStudyRooms(response.data);
-            setFilteredRooms(response.data);
-        })
-        .catch((error) => {
-            console.error('학습방 목록 불러오기 실패:', error);
-        });
+            .then((response) => {
+                setStudyRooms(response.data);
+                setFilteredRooms(response.data);
+            })
+            .catch((error) => {
+                console.error('학습방 목록 불러오기 실패:', error);
+            });
     }, []);
 
     const handleSearch = () => {

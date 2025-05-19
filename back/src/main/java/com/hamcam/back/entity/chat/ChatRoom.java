@@ -8,12 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 채팅방 엔티티
- * <p>
- * 게시글, 그룹, 스터디, 1:1 채팅 등 다양한 타입의 채팅방을 표현합니다.
- * </p>
+ * 채팅방 엔티티 (MySQL 호환)
  */
 @Entity
+@Table(name = "chat_room",
+        indexes = {
+                @Index(name = "idx_chatroom_type_ref", columnList = "type, reference_id"),
+                @Index(name = "idx_chatroom_last_message_at", columnList = "last_message_at")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,30 +24,77 @@ import java.util.List;
 @Builder
 public class ChatRoom {
 
+    /**
+     * 기본키 - MySQL에서는 AUTO_INCREMENT 전략 사용
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * 채팅방 이름
+     * 채팅방 이름 (1:1일 경우 null 가능)
      */
+    @Column(length = 255)
     private String name;
 
     /**
-     * 채팅방 유형 (POST, GROUP, STUDY, DIRECT 등)
+     * 대표 이미지 URL
      */
-    private String type;
+    @Column(name = "representative_image_url", length = 500)
+    private String representativeImageUrl;
 
     /**
-     * 연동된 리소스 ID (예: 게시글 ID, 그룹 ID 등)
+     * 채팅방 유형 (DIRECT, GROUP, STUDY, POST 등)
      */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private ChatRoomType type;
+
+    /**
+     * 연동 리소스 ID (게시글, 그룹 등)
+     */
+    @Column(name = "reference_id")
     private Long referenceId;
+
+    /**
+     * 마지막 메시지 (미리보기용)
+     */
+    @Column(name = "last_message", length = 1000)
+    private String lastMessage;
+
+    /**
+     * 마지막 메시지 시각
+     */
+    @Column(name = "last_message_at")
+    private LocalDateTime lastMessageAt;
 
     /**
      * 채팅방 생성 시각
      */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // ====== 연관관계 ======
+
+    @Builder.Default
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatParticipant> participants = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatMessage> messages = new ArrayList<>();
+
+    // ====== 콜백 ======
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // ====== 유틸 메서드 ======
+
+    public void updateLastMessage(String message, LocalDateTime time) {
+        this.lastMessage = message;
+        this.lastMessageAt = time;
+    }
 }

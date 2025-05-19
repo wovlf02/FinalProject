@@ -1,93 +1,94 @@
 .team-study-container {
-  padding: 20px;
-  font-family: Arial, sans-serif;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    margin-left: 160px;
 }
 
 h1 {
-  font-size: 24px;
-  margin-bottom: 20px;
+    font-size: 24px;
+    margin-bottom: 20px;
 }
 
 .search-bar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
 }
 
 .search-bar input {
-  width: 70%;
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+    width: 70%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
 
 .search-bar button {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .search-bar button:hover {
-  background-color: #0056b3;
+    background-color: #0056b3;
 }
 
 .search-bar button.search {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
 }
 
 .search-bar button.search:hover {
-  background-color: #5a6268;
+    background-color: #5a6268;
 }
 
 .study-room-list {
-  list-style: none;
-  padding: 0;
+    list-style: none;
+    padding: 0;
 }
 
 .study-room-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
 }
 
 .room-info h2 {
-  margin: 0;
-  font-size: 18px;
+    margin: 0;
+    font-size: 18px;
 }
 
 .room-info p {
-  margin: 5px 0 0;
-  color: #666;
+    margin: 5px 0 0;
+    color: #666;
 }
 
 .join-button {
-  padding: 10px 20px;
-  font-size: 14px;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+    padding: 10px 20px;
+    font-size: 14px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .join-button:hover {
-  background-color: #218838;
+    background-color: #218838;
 }
 
 .modal {

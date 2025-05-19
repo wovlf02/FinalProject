@@ -22,10 +22,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Spring Security 설정 클래스
- * JWT 인증 방식, WebSocket 허용, CORS 및 Stateless 세션 등 포함
- */
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -34,11 +30,17 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
 
+    /**
+     * 비밀번호 암호화에 사용되는 BCrypt 인코더 빈 등록
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * 사용자 인증 매니저 설정
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -47,15 +49,21 @@ public class SecurityConfig {
         return new ProviderManager(provider);
     }
 
+    /**
+     * Spring Security FilterChain 설정
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ cors 활성화
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // ✅ 세션 정책 수정: HttpOnly 쿠키 사용을 위해 세션 사용 허용
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ws/**", "/topic/**", "/app/**").permitAll() // ✅ WebSocket 및 STOMP 경로 허용
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/chat/**", "/chat/upload").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -66,13 +74,16 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * CORS 설정 - 쿠키 허용 위해 allowCredentials = true
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*"));
+        config.setAllowedOrigins(List.of("http://localhost:3000")); // 프론트 도메인 명시
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(false); // "*" 사용 시 false로 설정
+        config.setAllowCredentials(true); // ✅ 쿠키 사용을 위해 true
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

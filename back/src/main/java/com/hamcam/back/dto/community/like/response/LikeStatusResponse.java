@@ -1,20 +1,28 @@
 package com.hamcam.back.dto.community.like.response;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
- * 좋아요 여부 응답 DTO
- * <p>
- * 현재 로그인 사용자가 특정 리소스에 좋아요를 눌렀는지 여부를 반환합니다.
- * </p>
+ * [LikeStatusResponse]
+ *
+ * 로그인한 사용자가 특정 리소스(게시글, 댓글, 대댓글 등)에 좋아요를 눌렀는지 여부를 반환하는 응답 DTO입니다.
+ *
+ * 예시 응답:
+ * {
+ *     "liked": true
+ * }
  */
-@Data
+@Getter
+@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class LikeStatusResponse {
 
     /**
-     * 좋아요 여부 (true: 눌렀음, false: 안 눌렀음)
+     * 좋아요 여부 (true: 눌렀음, false: 누르지 않음)
      */
     private boolean liked;
 }

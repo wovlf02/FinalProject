@@ -1,25 +1,23 @@
 package com.hamcam.back.dto.community.comment.request;
 
-import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
 
 /**
- * 댓글 또는 대댓글 생성 요청 DTO
- * <p>
- * 본문 텍스트 및 작성자 ID 정보를 포함합니다.
- * 첨부파일은 MultipartFile[] 형태로 별도 전달되며,
- * 이 DTO는 @ModelAttribute 기반으로 처리됩니다.
- * </p>
+ * 댓글 생성 요청 DTO
+ *
+ * - 댓글 본문(content)만 포함되며, 작성자 정보는 서버에서 인증된 사용자 기준으로 처리됩니다.
+ * - 첨부파일은 multipart/form-data로 별도 전달됩니다.
  */
-@Data
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class CommentCreateRequest {
 
     /**
-     * 댓글 또는 대댓글의 본문 내용
+     * 댓글 본문
      */
+    @NotBlank(message = "댓글 내용을 입력해주세요.")
     private String content;
-
-    /**
-     * 작성자 사용자 ID
-     */
-    private Long writerId;
 }

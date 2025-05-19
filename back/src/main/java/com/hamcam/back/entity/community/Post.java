@@ -9,13 +9,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 게시글(Post) 엔티티
- * <p>
- * 사용자가 커뮤니티에 작성한 게시글을 나타냅니다.
- * 게시글은 댓글, 좋아요, 첨부파일, 신고 등의 다양한 기능과 연결됩니다.
- * </p>
+ * 커뮤니티 게시글 엔티티 (MySQL 호환)
  */
 @Entity
+@Table(name = "post",
+        indexes = {
+                @Index(name = "idx_post_writer", columnList = "writer_id"),
+                @Index(name = "idx_post_created", columnList = "created_at"),
+                @Index(name = "idx_post_is_deleted", columnList = "is_deleted")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,70 +26,154 @@ import java.util.List;
 @Builder
 public class Post {
 
+    /**
+     * 게시글 ID (AUTO_INCREMENT)
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * 게시글 제목
+     * 제목
      */
+    @Column(nullable = false, length = 200)
     private String title;
 
     /**
-     * 게시글 본문
+     * 카테고리
      */
-    @Column(columnDefinition = "TEXT")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false, length = 20)
+    private PostCategory category;
+
+    /**
+     * 본문 내용 (MySQL에선 TEXT 타입으로 매핑됨)
+     */
+    @Lob
+    @Column(nullable = false)
     private String content;
 
     /**
-     * 카테고리 (예: "자유", "질문", "공지")
-     */
-    private String category;
-
-    /**
-     * 작성자 (User 엔티티 연관)
+     * 작성자
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "writer_id")
+    @JoinColumn(name = "writer_id", nullable = false)
     private User writer;
 
     /**
-     * 게시글 등록 시각
+     * 작성일
      */
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /**
-     * 게시글 수정 시각
+     * 수정일
      */
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     /**
      * 좋아요 수
      */
+    @Column(name = "like_count", nullable = false)
     private int likeCount;
 
     /**
-     * 조회 수
+     * 조회수
      */
+    @Column(name = "view_count", nullable = false)
     private int viewCount;
 
     /**
      * 댓글 수
      */
+    @Column(name = "comment_count", nullable = false)
     private int commentCount;
 
+    /**
+     * 삭제 여부 (소프트 삭제)
+     */
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    /**
+     * 삭제 시각
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    // ===== 연관관계 =====
+
+    @Builder.Default
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Reply> replies = new ArrayList<>();
-
+    @Builder.Default
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attachment> attachments = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Like> likes = new ArrayList<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostFavorite> favorites = new ArrayList<>();
+
+    @Builder.Default
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Report> reports = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Block> blocks = new ArrayList<>();
+
+    // ===== 엔티티 생명주기 =====
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+        this.likeCount = 0;
+        this.viewCount = 0;
+        this.commentCount = 0;
+        this.isDeleted = false;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // ===== 비즈니스 메서드 =====
+
+    public void incrementViewCount() {
+        this.viewCount++;
+    }
+
+    public void incrementLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decrementLikeCount() {
+        if (this.likeCount > 0) this.likeCount--;
+    }
+
+    public void incrementCommentCount() {
+        this.commentCount++;
+    }
+
+    public void decrementCommentCount() {
+        if (this.commentCount > 0) this.commentCount--;
+    }
+
+    public void softDelete() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return !isDeleted;
+    }
 }

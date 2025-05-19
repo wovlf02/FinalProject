@@ -2,14 +2,18 @@ package com.hamcam.back.dto.community.comment.response;
 
 import com.hamcam.back.entity.community.Reply;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 /**
  * 대댓글 응답 DTO
+ *
+ * 게시글 댓글의 대댓글 데이터를 클라이언트에 전달하는 용도입니다.
  */
-@Data
+@Getter
+@Builder
 @AllArgsConstructor
 public class ReplyResponse {
 
@@ -54,27 +58,32 @@ public class ReplyResponse {
     private int likeCount;
 
     /**
-     * 내가 좋아요 눌렀는지 여부
+     * 내가 좋아요를 눌렀는지 여부
      */
     private boolean liked;
 
     /**
-     * Reply 엔티티를 ReplyResponse DTO로 변환
+     * 엔티티 → DTO 변환 메서드
      *
      * @param reply Reply 엔티티
-     * @return ReplyResponse DTO
+     * @param currentUserId 현재 사용자 ID
+     * @return 변환된 ReplyResponse
      */
-    public static ReplyResponse from(Reply reply) {
-        return new ReplyResponse(
-                reply.getId(),
-                reply.getWriter().getId(),
-                reply.getWriter().getUsername(), // 닉네임 필드가 따로 있으면 변경
-                reply.getWriter().getProfileImageUrl(), // User 엔티티에 해당 필드 필요
-                reply.getContent(),
-                reply.getCreatedAt(),
-                reply.getUpdatedAt(),
-                reply.getLikes() != null ? reply.getLikes().size() : 0,
-                false // 로그인 유저가 좋아요 했는지 여부 (SecurityContext 도입 후 교체)
-        );
+    public static ReplyResponse from(Reply reply, Long currentUserId) {
+        boolean liked = reply.getLikes() != null &&
+                reply.getLikes().stream()
+                        .anyMatch(like -> like.getUser().getId().equals(currentUserId));
+
+        return ReplyResponse.builder()
+                .replyId(reply.getId())
+                .writerId(reply.getWriter().getId())
+                .writerNickname(reply.getWriter().getNickname())
+                .profileImageUrl(reply.getWriter().getProfileImageUrl())
+                .content(reply.getContent())
+                .createdAt(reply.getCreatedAt())
+                .updatedAt(reply.getUpdatedAt())
+                .likeCount(reply.getLikes() != null ? reply.getLikes().size() : 0)
+                .liked(liked)
+                .build();
     }
 }

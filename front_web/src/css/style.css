@@ -1,0 +1,340 @@
+html, body {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+:root {
+    --brand-color: #006a79;
+    --bg-light: #f6f8fa;
+    --card-bg: #fff;
+    --card-radius: 16px;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --side-width: 160px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
+    background: var(--bg-light);
+    color: #222;
+}
+
+.nav-bar-container {
+    display: flex;
+}
+
+.side-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--side-width);
+    height: 100vh;
+    background: #f8f9fa;
+    border-right: 1px solid #e0e4ea;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+    padding-top: 0;
+}
+
+.side-menu-logo {
+    width: 100%;
+    height: 60px;
+    background: #222;
+    color: #fff;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.side-menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1 1 auto;
+}
+
+.side-menu-list-item {
+    margin-bottom: 4px;
+    border-radius: 6px;
+}
+
+.side-menu-button {
+    width: 92%;
+    margin-left: 4%;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #222;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s;
+    text-align: left;
+    padding-left: 12px;
+}
+
+.side-menu-button:hover,
+.side-menu-button.active {
+    background-color: #e2e6ea;
+    color: var(--brand-color);
+}
+
+.side-menu-list-item.active {
+    background-color: #e2e6ea;
+}
+
+.side-menu-list-item.active .side-menu-button {
+    font-weight: bold;
+    color: var(--brand-color);
+}
+
+.side-menu-bottom {
+    margin-top: auto;
+    padding: 0 8px 16px 8px;
+}
+
+.side-menu-bottom .side-menu-button {
+    justify-content: center;
+    margin-left: 0;
+    width: 100%;
+}
+
+.main-layout {
+    display: flex;
+    height: 100vh;
+}
+
+.dashboard-main {
+    flex: 1;
+    padding: 48px 40px 40px 40px;
+    min-width: 0;
+    background: var(--bg-light);
+    min-height: 100vh;
+    margin-left: var(--side-width);
+}
+
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+}
+
+.dashboard-header h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: -1px;
+}
+
+.dashboard-dday {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #eaf3f5;
+    border-radius: 16px;
+    padding: 8px 18px;
+    font-size: 1.07rem;
+}
+
+.dashboard-dday .dday-value {
+    font-weight: 700;
+    color: var(--brand-color);
+    font-size: 1.15rem;
+    margin-left: 2px;
+}
+
+.dashboard-dday button {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #888;
+    margin-left: 6px;
+    transition: color .2s;
+}
+
+.dashboard-dday button:hover {
+    color: var(--brand-color);
+}
+
+.dashboard-widgets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 28px;
+}
+
+.dashboard-card {
+    background: var(--card-bg);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    padding: 28px 24px 24px 24px;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.dashboard-card .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--brand-color);
+    margin-bottom: 6px;
+}
+
+.calendar-box {
+    width: 100%;
+    height: 120px;
+    background: #f2f8fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.todo-list {
+    margin: 0;
+    padding: 0 0 0 18px;
+    list-style: disc;
+    color: #444;
+    font-size: 1.03rem;
+}
+
+.todo-list li.done {
+    text-decoration: line-through;
+    color: #aaa;
+}
+
+.todo-input-wrap {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.todo-input-wrap input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid #cdd6e0;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.todo-input-wrap button {
+    background: var(--brand-color);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 16px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background .2s;
+}
+
+.todo-input-wrap button:hover {
+    background: #00525d;
+}
+
+.growth-bar-bg {
+    background: #eaf3f5;
+    border-radius: 8px;
+    height: 16px;
+    width: 100%;
+    margin-top: 6px;
+    overflow: hidden;
+}
+
+.growth-bar {
+    background: var(--brand-color);
+    height: 100%;
+    border-radius: 8px;
+    transition: width .5s;
+}
+
+.notice-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 1.02rem;
+}
+
+.notice-list li {
+    margin-bottom: 6px;
+    color: #555;
+}
+
+@media (max-width: 900px) {
+    .main-layout {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .side-menu {
+        width: 100%;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid #e0e4ea;
+        padding: 0;
+        min-height: unset;
+        height: auto;
+        position: static;
+    }
+
+    .side-menu-list {
+        flex-direction: row;
+        padding: 0 16px;
+        gap: 2px;
+    }
+
+    .side-menu-list-item {
+        border-radius: 0 0 8px 8px;
+        padding: 10px 18px;
+    }
+
+    .side-menu-bottom {
+        display: none;
+    }
+
+    .dashboard-main {
+        padding: 32px 8vw 24px 8vw;
+        min-height: 60vh;
+        margin-left: 0;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .dashboard-widgets {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-main {
+        padding: 20px 4vw 16px 4vw;
+    }
+
+    .dashboard-header h2 {
+        font-size: 1.3rem;
+    }
+}

@@ -1,0 +1,100 @@
+.mypage-container {
+    margin-left: 160px; /* 사이드바 너비 */
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 가로 중앙 정렬 */
+    justify-content: center; /* 세로 중앙 정렬 (원하면) */
+    background: #f7fafd;
+    box-sizing: border-box;
+    padding-top: 80px; /* 상단 여백(헤더 등 고려) */
+    padding-bottom: 40px;
+}
+
+.mypage-content {
+    width: 100%;
+    max-width: 420px;
+}
+
+.mypage-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 36px;
+    letter-spacing: -1px;
+    text-align: center;
+}
+
+.mypage-info-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(60, 60, 60, 0.04);
+    padding: 32px 24px;
+    margin-bottom: 32px;
+}
+
+.mypage-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.08rem;
+    margin-bottom: 18px;
+}
+
+.mypage-label {
+    color: #2563eb;
+    font-weight: 600;
+    min-width: 70px;
+}
+
+.mypage-btn-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+}
+
+.mypage-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.mypage-btn.logout {
+    background: #ef4444;
+}
+
+.mypage-btn:hover {
+    background: #174ea6;
+}
+
+.mypage-btn.logout:hover {
+    background: #b91c1c;
+}
+
+@media (max-width: 900px) {
+    .mypage-container {
+        margin-left: 0;
+        padding-top: 40px;
+    }
+}
+
+.mypage-profile-img-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 18px;
+}
+
+.mypage-profile-img {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e0e0e0;
+    background: #f4f4f4;
+}

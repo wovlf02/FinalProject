@@ -1,68 +1,109 @@
 package com.hamcam.back.entity.community;
 
+import com.hamcam.back.entity.chat.ChatMessage;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 /**
- * 첨부파일(Attachment) 엔티티
+ * 첨부파일 엔티티 (MySQL 호환)
  */
 @Entity
-@Getter @Setter
+@Table(name = "attachment",
+        indexes = {
+                @Index(name = "idx_attachment_post", columnList = "post_id"),
+                @Index(name = "idx_attachment_chat_message", columnList = "chat_message_id")
+        }
+)
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Attachment {
 
+    /**
+     * MySQL에서는 IDENTITY 전략 사용
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * 업로드된 파일의 원본 이름
+     * 원본 파일명
      */
+    @Column(name = "original_file_name", nullable = false, length = 255)
     private String originalFileName;
 
     /**
-     * 서버에 저장된 파일명 (UUID 등)
+     * 저장 파일명 (UUID 포함)
      */
+    @Column(name = "stored_file_name", nullable = false, length = 500)
     private String storedFileName;
 
     /**
-     * MIME 타입 (image/png, application/pdf 등)
+     * MIME 타입
      */
+    @Column(name = "content_type", length = 100)
     private String contentType;
 
     /**
-     * 이미지 미리보기 가능 여부
+     * 미리보기 가능 여부
      */
+    @Column(name = "preview_available", nullable = false)
     private boolean previewAvailable;
 
     /**
-     * 게시글 연관 (nullable)
+     * 파일 크기 (byte 단위)
+     */
+    @Column(name = "file_size")
+    private Long fileSize;
+
+    /**
+     * 생성 시각
+     */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    /**
+     * 게시글 첨부파일
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
 
     /**
-     * 댓글 연관 (nullable)
+     * 채팅 메시지 첨부파일
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "comment_id")
-    private Comment comment;
+    @JoinColumn(name = "chat_message_id")
+    private ChatMessage chatMessage;
 
     /**
-     * 대댓글 연관 (nullable)
+     * 파일 기본 접근 경로
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reply_id")
-    private Reply reply;
+    public static final String DEFAULT_BASE_URL = "/uploads";
 
     /**
-     * 첨부파일 다운로드 URL 반환
-     * (예시 경로: /api/community/attachments/{id}/download)
+     * 생성 시 자동 시간 설정
+     */
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    /**
+     * 파일 접근 URL 반환
      */
     public String getFileUrl() {
-        return "/api/community/attachments/" + this.id + "/download";
+        return (storedFileName != null) ? DEFAULT_BASE_URL + "/" + storedFileName : null;
+    }
+
+    /**
+     * 유효한 첨부파일인지 검사 (게시글 또는 채팅 메시지 중 하나에만 연결)
+     */
+    public boolean isValidAttachment() {
+        return (post != null && chatMessage == null) || (post == null && chatMessage != null);
     }
 }
