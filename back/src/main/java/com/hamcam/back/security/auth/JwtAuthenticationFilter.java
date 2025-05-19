@@ -22,10 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * JWT 인증 필터 (HttpOnly 쿠키 기반 + Redis 검증 포함)
- * - accessToken 쿠키에서 JWT 추출
- * - Redis에 저장된 토큰과 비교하여 유효성 확인
- * - 사용자 인증 컨텍스트 설정
+ * JWT 인증 필터 (HttpOnly 쿠키 기반 + Authorization 헤더 검증 포함)
  */
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -39,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            String token = getTokenFromCookie(request);
+            String token = resolveToken(request);
 
             if (token != null && jwtProvider.validateAccessTokenWithRedis(token)) {
                 Long userId = jwtProvider.getUserIdFromToken(token);
@@ -70,14 +67,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 요청에서 HttpOnly 쿠키로부터 accessToken 추출
+     * Authorization 헤더 또는 쿠키에서 JWT 토큰 추출
      */
-    private String getTokenFromCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
+    private String resolveToken(HttpServletRequest request) {
+        // 1) Authorization 헤더에서 토큰 추출
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
 
-        for (Cookie cookie : request.getCookies()) {
-            if (JwtProvider.ACCESS_COOKIE.equals(cookie.getName())) {
-                return cookie.getValue();
+        // 2) 쿠키에서 토큰 추출
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (JwtProvider.ACCESS_COOKIE.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
             }
         }
         return null;

@@ -27,4 +27,6 @@ public class TokenResponse {
      * Refresh Token (JWT)
      */
     private String refreshToken;
+    private String username;
+    private String name;
 }
