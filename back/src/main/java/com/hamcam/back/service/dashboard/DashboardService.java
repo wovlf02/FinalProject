@@ -34,7 +34,8 @@ public class DashboardService {
     private final GoalRepository goalRepository;
     private final SecurityUtil securityUtil;
 
-    // 📆 1. 월별 캘린더 이벤트
+    // =============== 📆 캘린더 및 TODO 기능 ===============
+
     public List<CalendarEventDto> getMonthlyCalendarEvents(YearMonth month) {
         User user = securityUtil.getCurrentUser();
         LocalDate start = month.atDay(1);
@@ -58,15 +59,13 @@ public class DashboardService {
                 .collect(Collectors.toList());
     }
 
-    // 📆 2. 특정 날짜의 Todo 목록
     public List<TodoResponse> getTodosByDate(LocalDate date) {
         User user = securityUtil.getCurrentUser();
         return todoRepository.findAllByUserAndTodoDateOrderByPriorityDesc(user, date)
                 .stream().map(this::toTodoResponse).collect(Collectors.toList());
     }
 
-    // 📆 3. Todo 생성
-    public void createTodo(TodoRequest request) {
+    public TodoResponse createTodo(TodoRequest request) {
         User user = securityUtil.getCurrentUser();
         Todo todo = Todo.builder()
                 .user(user)
@@ -74,12 +73,11 @@ public class DashboardService {
                 .description(request.getDescription())
                 .todoDate(request.getTodoDate())
                 .priority(request.getPriority())
-                .isCompleted(false)
+                .completed(false)
                 .build();
-        todoRepository.save(todo);
+        return toTodoResponse(todoRepository.save(todo));
     }
 
-    // 📆 4. Todo 수정
     public void updateTodo(Long todoId, TodoUpdateRequest request) {
         Todo todo = getTodoOrThrow(todoId);
         todo.setTitle(request.getTitle());
@@ -88,19 +86,19 @@ public class DashboardService {
         todo.setPriority(request.getPriority());
     }
 
-    // 📆 5. Todo 삭제
     public void deleteTodo(Long todoId) {
         Todo todo = getTodoOrThrow(todoId);
         todoRepository.delete(todo);
     }
 
-    // 📆 6. Todo 완료 체크
-    public void completeTodo(Long todoId) {
+    public TodoResponse toggleTodoCompletion(Long todoId) {
         Todo todo = getTodoOrThrow(todoId);
-        todo.setCompleted(true);
+        todo.setCompleted(!todo.isCompleted());
+        return toTodoResponse(todo);
     }
 
-    // 📅 7. 전체 시험 일정
+    // =============== 🗓️ 시험 일정 ===============
+
     public List<ExamScheduleResponse> getAllExamSchedules() {
         User user = securityUtil.getCurrentUser();
         return examScheduleRepository.findAllByUserOrderByExamDateAsc(user)
@@ -111,7 +109,6 @@ public class DashboardService {
                         .build()).collect(Collectors.toList());
     }
 
-    // 📅 8. 시험 일정 등록
     public void createExamSchedule(ExamScheduleRequest request) {
         User user = securityUtil.getCurrentUser();
         examScheduleRepository.save(ExamSchedule.builder()
@@ -121,7 +118,6 @@ public class DashboardService {
                 .build());
     }
 
-    // 📅 9. 가장 가까운 시험 일정
     public DDayInfoResponse getNearestExamSchedule() {
         User user = securityUtil.getCurrentUser();
         return examScheduleRepository.findNearestExamSchedule(user, LocalDate.now())
@@ -136,10 +132,11 @@ public class DashboardService {
                 }).orElse(null);
     }
 
-    // 📊 10. 전체 학습 통계
+    // =============== 📊 학습 통계 ===============
+
     public TotalStatsResponse getTotalStudyStats() {
         User user = securityUtil.getCurrentUser();
-        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, LocalDate.of(2000,1,1), LocalDate.now());
+        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, LocalDate.of(2000, 1, 1), LocalDate.now());
         return TotalStatsResponse.builder()
                 .totalStudyMinutes(sessions.stream().mapToInt(StudySession::getDurationMinutes).sum())
                 .averageFocusRate((int) sessions.stream().mapToInt(StudySession::getFocusRate).average().orElse(0))
@@ -147,9 +144,6 @@ public class DashboardService {
                 .build();
     }
 
-    // 📊 11. 과목별 통계 - 과목 연관 필드 없을 경우 생략
-
-    // 📊 12. 주간 통계
     public WeeklyStatsResponse getWeeklyStats() {
         User user = securityUtil.getCurrentUser();
         LocalDate now = LocalDate.now();
@@ -162,7 +156,7 @@ public class DashboardService {
             map.put(date, WeeklyStatsResponse.DailyStat.builder()
                     .date(date)
                     .studyMinutes(0)
-                    .warningCount(0) // 추후 경고 시스템 도입 시 수정
+                    .warningCount(0)
                     .build());
         }
         for (StudySession session : sessions) {
@@ -175,7 +169,6 @@ public class DashboardService {
                 .build();
     }
 
-    // 📊 13. 월간 통계
     public MonthlyStatsResponse getMonthlyStats() {
         User user = securityUtil.getCurrentUser();
         YearMonth currentMonth = YearMonth.now();
@@ -200,7 +193,6 @@ public class DashboardService {
                 .build();
     }
 
-    // 📊 14. 최고 집중일
     public BestFocusDayResponse getBestFocusDay() {
         User user = securityUtil.getCurrentUser();
         LocalDate start = LocalDate.now().minusDays(30);
@@ -212,16 +204,15 @@ public class DashboardService {
                 .orElse(null);
     }
 
-    // 🏁 15. GPT 목표 제안 - 추후 GPT 연동 또는 임시 로직 사용
+    // =============== 🧠 목표 설정 ===============
+
     public GoalSuggestionResponse getSuggestedGoal() {
-        // Mock 로직
         return GoalSuggestionResponse.builder()
                 .message("최근 집중률을 고려해 하루 2.5시간을 추천합니다.")
                 .suggestedDailyGoalMinutes(150)
                 .build();
     }
 
-    // 🏁 16. 수동 목표 수정
     public void updateGoalManually(GoalUpdateRequest request) {
         User user = securityUtil.getCurrentUser();
         goalRepository.save(Goal.builder()
@@ -232,7 +223,36 @@ public class DashboardService {
                 .build());
     }
 
-    // ===== 내부 유틸 =====
+    // =============== 📊 과목별 통계 ===============
+
+    public List<SubjectStatsResponse> getSubjectStats() {
+        User user = securityUtil.getCurrentUser();
+        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
+                user, LocalDate.of(2000, 1, 1), LocalDate.now());
+
+        Map<String, List<StudySession>> bySubject = sessions.stream()
+                .filter(s -> s.getSubject() != null)
+                .collect(Collectors.groupingBy(StudySession::getSubject));
+
+        return bySubject.entrySet().stream()
+                .map(entry -> {
+                    String subject = entry.getKey();
+                    List<StudySession> subjectSessions = entry.getValue();
+                    int totalFocus = subjectSessions.stream().mapToInt(StudySession::getDurationMinutes).sum();
+                    int avgAccuracy = (int) subjectSessions.stream().mapToInt(StudySession::getAccuracy).average().orElse(0);
+                    int avgCorrectRate = (int) subjectSessions.stream().mapToInt(StudySession::getCorrectRate).average().orElse(0);
+                    return SubjectStatsResponse.builder()
+                            .subjectName(subject)
+                            .totalFocusMinutes(totalFocus)
+                            .averageAccuracy(avgAccuracy)
+                            .averageCorrectRate(avgCorrectRate)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+
+    // =============== 내부 유틸 ===============
     private Todo getTodoOrThrow(Long id) {
         return todoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 할 일입니다."));
@@ -248,37 +268,4 @@ public class DashboardService {
                 .isCompleted(todo.isCompleted())
                 .build();
     }
-
-    // 📊 11. 과목별 학습 통계
-    public List<SubjectStatsResponse> getSubjectStats() {
-        User user = securityUtil.getCurrentUser();
-        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
-                user, LocalDate.of(2000, 1, 1), LocalDate.now());
-
-        // 과목별로 그룹핑
-        Map<String, List<StudySession>> bySubject = sessions.stream()
-                .filter(s -> s.getSubject() != null)
-                .collect(Collectors.groupingBy(StudySession::getSubject));
-
-        // 그룹별로 통계 계산
-        return bySubject.entrySet().stream()
-                .map(entry -> {
-                    String subject = entry.getKey();
-                    List<StudySession> subjectSessions = entry.getValue();
-
-                    int totalFocus = subjectSessions.stream().mapToInt(StudySession::getDurationMinutes).sum();
-                    int avgAccuracy = (int) subjectSessions.stream().mapToInt(StudySession::getAccuracy).average().orElse(0);
-                    int avgCorrectRate = (int) subjectSessions.stream().mapToInt(StudySession::getCorrectRate).average().orElse(0); // 필드 존재 가정
-
-                    return SubjectStatsResponse.builder()
-                            .subjectName(subject)
-                            .totalFocusMinutes(totalFocus)
-                            .averageAccuracy(avgAccuracy)
-                            .averageCorrectRate(avgCorrectRate)
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
-
-
 }

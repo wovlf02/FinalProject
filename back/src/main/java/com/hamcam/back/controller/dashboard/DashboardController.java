@@ -65,11 +65,12 @@ public class DashboardController {
         dashboardService.deleteTodo(todoId);
     }
 
-    // 📆 6. Todo 완료 체크
+    // 📆 6. Todo 완료 체크 (토글 방식)
     @PutMapping("/todos/{todoId}/complete")
-    public void completeTodo(@PathVariable Long todoId) {
-        dashboardService.completeTodo(todoId);
+    public TodoResponse toggleTodo(@PathVariable Long todoId) {
+        return dashboardService.toggleTodoCompletion(todoId);
     }
+
 
     // 📅 7. 전체 시험 일정 조회
     @GetMapping("/exams")

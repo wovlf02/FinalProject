@@ -58,6 +58,7 @@ const Register = () => {
                 navigate('/login');
             }
         } catch (error) {
+            console.log(error)
             alert('회원가입 실패: ' + (error.response?.data?.message || '오류가 발생했습니다.'));
         }
     };

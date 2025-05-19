@@ -4,6 +4,7 @@ import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.dto.auth.request.*;
 import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
+import com.hamcam.back.entity.auth.Subjects;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
@@ -11,16 +12,19 @@ import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -65,18 +69,26 @@ public class AuthService {
     }
 
     public void register(RegisterRequest request) {
+        log.info("📥 [회원가입 요청] username={}, email={}, nickname={}",
+                request.getUsername(), request.getEmail(), request.getNickname());
+
         if (userRepository.existsByUsername(request.getUsername())) {
+            log.warn("❌ 중복 아이디: {}", request.getUsername());
             throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
         }
+
         if (userRepository.existsByEmail(request.getEmail())) {
+            log.warn("❌ 중복 이메일: {}", request.getEmail());
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         String phone = request.getPhone();
         if (phone != null && !isValidPhone(phone)) {
+            log.warn("❌ 유효하지 않은 전화번호: {}", phone);
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
+        // User 객체 먼저 생성
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -84,14 +96,32 @@ public class AuthService {
                 .name(request.getName())
                 .nickname(request.getNickname())
                 .grade(request.getGrade())
-                .subjects(request.getSubjects())
                 .studyHabit(request.getStudyHabit())
                 .phone(phone)
                 .profileImageUrl(request.getProfileImageUrl())
                 .build();
 
-        userRepository.save(user);
+        // Subject 리스트 생성 후 User 연관관계 설정
+        List<Subjects> subjectEntities = request.getSubjects().stream()
+                .map(name -> Subjects.builder()
+                        .name(name)
+                        .user(user) // 연관관계 주입
+                        .build())
+                .toList();
+
+        user.setSubjects(subjectEntities);
+
+        log.info("✅ [DB 저장 전] 사용자 정보: {}, 과목 수: {}", user.getUsername(), subjectEntities.size());
+
+        try {
+            userRepository.save(user); // cascade = ALL → subject들도 자동 저장됨
+            log.info("✅ [회원가입 성공] ID={} 닉네임={}", user.getUsername(), user.getNickname());
+        } catch (Exception e) {
+            log.error("🔥 [회원가입 중 예외 발생]", e);
+            throw new CustomException("회원가입 처리 중 오류가 발생했습니다.");
+        }
     }
+
 
     /**
      * 로그인: ID/PW 검증 수행 후 User 반환

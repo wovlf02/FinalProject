@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -102,7 +103,7 @@ public class AuthController {
             @RequestParam("grade") Integer grade,
             @RequestParam("subjects") List<String> subjects,
             @RequestParam("studyHabit") String studyHabit,
-            @RequestParam("phone") String phone,
+            @RequestParam(value = "phone", required = false) String phone,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage
     ) {
         try {
@@ -151,43 +152,28 @@ public class AuthController {
      * 로그인 요청 - JWT 발급
      */
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginRequest request) {
-        // 1. 로그인 검증 (ID/PW 확인)
+    public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+        // 1. 로그인 검증
         authService.login(request);
 
-        // 2. 사용자 조회
+        // 2. 토큰 생성 후 쿠키로 전달
         var user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        // 3. 토큰 생성
         String accessToken = jwtProvider.generateAccessToken(user);
-        String refreshToken = jwtProvider.generateRefreshToken(user);
 
-        // 4. 토큰을 HttpOnly 쿠키로 세팅 (필요하면 유지)
         ResponseCookie accessCookie = ResponseCookie.from(JwtProvider.ACCESS_COOKIE, accessToken)
                 .httpOnly(true)
-                .secure(true) // 운영 시 true, 개발환경은 false 가능
+                .secure(true) // 배포 환경에서는 true
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(Duration.ofHours(1))
                 .build();
 
-        // 5. 응답 헤더에 쿠키 세팅
-        // 필요 없다면 제거 가능
-        // response.setHeader("Set-Cookie", accessCookie.toString());
+        response.setHeader("Set-Cookie", accessCookie.toString());
 
-        // 6. 토큰과 사용자 정보를 JSON 응답 바디에 포함해 클라이언트에 반환
-        TokenResponse tokenResponse = TokenResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .username(user.getUsername())
-                .name(user.getName())
-                .build();
-
-        return ResponseEntity.ok()
-                // .header(HttpHeaders.SET_COOKIE, accessCookie.toString()) // 쿠키로도 전달 시 주석 해제
-                .body(tokenResponse);
+        return ResponseEntity.ok().build(); // ✅ 응답 바디 없음
     }
+
 
 
     /**

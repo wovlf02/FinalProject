@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -40,10 +41,8 @@ public class User {
     @Column(nullable = false)
     private Integer grade; // ✅ 학년
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "user_subjects", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "subject")
-    private List<String> subjects; // ✅ 관심 과목
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Subjects> subjects = new ArrayList<>();
 
     @Column(nullable = false, length = 50)
     private String studyHabit; // ✅ 공부 습관

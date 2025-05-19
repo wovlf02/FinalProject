@@ -12,7 +12,7 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
     /**
      * 특정 사용자에 대한 전체 Todo 목록 조회 (날짜 + 우선순위 기준 정렬)
      */
-    List<Todo> findAllByUserOrderByTodoDateAscPriorityDesc(User user);
+    List<Todo> findByUser(User user);
 
     /**
      * 특정 날짜의 Todo 목록 조회 (날짜별 조회용)
