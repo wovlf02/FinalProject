@@ -94,9 +94,9 @@ public class AuthService {
     }
 
     /**
-     * 로그인: ID/PW 검증만 수행. 토큰 생성은 컨트롤러에서.
+     * 로그인: ID/PW 검증 수행 후 User 반환
      */
-    public void login(LoginRequest request) {
+    public User login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_USER_NOT_FOUND));
 
@@ -104,7 +104,7 @@ public class AuthService {
             throw new CustomException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
         }
 
-        // ✅ 토큰 생성은 Controller에서 수행
+        return user;
     }
 
     public void logout(String accessToken) {
@@ -141,11 +141,13 @@ public class AuthService {
         // 5. accessToken 새로 발급
         String newAccess = jwtProvider.generateAccessToken(user);
 
-        // 6. refreshToken도 갱신 (Redis에만 저장, 클라이언트에 전달 X)
-        jwtProvider.generateRefreshToken(user);
+        // 6. refreshToken도 새로 생성하고 Redis에 저장
+        String newRefresh = jwtProvider.generateRefreshToken(user);
+        redisTemplate.opsForValue().set("RT:" + userId, newRefresh, Duration.ofDays(14));
 
-        // 7. accessToken만 반환
-        return new TokenResponse(newAccess, null); // refreshToken은 null 또는 생략
+        // 7. accessToken과 새 refreshToken 반환
+        return new TokenResponse(newAccess, newRefresh, user.getUsername(), user.getName());
+
     }
 
 

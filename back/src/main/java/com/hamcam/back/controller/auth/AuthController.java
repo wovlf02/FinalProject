@@ -151,27 +151,44 @@ public class AuthController {
      * 로그인 요청 - JWT 발급
      */
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
-        // 1. 로그인 검증
+    public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginRequest request) {
+        // 1. 로그인 검증 (ID/PW 확인)
         authService.login(request);
 
-        // 2. 토큰 생성 후 쿠키로 전달
+        // 2. 사용자 조회
         var user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        String accessToken = jwtProvider.generateAccessToken(user);
 
+        // 3. 토큰 생성
+        String accessToken = jwtProvider.generateAccessToken(user);
+        String refreshToken = jwtProvider.generateRefreshToken(user);
+
+        // 4. 토큰을 HttpOnly 쿠키로 세팅 (필요하면 유지)
         ResponseCookie accessCookie = ResponseCookie.from(JwtProvider.ACCESS_COOKIE, accessToken)
                 .httpOnly(true)
-                .secure(true) // 배포 환경에서는 true
+                .secure(true) // 운영 시 true, 개발환경은 false 가능
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(Duration.ofHours(1))
                 .build();
 
-        response.setHeader("Set-Cookie", accessCookie.toString());
+        // 5. 응답 헤더에 쿠키 세팅
+        // 필요 없다면 제거 가능
+        // response.setHeader("Set-Cookie", accessCookie.toString());
 
-        return ResponseEntity.ok().build(); // ✅ 응답 바디 없음
+        // 6. 토큰과 사용자 정보를 JSON 응답 바디에 포함해 클라이언트에 반환
+        TokenResponse tokenResponse = TokenResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .username(user.getUsername())
+                .name(user.getName())
+                .build();
+
+        return ResponseEntity.ok()
+                // .header(HttpHeaders.SET_COOKIE, accessCookie.toString()) // 쿠키로도 전달 시 주석 해제
+                .body(tokenResponse);
     }
+
 
     /**
      * 로그아웃 - refresh 제거 및 access 블랙리스트 처리
