@@ -249,4 +249,36 @@ public class DashboardService {
                 .build();
     }
 
+    // 📊 11. 과목별 학습 통계
+    public List<SubjectStatsResponse> getSubjectStats() {
+        User user = securityUtil.getCurrentUser();
+        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
+                user, LocalDate.of(2000, 1, 1), LocalDate.now());
+
+        // 과목별로 그룹핑
+        Map<String, List<StudySession>> bySubject = sessions.stream()
+                .filter(s -> s.getSubject() != null)
+                .collect(Collectors.groupingBy(StudySession::getSubject));
+
+        // 그룹별로 통계 계산
+        return bySubject.entrySet().stream()
+                .map(entry -> {
+                    String subject = entry.getKey();
+                    List<StudySession> subjectSessions = entry.getValue();
+
+                    int totalFocus = subjectSessions.stream().mapToInt(StudySession::getDurationMinutes).sum();
+                    int avgAccuracy = (int) subjectSessions.stream().mapToInt(StudySession::getAccuracy).average().orElse(0);
+                    int avgCorrectRate = (int) subjectSessions.stream().mapToInt(StudySession::getCorrectRate).average().orElse(0); // 필드 존재 가정
+
+                    return SubjectStatsResponse.builder()
+                            .subjectName(subject)
+                            .totalFocusMinutes(totalFocus)
+                            .averageAccuracy(avgAccuracy)
+                            .averageCorrectRate(avgCorrectRate)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+
 }

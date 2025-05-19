@@ -38,15 +38,16 @@ public class UserController {
     private final SecurityUtil securityUtil;
 
     /**
-     * 내 정보 조회
+     * ✅ 내 정보 조회 (쿠키 기반 인증)
      */
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponse> getMyInfo() {
-        return ResponseEntity.ok(userService.getMyProfile());
+        User user = securityUtil.getCurrentUser();
+        return ResponseEntity.ok(UserProfileResponse.from(user));
     }
 
     /**
-     * 회원 탈퇴
+     * ✅ 회원 탈퇴 (비밀번호 확인)
      */
     @PostMapping("/withdraw")
     public ResponseEntity<Void> withdraw(@RequestBody @Valid PasswordConfirmRequest request) {
@@ -55,7 +56,7 @@ public class UserController {
     }
 
     /**
-     * 사용자 ID로 프로필 조회
+     * ✅ 다른 사용자 ID로 프로필 조회 (친구, 커뮤니티 등에서 사용)
      */
     @GetMapping("/{id}")
     public ResponseEntity<UserProfileResponse> getUserById(@PathVariable Long id) {
@@ -64,7 +65,7 @@ public class UserController {
     }
 
     /**
-     * 닉네임 변경
+     * ✅ 닉네임 변경
      */
     @PatchMapping("/nickname")
     public ApiResponse<Void> updateNickname(@RequestBody @Valid UpdateNicknameRequest request) {
@@ -73,7 +74,7 @@ public class UserController {
     }
 
     /**
-     * 이메일 변경
+     * ✅ 이메일 변경
      */
     @PatchMapping("/email")
     public ApiResponse<Void> updateEmail(@RequestBody @Valid UpdateEmailRequest request) {
@@ -82,7 +83,7 @@ public class UserController {
     }
 
     /**
-     * 아이디(username) 변경
+     * ✅ 아이디(username) 변경
      */
     @PatchMapping("/username")
     public ApiResponse<Void> updateUsername(@RequestBody @Valid UpdateUsernameRequest request) {
@@ -91,12 +92,12 @@ public class UserController {
     }
 
     /**
-     * 프로필 이미지 변경
+     * ✅ 프로필 이미지 변경 (Multipart 전송)
      */
     @PatchMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<String> updateProfileImage(@RequestPart("profileImage") MultipartFile file) {
         try {
-            // 저장 경로 및 파일명 지정
+            // 파일명 유니크 생성
             String storedFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
             Path uploadDir = Paths.get("uploads/profile");
             Files.createDirectories(uploadDir);
@@ -106,7 +107,7 @@ public class UserController {
 
             String imageUrl = "/uploads/profile/" + storedFileName;
 
-            // DB 반영
+            // 서비스 레이어에서 DB 반영
             userService.updateProfileImage(imageUrl);
 
             return ApiResponse.ok(imageUrl);

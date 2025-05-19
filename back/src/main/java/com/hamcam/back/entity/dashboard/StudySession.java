@@ -52,19 +52,25 @@ public class StudySession {
     private Integer durationMinutes;
 
     /**
-     * 집중률 (0 ~ 100, 예: 87)
+     * 집중률 (0 ~ 100)
      */
     @Column(nullable = false)
     private Integer focusRate;
 
     /**
-     * 정확도 (0 ~ 100, 문제 풀이 정확도 등)
+     * 정확도 (0 ~ 100)
      */
     @Column(nullable = false)
     private Integer accuracy;
 
     /**
-     * 학습 유형 (PERSONAL, TEAM)
+     * 정답률 (0 ~ 100)
+     */
+    @Column(nullable = false)
+    private Integer correctRate;
+
+    /**
+     * 학습 유형 (PERSONAL / TEAM)
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -74,4 +80,10 @@ public class StudySession {
         PERSONAL,
         TEAM
     }
+
+    /**
+     * 과목명 (예: 수학, 영어 등)
+     */
+    @Column(nullable = false, length = 50)
+    private String subject;
 }

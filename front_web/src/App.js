@@ -3,7 +3,7 @@ import {BrowserRouter as Router, Routes, Route, Navigate, Outlet} from 'react-ro
 import NavBar from './components/NavBar';
 import UnitEvaluation from './pages/UnitEvaluation';
 import UnitEvaluationStart from './pages/UnitEvaluationStart';
-import Dashboard from './pages/dashboard';
+import Dashboard from './pages/Dashboard';
 import TeamStudy from './pages/TeamStudy';
 import StudyStart from './pages/StudyStart';
 import PersonalStudy from './pages/PersonalStudy';

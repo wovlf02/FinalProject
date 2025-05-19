@@ -1,6 +1,6 @@
-import React, {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
-import axios from 'axios';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/api'; // ✅ 공통 axios 인스턴스
 import '../css/Login.css';
 
 const Login = () => {
@@ -11,29 +11,22 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post("http://localhost:8080/api/auth/login", {
+            // ✅ 1. 로그인 요청 (토큰은 HttpOnly 쿠키로 처리됨)
+            await api.post('/auth/login', {
                 username,
                 password,
             });
-            // 로그인 응답 전체를 콘솔에 출력!
-            console.log('로그인 응답:', response.data);
 
-            // ApiResponse 래퍼 안의 data에서 꺼냄
-            const loginData = response.data.data;
-            if (loginData && loginData.accessToken) {
-                localStorage.setItem('accessToken', loginData.accessToken);
-                localStorage.setItem('refreshToken', loginData.refreshToken);
-                localStorage.setItem('username', loginData.username);
-                localStorage.setItem('email', loginData.email);
-                localStorage.setItem('name', loginData.name);
-                alert(`로그인 성공: ${loginData.name}님 환영합니다!`);
-                navigate('/dashboard');
-            } else {
-                alert('서버에서 accessToken이 오지 않았습니다. 서버 응답을 확인하세요.');
-            }
+            // ✅ 2. 로그인 성공 시 사용자 정보 요청
+            const userResponse = await api.get('/users/me');
+            const nickname = userResponse.data.nickname;
+
+            // ✅ 3. 환영 메시지 출력
+            alert(`로그인 성공: ${nickname}님 환영합니다!`);
+            navigate('/dashboard');
         } catch (err) {
             alert('아이디 또는 비밀번호를 확인하세요.');
-            console.log('로그인 에러:', err);
+            console.error('로그인 에러:', err);
         }
     };
 
@@ -73,8 +66,7 @@ const Login = () => {
                     <button type="submit" className="login-main-btn">확인</button>
                 </form>
 
-                {/* ✅ 회원가입 및 관리자 모드 추가된 영역 */}
-                <div className="login-main-bottom" style={{marginTop: "16px"}}>
+                <div className="login-main-bottom" style={{ marginTop: "16px" }}>
                     <span className="login-main-link">계정이 없으신가요?</span>
                     <button
                         type="button"
@@ -87,7 +79,7 @@ const Login = () => {
                         type="button"
                         className="login-main-admin-btn"
                         onClick={() => alert('관리자 모드 준비중')}
-                        style={{marginLeft: "8px"}}
+                        style={{ marginLeft: "8px" }}
                     >
                         관리자 모드
                     </button>
