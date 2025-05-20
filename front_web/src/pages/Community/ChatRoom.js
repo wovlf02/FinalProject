@@ -3,6 +3,7 @@ import '../../css/ChatRoom.css';
 import { FaPaperPlane, FaSmile, FaPaperclip, FaMicrophone } from 'react-icons/fa';
 import api from '../../api/api';
 import moment from 'moment';
+import base_profile from '../../icons/base_profile.png'
 
 const ChatRoom = ({ roomId }) => {
     const [message, setMessage] = useState('');
@@ -112,7 +113,7 @@ const ChatRoom = ({ roomId }) => {
         <div className="chat-room">
             <div className="chat-room-header">
                 <img
-                    src={roomInfo?.profileImageUrl ? `${roomInfo.profileImageUrl}` : '/images/profile.png'}
+                    src={roomInfo?.profileImageUrl ? `${roomInfo.profileImageUrl}` : base_profile}
                     alt="room"
                     className="chat-room-profile"
                 />

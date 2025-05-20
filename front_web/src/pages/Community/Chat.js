@@ -121,7 +121,7 @@ const Chat = () => {
                                             room.profileImageUrl
                                                 ? `
                                                 ${room.profileImageUrl}`
-                                                : '/images/profile.png'
+                                                : base_profile
                                         }
                                         alt={room.roomName}
                                     />
