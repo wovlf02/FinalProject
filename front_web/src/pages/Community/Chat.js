@@ -23,13 +23,22 @@ const Chat = () => {
     const fetchChatRooms = async () => {
         try {
             const res = await api.get('/chat/rooms');
-            const rooms = Array.isArray(res.data) ? res.data : [];
+            const rooms = res.data?.data || [];
+
             const mappedRooms = rooms.map(room => ({
-                ...room,
-                profileImageUrl: room.profileImageUrl
-                    ? `http://localhost:8080${room.profileImageUrl}`
+                roomId: room.room_id,
+                roomName: room.room_name,
+                roomType: room.room_type,
+                profileImageUrl: room.profile_image_url
+                    ? `http://localhost:8080${room.profile_image_url}`
                     : '',
+                participantCount: room.participant_count,
+                totalMessageCount: room.total_message_count,
+                unreadCount: room.unread_count,
+                lastMessage: room.last_message,
+                lastMessageAt: room.last_message_at,
             }));
+
             setChatRooms(mappedRooms);
             if (mappedRooms.length > 0 && !selectedRoomId) {
                 setSelectedRoomId(mappedRooms[0].roomId);
@@ -121,7 +130,7 @@ const Chat = () => {
                             .map(room => (
                                 <div
                                     key={room.roomId}
-                                    className="chat-room-item"
+                                    className={`chat-room-item ${room.roomId === selectedRoomId ? 'selected' : ''}`}
                                     onClick={() => handleRoomClick(room.roomId)}
                                 >
                                     <img
@@ -150,7 +159,7 @@ const Chat = () => {
                     )}
                 </div>
 
-                {/* 채팅창 */}
+                {/* 채팅방 본문 */}
                 <ChatRoom roomId={selectedRoomId} />
             </div>
 
@@ -161,7 +170,19 @@ const Chat = () => {
                     onClose={() => setShowCreateModal(false)}
                     onCreate={(room) => {
                         if (room && room.roomId && room.roomName) {
-                            setChatRooms(prev => [...prev, room]);
+                            setChatRooms(prev => [...prev, {
+                                roomId: room.roomId,
+                                roomName: room.roomName,
+                                roomType: room.roomType,
+                                profileImageUrl: room.profileImageUrl
+                                    ? `http://localhost:8080${room.profileImageUrl}`
+                                    : '',
+                                participantCount: room.participantCount,
+                                totalMessageCount: 0,
+                                unreadCount: 0,
+                                lastMessage: '',
+                                lastMessageAt: '',
+                            }]);
                             setSelectedRoomId(room.roomId);
                         }
                         setShowCreateModal(false);

@@ -11,8 +11,6 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
     const [search, setSearch] = useState('');
     const [image, setImage] = useState(null);
 
-    const BASE_URL = '/uploads/profile/';
-
     useEffect(() => {
         fetchFriends();
     }, []);
@@ -20,7 +18,14 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
     const fetchFriends = async () => {
         try {
             const res = await api.get('/friends');
-            setFriends(res.data.friends || []);
+            const mapped = res.data.friends.map(f => ({
+                userId: f.user_id,
+                nickname: f.nickname,
+                profileImageUrl: f.profile_image_url
+                    ? `http://localhost:8080${f.profile_image_url}`
+                    : baseProfile,
+            }));
+            setFriends(mapped);
         } catch (e) {
             console.error('❌ 친구 목록 불러오기 실패', e);
         }
@@ -34,30 +39,27 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
 
     const handleCreate = async () => {
         if (!roomName.trim() || selected.length === 0) return;
+
         const formData = new FormData();
         formData.append('roomName', roomName.trim());
         formData.append('invitedUserIds', JSON.stringify(selected));
-        if (image) {
-            formData.append('image', image);
-        }
+        if (image) formData.append('image', image);
+
         try {
             const res = await api.post('/chat/rooms', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
-
             const createdRoom = res.data?.data;
-            onCreate(createdRoom); // ✅ 새 방 정보 전달
+            onCreate(createdRoom);
         } catch (e) {
             alert('채팅방 생성 실패');
+            console.error(e);
         }
     };
 
-
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setImage(file);
-        }
+        if (file) setImage(file);
     };
 
     const filteredFriends = friends.filter(friend =>
@@ -113,9 +115,10 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
                                 onClick={() => handleSelect(friend.userId)}
                             >
                                 <img
-                                    src={friend.profileImageUrl ? friend.profileImageUrl : baseProfile}
+                                    src={friend.profileImageUrl}
                                     alt={friend.nickname}
                                     className="friend-avatar"
+                                    onError={(e) => { e.target.src = baseProfile; }}
                                 />
                                 <span>{friend.nickname}</span>
                                 <div className={`friend-check ${selected.includes(friend.userId) ? 'checked' : ''}`} />

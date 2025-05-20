@@ -21,12 +21,22 @@ const ChatRoom = ({ roomId }) => {
 
     const fetchInitialData = async () => {
         try {
-            const userRes = await api.get('/users/me');
-            const roomRes = await api.get(`/chat/rooms/${roomId}`);
-            const messageRes = await api.get(`/chat/rooms/${roomId}/messages?page=0&size=100`);
+            const [userRes, roomRes, messageRes] = await Promise.all([
+                api.get('/users/me'),
+                api.get(`/chat/rooms/${roomId}`),
+                api.get(`/chat/rooms/${roomId}/messages?page=0&size=100`)
+            ]);
+            console.log(roomRes.data);
 
             setUser(userRes.data);
-            setRoomInfo(roomRes.data?.data || {});
+            setRoomInfo({
+                ...roomRes.data.data,
+                profileImageUrl: roomRes.data.data.representative_image_url
+                    ? `http://localhost:8080${roomRes.data.data.representative_image_url}`
+                    : base_profile,
+                roomName: roomRes.data.data.room_name,
+                roomType: roomRes.data.data.room_type
+            });
             setMessages(messageRes.data?.data || []);
 
             connectStomp(userRes.data);
@@ -43,12 +53,11 @@ const ChatRoom = ({ roomId }) => {
         client.connect({}, () => {
             client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
                 const message = JSON.parse(msg.body);
-                console.log('📥 받은 메시지:', message);
                 setMessages(prev => [...prev, message]);
                 setTimeout(scrollToBottom, 50);
             });
 
-            // 입장 메시지 (type: ENTER)
+            // 입장 메시지 전송
             client.send('/pub/chat/send', {}, JSON.stringify({
                 roomId,
                 type: 'ENTER',
@@ -62,13 +71,12 @@ const ChatRoom = ({ roomId }) => {
     const handleSend = () => {
         if (!message.trim() || !user || !stompClient.current?.connected) return;
 
-        const payload = {
+        stompClient.current.send('/pub/chat/send', {}, JSON.stringify({
             roomId,
             type: 'TEXT',
             content: message,
-        };
+        }));
 
-        stompClient.current.send('/pub/chat/send', {}, JSON.stringify(payload));
         setMessage('');
         setTimeout(scrollToBottom, 50);
     };
@@ -84,7 +92,7 @@ const ChatRoom = ({ roomId }) => {
         };
     }, [roomId]);
 
-    if (!roomId || !user) {
+    if (!roomId || !user || !roomInfo) {
         return <div className="chat-room-empty">채팅방을 선택해주세요.</div>;
     }
 
@@ -92,13 +100,14 @@ const ChatRoom = ({ roomId }) => {
         <div className="chat-room">
             <div className="chat-room-header">
                 <img
-                    src={roomInfo?.profileImageUrl || base_profile}
+                    src={roomInfo.profileImageUrl}
                     alt="room"
                     className="chat-room-profile"
+                    onError={(e) => { e.target.src = base_profile; }}
                 />
                 <div className="chat-room-header-info">
-                    <h4>{roomInfo?.roomName || '채팅방'}</h4>
-                    <span className="status">그룹채팅</span>
+                    <h4>{roomInfo.roomName}</h4>
+                    <span className="status">{roomInfo.roomType === 'GROUP' ? '그룹채팅' : '1:1 채팅'}</span>
                 </div>
             </div>
 
@@ -113,9 +122,10 @@ const ChatRoom = ({ roomId }) => {
                             {!isMe && (
                                 <div className="message-header">
                                     <img
-                                        src={msg.profileUrl || base_profile}
+                                        src={msg.profileUrl ? `http://localhost:8080${msg.profileUrl}` : base_profile}
                                         alt="profile"
                                         className="message-avatar"
+                                        onError={(e) => { e.target.src = base_profile; }}
                                     />
                                     <div className="message-nickname">{msg.nickname}</div>
                                 </div>
@@ -124,7 +134,7 @@ const ChatRoom = ({ roomId }) => {
                                 <div className={`message-bubble-wrapper ${isMe ? 'right' : 'left'}`}>
                                     <div className={`message-bubble ${isMe ? 'me' : ''}`}>
                                         {isFile ? (
-                                            <a href={msg.content} target="_blank" rel="noreferrer">📎 첨부파일</a>
+                                            <a href={`http://localhost:8080${msg.content}`} target="_blank" rel="noreferrer">📎 첨부파일</a>
                                         ) : (
                                             msg.content
                                         )}
