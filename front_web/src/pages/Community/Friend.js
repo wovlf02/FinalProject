@@ -1,172 +1,401 @@
-// Friend.js
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../css/Friend.css';
-import FriendCard from '../../components/friend/FriendCard';
-import api from '../../api/api';
+
+const initialRequests = [
+  {
+    id: 1,
+    name: '한명재',
+    message: '함께 아는 친구 3명',
+    avatar: 'https://i.pravatar.cc/150?img=11',
+  },
+  {
+    id: 2,
+    name: '임수진',
+    message: '함께 아는 친구 1명',
+    avatar: 'https://i.pravatar.cc/150?img=12',
+  },
+];
+
+const initialOnline = [
+  {
+    id: 1,
+    name: '김일수',
+    message: '공부중',
+    avatar: 'https://i.pravatar.cc/150?img=13',
+  },
+  {
+    id: 2,
+    name: '이지연',
+    message: '공부중',
+    avatar: 'https://i.pravatar.cc/150?img=14',
+  },
+  {
+    id: 3,
+    name: '박호준',
+    message: '공부중',
+    avatar: 'https://i.pravatar.cc/150?img=15',
+  },
+  {
+    id: 4,
+    name: '최서연',
+    message: '공부중',
+    avatar: 'https://i.pravatar.cc/150?img=16',
+  },
+  {
+    id: 5,
+    name: '정우진',
+    message: '공부중',
+    avatar: 'https://i.pravatar.cc/150?img=17',
+  },
+];
+
+const initialOffline = [
+  {
+    id: 1,
+    name: '류소현',
+    message: '접속하지 않은 지 3시간 전',
+    avatar: 'https://i.pravatar.cc/150?img=18',
+  },
+  {
+    id: 2,
+    name: '김동훈',
+    message: '마지막 접속: 어제',
+    avatar: 'https://i.pravatar.cc/150?img=19',
+  },
+  {
+    id: 3,
+    name: '황호준',
+    message: '접속한 지 없는: 2주 전',
+    avatar: 'https://i.pravatar.cc/150?img=20',
+  },
+];
 
 const Friend = () => {
-    const [friends, setFriends] = useState([]);
-    const [requests, setRequests] = useState([]);
-    const [blocked, setBlocked] = useState([]);
-    const [searchResults, setSearchResults] = useState([]);
-    const [searchInput, setSearchInput] = useState('');
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchAll();
-    }, []);
+  // 상태 관리
+  const [friendRequests, setFriendRequests] = useState(initialRequests);
+  const [onlineFriends, setOnlineFriends] = useState(initialOnline);
+  const [offlineFriends, setOfflineFriends] = useState(initialOffline);
+  const [blockedFriends, setBlockedFriends] = useState([]);
+  const [search, setSearch] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterType, setFilterType] = useState('전체');
+  const [showMoreId, setShowMoreId] = useState(null);
+  const [showBlockManager, setShowBlockManager] = useState(false);
 
-    const fetchAll = async () => {
-        try {
-            const [res1, res2, res3] = await Promise.all([
-                api.get('/friends'),
-                api.get('/friends/requests'),
-                api.get('/friends/blocked'),
-            ]);
-            setFriends(res1.data.friends);
-            setRequests(res2.data.requests);
-            setBlocked(res3.data.blockedUsers || res3.data.blocked); // 백엔드 명칭 유연 처리
-        } catch (e) {
-            console.error('친구 목록 불러오기 실패:', e);
-        }
-    };
+  // 친구 추가 모달 예시
+  const [addName, setAddName] = useState('');
+  const [addMsg, setAddMsg] = useState('');
 
-    const handleSearch = async () => {
-        if (!searchInput.trim()) return;
-        try {
-            const res = await api.get(`/friends/search?nickname=${searchInput.trim()}`);
-            setSearchResults(res.data.results);
-        } catch (e) {
-            alert('검색 실패');
-        }
-    };
+  // 검색 필터
+  const filterFn = (f) =>
+    (!search ||
+      f.name.includes(search) ||
+      (f.message && f.message.includes(search))) &&
+    (filterType === '전체' ||
+      (filterType === '온라인' && onlineFriends.some((o) => o.id === f.id)) ||
+      (filterType === '오프라인' && offlineFriends.some((o) => o.id === f.id)));
 
-    const updateSearchStatus = (userId, field) => {
-        setSearchResults(prev =>
-            prev.map(u =>
-                u.userId === userId ? { ...u, [field]: true } : u
-            )
-        );
-    };
+  // 친구 요청 수락
+  const handleAccept = (id) => {
+    const accepted = friendRequests.find((f) => f.id === id);
+    if (accepted) {
+      setOnlineFriends([accepted, ...onlineFriends]);
+      setFriendRequests(friendRequests.filter((f) => f.id !== id));
+    }
+  };
 
-    return (
-        <div className="friend-page-container">
-            {/* 사용자 검색 */}
-            <div className="friend-column">
-                <h3>사용자 검색</h3>
-                <div style={{ display: 'flex', marginBottom: '16px' }}>
-                    <input
-                        className="search-input"
-                        type="text"
-                        placeholder="닉네임 또는 이메일 입력"
-                        value={searchInput}
-                        onChange={(e) => setSearchInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if(e.key === 'Enter') handleSearch();
-                        }}
-                    />
-                    <button className="friend-btn chat-btn" onClick={handleSearch}>
-                        검색
-                    </button>
-                </div>
-                {searchResults.length === 0 ? (
-                    <div className="friend-empty">검색 결과가 없습니다.</div>
-                ) : (
-                    searchResults.map(u => (
-                        <FriendCard
-                            key={u.userId}
-                            user={u}
-                            type="search"
-                            onRequestSent={() => updateSearchStatus(u.userId, 'alreadyRequested')}
-                        />
-                    ))
-                )}
-            </div>
+  // 친구 요청 거절
+  const handleReject = (id) => {
+    setFriendRequests(friendRequests.filter((f) => f.id !== id));
+  };
 
-            {/* 친구 목록 */}
-            <div className="friend-column">
-                <h3>친구 목록</h3>
-                {friends.length === 0 ? (
-                    <div className="friend-empty">친구가 없습니다.</div>
-                ) : (
-                    friends.map(friend => (
-                        <FriendCard
-                            key={friend.userId}
-                            user={friend}
-                            type="friend"
-                            onDelete={async (u) => {
-                                await api.delete(`/friends/${u.userId}`);
-                                setFriends(prev => prev.filter(f => f.userId !== u.userId));
-                            }}
-                            onStartChat={async (u) => {
-                                try {
-                                    const res = await api.post('/chat/rooms', {
-                                        name: null,
-                                        isPrivate: true,
-                                        targetUserId: u.userId,
-                                    });
-                                    window.location.href = `/chat/room/${res.data.roomId}`;
-                                } catch {
-                                    alert('채팅방 생성 실패');
-                                }
-                            }}
-                            onBlock={async (u) => {
-                                await api.post(`/friends/block/${u.userId}`);
-                                fetchAll();
-                            }}
-                        />
-                    ))
-                )}
-            </div>
+  // 친구 추가
+  const handleAddFriend = (e) => {
+    e.preventDefault();
+    if (!addName.trim()) return;
+    setFriendRequests([
+      ...friendRequests,
+      {
+        id: Date.now(),
+        name: addName,
+        message: addMsg || '함께 아는 친구 없음',
+        avatar: 'https://i.pravatar.cc/150?img=21',
+      },
+    ]);
+    setAddName('');
+    setAddMsg('');
+    setShowAddModal(false);
+  };
 
-            {/* 요청 목록 */}
-            <div className="friend-column">
-                <h3>요청 목록</h3>
-                {requests.length === 0 ? (
-                    <div className="friend-empty">요청이 없습니다.</div>
-                ) : (
-                    requests.map(r => (
-                        <FriendCard
-                            key={r.requestId}
-                            user={r}
-                            type="received"
-                            onAccept={async (u) => {
-                                await api.post(`/friends/request/${u.requestId}/accept`, {
-                                    requestId: u.senderId,
-                                });
-                                fetchAll();
-                            }}
-                            onReject={async (u) => {
-                                await api.post(`/friends/request/${u.requestId}/reject`, {
-                                    receiverId: u.senderId,
-                                });
-                                fetchAll();
-                            }}
-                        />
-                    ))
-                )}
-            </div>
+  // 친구 삭제
+  const handleRemoveFriend = (id, type) => {
+    if (type === 'online') {
+      setOnlineFriends(onlineFriends.filter((f) => f.id !== id));
+    } else if (type === 'offline') {
+      setOfflineFriends(offlineFriends.filter((f) => f.id !== id));
+    }
+    setShowMoreId(null);
+  };
 
-            {/* 차단 목록 */}
-            <div className="friend-column">
-                <h3>차단 목록</h3>
-                {blocked.length === 0 ? (
-                    <div className="friend-empty">차단한 사용자가 없습니다.</div>
-                ) : (
-                    blocked.map(u => (
-                        <FriendCard
-                            key={u.userId}
-                            user={u}
-                            type="blocked"
-                            onUnblock={async (target) => {
-                                await api.delete(`/friends/block/${target.userId}`);
-                                fetchAll();
-                            }}
-                        />
-                    ))
-                )}
-            </div>
+  // 친구 차단
+  const handleBlockFriend = (id, type) => {
+    let blocked;
+    if (type === 'online') {
+      blocked = onlineFriends.find((f) => f.id === id);
+      setOnlineFriends(onlineFriends.filter((f) => f.id !== id));
+    } else if (type === 'offline') {
+      blocked = offlineFriends.find((f) => f.id === id);
+      setOfflineFriends(offlineFriends.filter((f) => f.id !== id));
+    }
+    if (blocked) {
+      setBlockedFriends([blocked, ...blockedFriends]);
+    }
+    setShowMoreId(null);
+  };
+
+  // 차단 해제
+  const handleUnblock = (id) => {
+    const unblocked = blockedFriends.find((f) => f.id === id);
+    if (unblocked) {
+      setOnlineFriends([unblocked, ...onlineFriends]);
+      setBlockedFriends(blockedFriends.filter((f) => f.id !== id));
+    }
+  };
+
+  // 필터 적용
+  const filteredOnline = onlineFriends.filter(filterFn);
+  const filteredOffline = offlineFriends.filter(filterFn);
+  const filteredRequests = friendRequests.filter(filterFn);
+
+  return (
+    <div className="friend-root">
+      <div className="friend-header">
+        <h2>친구</h2>
+        <div className="friend-header-actions">
+          <button
+            className="friend-block-manager-btn"
+            onClick={() => setShowBlockManager(true)}
+          >
+            차단 관리
+          </button>
+          <button
+            className="friend-join-btn"
+            onClick={() => navigate('/community')}
+          >
+            커뮤니티로 돌아가기
+          </button>
         </div>
-    );
+      </div>
+      <div className="friend-search-row">
+        <input
+          className="friend-search"
+          placeholder="친구 검색..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className="friend-search-actions">
+          <button className="friend-add-btn" onClick={() => setShowAddModal(true)}>
+            친구 추가
+          </button>
+          <button
+            className="friend-filter-btn"
+            onClick={() => setShowFilter((v) => !v)}
+          >
+            <span className="friend-filter-icon">☰</span>
+            필터
+          </button>
+          {showFilter && (
+            <div className="friend-filter-dropdown">
+              <div
+                className={filterType === '전체' ? 'active' : ''}
+                onClick={() => {
+                  setFilterType('전체');
+                  setShowFilter(false);
+                }}
+              >
+                전체
+              </div>
+              <div
+                className={filterType === '온라인' ? 'active' : ''}
+                onClick={() => {
+                  setFilterType('온라인');
+                  setShowFilter(false);
+                }}
+              >
+                온라인
+              </div>
+              <div
+                className={filterType === '오프라인' ? 'active' : ''}
+                onClick={() => {
+                  setFilterType('오프라인');
+                  setShowFilter(false);
+                }}
+              >
+                오프라인
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 친구 추가 모달 */}
+      {showAddModal && (
+        <div className="friend-modal-overlay">
+          <div className="friend-modal">
+            <button className="friend-modal-close" onClick={() => setShowAddModal(false)}>
+              ×
+            </button>
+            <h3>친구 추가</h3>
+            <form onSubmit={handleAddFriend}>
+              <input
+                placeholder="이름"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                required
+              />
+              <input
+                placeholder="상태메시지(선택)"
+                value={addMsg}
+                onChange={(e) => setAddMsg(e.target.value)}
+              />
+              <button type="submit">추가</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 차단 관리 모달 */}
+      {showBlockManager && (
+        <div className="friend-modal-overlay">
+          <div className="friend-modal">
+            <button className="friend-modal-close" onClick={() => setShowBlockManager(false)}>
+              ×
+            </button>
+            <h3>차단한 친구 관리</h3>
+            {blockedFriends.length === 0 ? (
+              <div className="friend-empty" style={{padding:'18px 0'}}>차단한 친구가 없습니다.</div>
+            ) : (
+              <div>
+                {blockedFriends.map((f) => (
+                  <div className="friend-row" key={f.id}>
+                    <img src={f.avatar} alt={f.name} className="friend-avatar" />
+                    <div className="friend-info">
+                      <div className="friend-name">{f.name}</div>
+                      <div className="friend-message">{f.message}</div>
+                    </div>
+                    <button
+                      className="friend-accept"
+                      onClick={() => handleUnblock(f.id)}
+                    >
+                      차단 해제
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 친구 요청 */}
+      <div className="friend-section">
+        <div className="friend-section-title">
+          친구 요청 <span className="friend-section-count">{filteredRequests.length}개</span>
+        </div>
+        {filteredRequests.length === 0 ? (
+          <div className="friend-empty">친구 요청이 없습니다.</div>
+        ) : (
+          filteredRequests.map((f) => (
+            <div className="friend-row" key={f.id}>
+              <img src={f.avatar} alt={f.name} className="friend-avatar" />
+              <div className="friend-info">
+                <div className="friend-name">{f.name}</div>
+                <div className="friend-message">{f.message}</div>
+              </div>
+              <div className="friend-request-actions">
+                <button className="friend-accept" onClick={() => handleAccept(f.id)}>
+                  수락
+                </button>
+                <button className="friend-reject" onClick={() => handleReject(f.id)}>
+                  거절
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      {/* 온라인 */}
+      <div className="friend-section">
+        <div className="friend-section-title">
+          온라인 <span className="friend-section-count green">{filteredOnline.length}명</span>
+        </div>
+        {filteredOnline.length === 0 ? (
+          <div className="friend-empty">온라인 친구가 없습니다.</div>
+        ) : (
+          filteredOnline.map((f) => (
+            <div className="friend-row" key={f.id}>
+              <img src={f.avatar} alt={f.name} className="friend-avatar" />
+              <div className="friend-info">
+                <div className="friend-name">{f.name}</div>
+                <div className="friend-message">{f.message}</div>
+              </div>
+              <div className="friend-more-wrap">
+                <button
+                  className="friend-more-btn"
+                  onClick={() => setShowMoreId(showMoreId === f.id ? null : f.id)}
+                >
+                  ⋯
+                </button>
+                {showMoreId === f.id && (
+                  <div className="friend-more-dropdown">
+                    <div onClick={() => handleRemoveFriend(f.id, 'online')}>친구 삭제</div>
+                    <div onClick={() => handleBlockFriend(f.id, 'online')}>차단</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      {/* 오프라인 */}
+      <div className="friend-section">
+        <div className="friend-section-title">
+          오프라인 <span className="friend-section-count gray">{filteredOffline.length}명</span>
+        </div>
+        {filteredOffline.length === 0 ? (
+          <div className="friend-empty">오프라인 친구가 없습니다.</div>
+        ) : (
+          filteredOffline.map((f) => (
+            <div className="friend-row" key={f.id}>
+              <img src={f.avatar} alt={f.name} className="friend-avatar" />
+              <div className="friend-info">
+                <div className="friend-name">{f.name}</div>
+                <div className="friend-message">{f.message}</div>
+              </div>
+              <div className="friend-more-wrap">
+                <button
+                  className="friend-more-btn"
+                  onClick={() => setShowMoreId(showMoreId === f.id ? null : f.id)}
+                >
+                  ⋯
+                </button>
+                {showMoreId === f.id && (
+                  <div className="friend-more-dropdown">
+                    <div onClick={() => handleRemoveFriend(f.id, 'offline')}>친구 삭제</div>
+                    <div onClick={() => handleBlockFriend(f.id, 'offline')}>차단</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Friend;

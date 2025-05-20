@@ -1,146 +1,427 @@
-.friend-page-container {
-    margin-left: 160px;
-    display: flex;
-    padding: 40px 60px;
-    background-color: #f9fafb;
-    min-height: 100vh;
-    box-sizing: border-box;
-    gap: 28px;
-    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+.friend-root {
+  background: #f7f8fa;
+  min-height: 100vh;
+  padding: 36px 0 60px 0;
+  max-width: 100vw;
 }
 
-/* 각 열 */
-.friend-column {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 24px;
-    box-sizing: border-box;
-    min-width: 320px;
-    max-height: 100%;
-    overflow-y: auto;
+.friend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto 16px auto;
+  padding: 0 32px;
 }
 
-/* 제목 스타일 개선 */
-.friend-column h3 {
-    font-size: 18px;
-    font-weight: 800;
-    color: #1e293b;
-    margin-bottom: 20px;
-    border-left: 4px solid #2563eb;
-    padding-left: 10px;
+.friend-header h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+  color: #23272f;
 }
 
-/* 카드 공통 */
-.friend-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: 10px;
-    padding: 14px 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
-    transition: background-color 0.2s;
-    background-color: #fff;
+.friend-header-actions {
+  display: flex;
+  gap: 10px;
 }
 
-.friend-card:hover {
-    background-color: #f3f4f6;
+.friend-join-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-size: 0.98rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.friend-join-btn:hover {
+  background: #1d4ed8;
 }
 
-/* 좌측 사용자 정보 */
-.friend-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+/* 차단 관리 버튼 */
+.friend-block-manager-btn {
+  background: #fff;
+  color: #ef4444;
+  border: 1.5px solid #ef4444;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.98rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-right: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.friend-block-manager-btn:hover {
+  background: #ef4444;
+  color: #fff;
 }
 
+.friend-search-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto 18px auto;
+  padding: 0 32px;
+  position: relative;
+}
+
+.friend-search {
+  flex: 1;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  padding: 9px 16px;
+  font-size: 1rem;
+  color: #23272f;
+  outline: none;
+  transition: border 0.15s;
+}
+
+.friend-search:focus {
+  border: 1.5px solid #2563eb;
+}
+
+.friend-search-actions {
+  display: flex;
+  gap: 8px;
+  position: relative;
+}
+
+.friend-add-btn {
+  background: #fff;
+  border: 1px solid #2563eb;
+  color: #2563eb;
+  border-radius: 6px;
+  padding: 8px 15px;
+  font-size: 0.96rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.friend-add-btn:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.friend-filter-btn {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  border-radius: 6px;
+  padding: 8px 13px;
+  font-size: 0.96rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.friend-filter-btn:hover {
+  background: #f1f5fb;
+}
+
+.friend-filter-icon {
+  font-size: 1.13rem;
+}
+
+/* 필터 드롭다운 */
+.friend-filter-dropdown {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  min-width: 90px;
+  z-index: 10;
+  font-size: 0.97rem;
+  overflow: hidden;
+}
+.friend-filter-dropdown div {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.friend-filter-dropdown div.active,
+.friend-filter-dropdown div:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.friend-section {
+  background: #fff;
+  border-radius: 10px;
+  max-width: 1200px;
+  margin: 0 auto 22px auto;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+  padding: 18px 0 8px 0;
+  border: 1px solid #f1f3f8;
+}
+
+.friend-section-title {
+  font-size: 1.04rem;
+  font-weight: 600;
+  color: #23272f;
+  padding: 0 32px 8px 32px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 1px solid #f3f4f7;
+}
+
+.friend-section-count {
+  font-size: 0.98rem;
+  color: #2563eb;
+  font-weight: 500;
+}
+.friend-section-count.green { color: #22c55e; }
+.friend-section-count.gray { color: #a1a1aa; }
+
+.friend-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 32px 10px 32px;
+  border-bottom: 1px solid #f3f4f7;
+  min-height: 64px;
+  position: relative;
+  background: #fff;
+}
+.friend-row:last-child {
+  border-bottom: none;
+}
+
+/* 차단된 친구 row 강조 */
+.friend-modal .friend-row {
+  background: #fdf2f8;
+}
+.friend-modal .friend-name {
+  color: #e11d48;
+}
+.friend-modal .friend-accept {
+  background: #fff;
+  color: #e11d48;
+  border: 1.5px solid #e11d48;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+.friend-modal .friend-accept:hover {
+  background: #e11d48;
+  color: #fff;
+}
+
+/* 일반 친구 row */
 .friend-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    object-fit: cover;
-    background-color: #e2e8f0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f1f1f1;
+  border: 1.5px solid #e5e7eb;
 }
 
 .friend-info {
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.friend-nickname {
-    font-weight: 600;
-    font-size: 15px;
-    color: #111827;
+.friend-name {
+  font-size: 1.07rem;
+  font-weight: 600;
+  color: #23272f;
 }
 
-.friend-email {
-    font-size: 13px;
-    color: #6b7280;
+.friend-message {
+  font-size: 0.97rem;
+  color: #7b8591;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* 온라인 여부 */
-.friend-status {
-    font-size: 13px;
-    margin-top: 2px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #4b5563;
+.friend-request-actions {
+  display: flex;
+  gap: 8px;
 }
 
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+.friend-accept {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.friend-accept:hover {
+  background: #1d4ed8;
 }
 
-.status-online {
-    background-color: #22c55e;
+.friend-reject {
+  background: #fff;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.friend-reject:hover {
+  background: #ef4444;
+  color: #fff;
 }
 
-.status-offline {
-    background-color: #f43f5e;
+.friend-more-wrap {
+  position: relative;
 }
 
-/* 버튼 영역 */
-.friend-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+.friend-more-btn {
+  background: none;
+  border: none;
+  color: #b0b6be;
+  font-size: 1.7rem;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 5px;
+  transition: background 0.13s;
+}
+.friend-more-btn:hover {
+  background: #f1f5fb;
+  color: #2563eb;
 }
 
-.friend-btn {
-    padding: 6px 10px;
-    font-size: 13px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    color: white;
-    transition: background-color 0.2s ease;
+/* 더보기 드롭다운 */
+.friend-more-dropdown {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  min-width: 90px;
+  z-index: 10;
+  font-size: 0.97rem;
+  overflow: hidden;
+}
+.friend-more-dropdown div {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.friend-more-dropdown div:hover {
+  background: #ef4444;
+  color: #fff;
 }
 
-.chat-btn { background-color: #2563eb; }
-.accept-btn { background-color: #22c55e; }
-.reject-btn { background-color: #ef4444; }
-.block-btn { background-color: #6b7280; }
-.unblock-btn { background-color: #6366f1; }
-.delete-btn { background-color: #f97316; }
-
-.friend-btn:hover {
-    opacity: 0.9;
+/* 차단 관리 모달 강조 */
+.friend-modal {
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 6px 32px rgba(239,68,68,0.13), 0 6px 32px rgba(0,0,0,0.10);
+  width: 95%;
+  max-width: 340px;
+  padding: 30px 22px 24px 22px;
+  position: relative;
+  border: 2px solid #fda4af;
 }
 
-/* 비어있을 때 메시지 */
+.friend-modal h3 {
+  color: #e11d48;
+}
+
+.friend-modal-close {
+  position: absolute;
+  top: 14px; right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s;
+  z-index: 2;
+}
+.friend-modal-close:hover {
+  color: #ef4444;
+}
+.friend-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.friend-modal input {
+  font-size: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  padding: 10px 13px;
+  background: #f9fafb;
+  color: #23272f;
+  transition: border 0.15s;
+  outline: none;
+}
+.friend-modal input:focus {
+  border: 1.5px solid #2563eb;
+  background: #fff;
+}
+.friend-modal button[type="submit"] {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 7px;
+  transition: background 0.15s;
+}
+.friend-modal button[type="submit"]:hover {
+  background: #1d4ed8;
+}
+
 .friend-empty {
-    color: #9ca3af;
-    font-size: 15px;
-    text-align: center;
-    margin-top: 40px;
+  color: #b0b6be;
+  text-align: left;
+  padding: 10px 32px;
+  font-size: 1rem;
+}
+
+/* 친구 추가/차단 관리 모달 오버레이 */
+.friend-modal-overlay {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(30,41,59,0.18);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 반응형 */
+@media (max-width: 700px) {
+  .friend-header,
+  .friend-search-row,
+  .friend-section-title,
+  .friend-row {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .friend-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
