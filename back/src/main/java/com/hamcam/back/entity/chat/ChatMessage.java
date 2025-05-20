@@ -54,7 +54,6 @@ public class ChatMessage {
     /**
      * 메시지 타입 (TEXT, IMAGE, FILE 등)
      */
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private ChatMessageType type;
 

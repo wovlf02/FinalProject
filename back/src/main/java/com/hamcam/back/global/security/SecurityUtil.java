@@ -23,20 +23,31 @@ public class SecurityUtil {
 
     /**
      * 현재 인증된 사용자의 ID 반환
+     * WebSocket 인증 시 principal이 Long이나 String일 수 있으므로 유연하게 처리
      *
      * @return 사용자 ID
      * @throws CustomException 인증되지 않은 경우
      */
     public Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("🔍 SecurityUtil 내부 인증 객체: " + authentication);
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
 
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof CustomUserDetails userDetails) {
-            return userDetails.getUserId();
+            if (principal instanceof CustomUserDetails userDetails) {
+                return userDetails.getUserId();
+            }
+
+            // WebSocket 인증 시 Principal이 문자열 userId로 전달될 수 있음
+            if (principal instanceof String str && str.matches("\\d+")) {
+                return Long.parseLong(str);
+            }
+
+            // WebSocket 연결 중 principal이 Long 타입인 경우도 대응
+            if (principal instanceof Long id) {
+                return id;
+            }
         }
 
         throw new CustomException(ErrorCode.UNAUTHORIZED);

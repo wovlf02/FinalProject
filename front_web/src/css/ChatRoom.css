@@ -235,7 +235,7 @@
 
 .message-time-bottom-left {
     position: absolute;
-    bottom: 0;
+    bottom: -5px;
     left: -53px;
     font-size: 11px;
     color: #999;

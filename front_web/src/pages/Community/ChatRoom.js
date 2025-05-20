@@ -24,11 +24,11 @@ const ChatRoom = ({ roomId }) => {
             const [userRes, roomRes, messageRes] = await Promise.all([
                 api.get('/users/me'),
                 api.get(`/chat/rooms/${roomId}`),
-                api.get(`/chat/rooms/${roomId}/messages?page=0&size=100`)
+                api.get(`/chat/rooms/${roomId}/messages`)
             ]);
-            console.log(roomRes.data);
 
             setUser(userRes.data);
+
             setRoomInfo({
                 ...roomRes.data.data,
                 profileImageUrl: roomRes.data.data.representative_image_url
@@ -37,8 +37,14 @@ const ChatRoom = ({ roomId }) => {
                 roomName: roomRes.data.data.room_name,
                 roomType: roomRes.data.data.room_type
             });
-            setMessages(messageRes.data?.data || []);
 
+            const normalizedMessages = (messageRes.data?.data || []).map(msg => ({
+                ...msg,
+                isMe: String(msg.senderId) === String(userRes.data.id),
+                profileUrl: msg.profileUrl ? `http://localhost:8080${msg.profileUrl}` : base_profile,
+            }));
+
+            setMessages(normalizedMessages);
             connectStomp(userRes.data);
         } catch (err) {
             console.error('❌ 초기 데이터 로딩 실패:', err);
@@ -52,17 +58,17 @@ const ChatRoom = ({ roomId }) => {
 
         client.connect({}, () => {
             client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
-                const message = JSON.parse(msg.body);
-                setMessages(prev => [...prev, message]);
+                const newMsg = JSON.parse(msg.body);
+                const normalizedMsg = {
+                    ...newMsg,
+                    isMe: String(newMsg.senderId) === String(userData.id),
+                    profileUrl: newMsg.profileUrl ? `http://localhost:8080${newMsg.profileUrl}` : base_profile,
+                };
+                setMessages(prev => [...prev, normalizedMsg]);
                 setTimeout(scrollToBottom, 50);
             });
 
-            // 입장 메시지 전송
-            client.send('/pub/chat/send', {}, JSON.stringify({
-                roomId,
-                type: 'ENTER',
-                content: `${userData.nickname}님이 입장하셨습니다.`,
-            }));
+            // ❌ 서버에서 입장 메시지를 처리하거나 추후 추가
         }, (error) => {
             console.error('❌ STOMP 연결 실패:', error);
         });
@@ -71,12 +77,16 @@ const ChatRoom = ({ roomId }) => {
     const handleSend = () => {
         if (!message.trim() || !user || !stompClient.current?.connected) return;
 
-        stompClient.current.send('/pub/chat/send', {}, JSON.stringify({
+        const payload = {
             roomId,
-            type: 'TEXT',
+            type: "TEXT",
             content: message,
-        }));
+            storedFileName: null,
+        };
 
+        console.log('📤 보내는 메시지:', payload); // 디버깅용
+
+        stompClient.current.send('/pub/chat/send', {}, JSON.stringify(payload));
         setMessage('');
         setTimeout(scrollToBottom, 50);
     };
@@ -113,16 +123,14 @@ const ChatRoom = ({ roomId }) => {
 
             <div className="chat-room-body">
                 {messages.map((msg, index) => {
-                    const isMe = String(msg.senderId) === String(user.id);
-                    const isFile = msg.type === 'FILE';
                     const formattedTime = moment(msg.sentAt || msg.time).format('A hh:mm');
 
                     return (
-                        <div key={index} className={`message-wrapper ${isMe ? 'right' : 'left'}`}>
-                            {!isMe && (
+                        <div key={index} className={`message-wrapper ${msg.isMe ? 'right' : 'left'}`}>
+                            {!msg.isMe && (
                                 <div className="message-header">
                                     <img
-                                        src={msg.profileUrl ? `http://localhost:8080${msg.profileUrl}` : base_profile}
+                                        src={msg.profileUrl}
                                         alt="profile"
                                         className="message-avatar"
                                         onError={(e) => { e.target.src = base_profile; }}
@@ -130,17 +138,17 @@ const ChatRoom = ({ roomId }) => {
                                     <div className="message-nickname">{msg.nickname}</div>
                                 </div>
                             )}
-                            <div className={`message-content-group ${isMe ? 'right' : 'left'}`}>
-                                <div className={`message-bubble-wrapper ${isMe ? 'right' : 'left'}`}>
-                                    <div className={`message-bubble ${isMe ? 'me' : ''}`}>
-                                        {isFile ? (
+                            <div className={`message-content-group ${msg.isMe ? 'right' : 'left'}`}>
+                                <div className={`message-bubble-wrapper ${msg.isMe ? 'right' : 'left'}`}>
+                                    <div className={`message-bubble ${msg.isMe ? 'me' : ''}`}>
+                                        {msg.type === 'FILE' ? (
                                             <a href={`http://localhost:8080${msg.content}`} target="_blank" rel="noreferrer">📎 첨부파일</a>
                                         ) : (
                                             msg.content
                                         )}
                                     </div>
-                                    <div className={`message-time ${isMe ? 'bottom-left' : 'left'}`}>{formattedTime}</div>
-                                    {isMe && msg.unreadCount > 0 && (
+                                    <div className={`message-time ${msg.isMe ? 'bottom-left' : 'left'}`}>{formattedTime}</div>
+                                    {msg.isMe && msg.unreadCount > 0 && (
                                         <div className="chat-unread-top-left">{msg.unreadCount}</div>
                                     )}
                                 </div>

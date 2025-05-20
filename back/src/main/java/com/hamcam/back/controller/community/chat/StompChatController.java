@@ -2,13 +2,20 @@ package com.hamcam.back.controller.community.chat;
 
 import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.service.community.chat.ChatReadService;
 import com.hamcam.back.service.community.chat.WebSocketChatService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.handler.annotation.*;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Controller;
+
+import java.security.Principal;
 
 /**
  * [StompChatController]
@@ -28,17 +35,41 @@ public class StompChatController {
      * 해당 채팅방의 구독자에게 /sub/chat/room/{roomId} 로 브로드캐스트합니다.
      */
     @MessageMapping("/chat/send")
-    public void handleChatMessage(@Payload ChatMessageRequest messageRequest) {
+    public void handleChatMessage(@Payload @Valid ChatMessageRequest messageRequest, Principal principal) {
+        Long userId = extractUserIdFromPrincipal(principal);
+
+        log.info("📥 WebSocket 메시지 수신: roomId={}, userId={}", messageRequest.getRoomId(), userId);
+
         // 1. 메시지 저장
-        ChatMessageResponse response = webSocketChatService.saveMessage(messageRequest);
+        ChatMessageResponse response = webSocketChatService.saveMessage(messageRequest, userId);
 
-        // 2. 읽음 처리 (보낸 사람 기준)
-        chatReadService.markReadAsAuthenticatedUser(response.getRoomId(), response.getMessageId());
+        // 2. 읽음 처리
+        chatReadService.markReadAsUserId(response.getRoomId(), response.getMessageId(), userId);
 
-        // 3. 구독 중인 클라이언트에게 브로드캐스트
+        // 3. 메시지 브로드캐스트
         messagingTemplate.convertAndSend(
                 "/sub/chat/room/" + response.getRoomId(),
                 response
         );
     }
+
+    /**
+     * WebSocket 연결 시 전달된 Principal에서 userId를 추출
+     * (예: UsernamePasswordAuthenticationToken 또는 String userId 등)
+     */
+    private Long extractUserIdFromPrincipal(Principal principal) {
+        if (principal instanceof UsernamePasswordAuthenticationToken token) {
+            Object principalObj = token.getPrincipal();
+
+            if (principalObj instanceof Long id) {
+                return id;
+            } else if (principalObj instanceof String str && str.matches("\\d+")) {
+                return Long.parseLong(str);
+            }
+        }
+
+        log.warn("❌ Principal에서 userId 추출 실패: {}", principal);
+        throw new CustomException(ErrorCode.UNAUTHORIZED);
+    }
+
 }

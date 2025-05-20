@@ -63,4 +63,10 @@ public class CustomUserDetails implements UserDetails {
     public boolean isEnabled() {
         return true; // User 엔티티에 활성 여부 필드 도입 시 변경
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(user.getId()); // WebSocket Principal로 쓰일 때 ID가 자동 변환됨
+    }
+
 }

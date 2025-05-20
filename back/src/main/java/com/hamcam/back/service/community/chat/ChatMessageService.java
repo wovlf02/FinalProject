@@ -74,7 +74,7 @@ public class ChatMessageService {
     private ChatMessage createMessageEntity(ChatRoom room, User sender, ChatMessageRequest request) {
         ChatMessageType type;
         try {
-            type = ChatMessageType.valueOf(request.getType().toUpperCase());
+            type = request.getType();
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }

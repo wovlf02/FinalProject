@@ -98,7 +98,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 Long roomId = readRequest.getRoomId();
                 Long messageId = readRequest.getMessageId();
 
-                int unreadCount = chatReadService.markAsRead(user, roomId, messageId);
+                int unreadCount = chatReadService.markReadAsUserId(roomId, roomId, messageId);
 
                 Map<String, Object> readAck = new HashMap<>();
                 readAck.put("type", "READ_ACK");
