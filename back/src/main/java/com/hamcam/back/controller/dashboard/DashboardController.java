@@ -55,22 +55,21 @@ public class DashboardController {
 
     // 📆 4. Todo 수정
     @PutMapping("/todos/{todoId}")
-    public void updateTodo(@PathVariable Long todoId, @Valid @RequestBody TodoUpdateRequest request) {
+    public void updateTodo(@PathVariable("todoId") Long todoId, @Valid @RequestBody TodoUpdateRequest request) {
         dashboardService.updateTodo(todoId, request);
     }
 
     // 📆 5. Todo 삭제
     @DeleteMapping("/todos/{todoId}")
-    public void deleteTodo(@PathVariable Long todoId) {
+    public void deleteTodo(@PathVariable("todoId") Long todoId) {
         dashboardService.deleteTodo(todoId);
     }
 
     // 📆 6. Todo 완료 체크 (토글 방식)
     @PutMapping("/todos/{todoId}/complete")
-    public TodoResponse toggleTodo(@PathVariable Long todoId) {
+    public TodoResponse toggleTodo(@PathVariable("todoId") Long todoId) {
         return dashboardService.toggleTodoCompletion(todoId);
     }
-
 
     // 📅 7. 전체 시험 일정 조회
     @GetMapping("/exams")

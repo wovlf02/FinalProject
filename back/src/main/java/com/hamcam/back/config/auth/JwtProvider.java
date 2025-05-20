@@ -25,7 +25,6 @@ public class JwtProvider {
 
     private Key key;
 
-    // 쿠키 키 상수 (HttpOnly 쿠키에서 사용할 이름)
     public static final String ACCESS_COOKIE = "accessToken";
     public static final String REFRESH_COOKIE = "refreshToken";
 
@@ -37,27 +36,18 @@ public class JwtProvider {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    /**
-     * Access Token 생성 및 Redis 저장
-     */
     public String generateAccessToken(User user) {
         String token = generateToken(user.getId(), ACCESS_EXP);
         redisTemplate.opsForValue().set("AT:" + user.getId(), token, Duration.ofMillis(ACCESS_EXP));
         return token;
     }
 
-    /**
-     * Refresh Token 생성 및 Redis 저장
-     */
     public String generateRefreshToken(User user) {
         String token = generateToken(user.getId(), REFRESH_EXP);
         redisTemplate.opsForValue().set("RT:" + user.getId(), token, Duration.ofMillis(REFRESH_EXP));
         return token;
     }
 
-    /**
-     * 사용자 ID 기반 JWT 생성
-     */
     private String generateToken(Long userId, long exp) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + exp);
@@ -70,20 +60,20 @@ public class JwtProvider {
                 .compact();
     }
 
-    /**
-     * 토큰에서 사용자 ID 추출
-     */
     public Long getUserIdFromToken(String token) {
         return Long.valueOf(parseClaims(token).getSubject());
     }
 
-    /**
-     * 쿠키 기반 REST 인증: Redis에 저장된 AccessToken과 비교하여 유효성 검증
-     */
-    public boolean validateAccessTokenWithRedis(String token) {
+    public boolean validateAccessTokenWithRedis(String token, boolean fromHeader) {
         try {
             Claims claims = parseClaims(token);
             String userId = claims.getSubject();
+
+            if (fromHeader) {
+                // 헤더에서 온 토큰은 Redis 검사 없이 JWT 자체 유효성만 검사
+                return true;
+            }
+
             String redisToken = redisTemplate.opsForValue().get("AT:" + userId);
 
             if (redisToken == null || !redisToken.equals(token)) {
@@ -98,9 +88,6 @@ public class JwtProvider {
         }
     }
 
-    /**
-     * WebSocket용: Redis 확인 없이 JWT 자체 유효성만 검사
-     */
     public boolean validateTokenWithoutRedis(String token) {
         try {
             parseClaims(token);
@@ -112,17 +99,11 @@ public class JwtProvider {
         }
     }
 
-    /**
-     * 토큰 만료 시간 확인
-     */
     public long getExpiration(String token) {
         Date expiration = parseClaims(token).getExpiration();
         return expiration.getTime() - new Date().getTime();
     }
 
-    /**
-     * Claims 파싱
-     */
     private Claims parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)

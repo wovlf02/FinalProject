@@ -21,9 +21,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * JWT 인증 필터 (HttpOnly 쿠키 기반 + Authorization 헤더 검증 포함)
- */
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -38,23 +35,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = resolveToken(request);
 
-            if (token != null && jwtProvider.validateAccessTokenWithRedis(token)) {
-                Long userId = jwtProvider.getUserIdFromToken(token);
+            if (token != null) {
+                String authHeader = request.getHeader("Authorization");
+                boolean fromHeader = authHeader != null && authHeader.startsWith("Bearer ");
 
-                // 사용자 정보 조회
-                User user = userRepository.findById(userId)
-                        .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
+                if (jwtProvider.validateAccessTokenWithRedis(token, fromHeader)) {
+                    Long userId = jwtProvider.getUserIdFromToken(token);
 
-                UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+                    User user = userRepository.findById(userId)
+                            .orElseThrow(() -> new CustomException("사용자를 찾을 수 없습니다."));
 
-                // 인증 객체 생성 및 SecurityContext 등록
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
-
         } catch (ExpiredJwtException e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access Token이 만료되었습니다.");
             return;
@@ -66,17 +65,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Authorization 헤더 또는 쿠키에서 JWT 토큰 추출
-     */
     private String resolveToken(HttpServletRequest request) {
-        // 1) Authorization 헤더에서 토큰 추출
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
 
-        // 2) 쿠키에서 토큰 추출
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if (JwtProvider.ACCESS_COOKIE.equals(cookie.getName())) {
