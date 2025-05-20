@@ -4,7 +4,6 @@ import com.hamcam.back.dto.common.MessageResponse;
 import com.hamcam.back.dto.community.chat.request.DirectChatRequest;
 import com.hamcam.back.dto.community.chat.response.ChatRoomListResponse;
 import com.hamcam.back.dto.community.chat.response.ChatRoomResponse;
-import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.service.community.chat.DirectChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +22,6 @@ import java.util.List;
 public class DirectChatController {
 
     private final DirectChatService directChatService;
-    private final SecurityUtil securityUtil;
 
     /**
      * [1:1 채팅 시작 또는 기존 채팅방 반환]

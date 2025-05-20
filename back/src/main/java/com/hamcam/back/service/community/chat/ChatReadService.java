@@ -34,8 +34,9 @@ public class ChatReadService {
     @Transactional
     public int markAsRead(User reader, Long roomId, Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.MESSAGE_NOT_FOUND));
 
+        // 본인이 보낸 메시지는 읽음 처리하지 않음
         if (!message.getSender().getId().equals(reader.getId())) {
             boolean alreadyRead = chatReadRepository.existsByMessageAndUser(message, reader);
             if (!alreadyRead) {
@@ -43,10 +44,7 @@ public class ChatReadService {
             }
         }
 
-        int totalParticipants = chatParticipantRepository.countByChatRoomId(roomId);
-        long readCount = chatReadRepository.countByMessage(message);
-
-        return (int) (totalParticipants - readCount - 1); // 보낸 사람 제외
+        return calculateUnreadCount(message);
     }
 
     /**
@@ -55,13 +53,9 @@ public class ChatReadService {
     @Transactional(readOnly = true)
     public int getUnreadCountForMessage(Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.MESSAGE_NOT_FOUND));
 
-        Long roomId = message.getChatRoom().getId();
-        int totalParticipants = chatParticipantRepository.countByChatRoomId(roomId);
-        long readCount = chatReadRepository.countByMessage(message);
-
-        return (int) (totalParticipants - readCount - 1); // 보낸 사람 제외
+        return calculateUnreadCount(message);
     }
 
     /**
@@ -80,17 +74,30 @@ public class ChatReadService {
     }
 
     /**
-     * SecurityUtil 기반 유저로 바로 읽음 처리 (WebSocket 등에서 활용 가능)
+     * 현재 인증된 사용자 기준 읽음 처리
      */
     @Transactional
-    public int markAsReadByAuth(Long roomId, Long messageId) {
+    public int markReadAsAuthenticatedUser(Long roomId, Long messageId) {
         User reader = securityUtil.getCurrentUser();
         return markAsRead(reader, roomId, messageId);
     }
 
+    /**
+     * 현재 인증된 사용자 기준 마지막 메시지 ID 갱신
+     */
     @Transactional
-    public void updateLastReadMessageByAuth(Long roomId) {
+    public void updateLastReadMessageByAuthenticatedUser(Long roomId) {
         Long userId = securityUtil.getCurrentUserId();
         updateLastReadMessage(roomId, userId);
+    }
+
+    /**
+     * 내부 공통 로직: 읽지 않은 사용자 수 계산
+     */
+    private int calculateUnreadCount(ChatMessage message) {
+        Long roomId = message.getChatRoom().getId();
+        int totalParticipants = chatParticipantRepository.countByChatRoomId(roomId);
+        long readCount = chatReadRepository.countByMessage(message);
+        return (int) (totalParticipants - readCount - 1); // 보낸 사람 제외
     }
 }

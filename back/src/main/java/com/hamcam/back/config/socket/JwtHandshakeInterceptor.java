@@ -10,7 +10,6 @@ import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import java.util.Arrays;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -23,24 +22,44 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                                    ServerHttpResponse response,
                                    WebSocketHandler wsHandler,
                                    Map<String, Object> attributes) {
+
         if (request instanceof ServletServerHttpRequest servletRequest) {
             HttpServletRequest httpRequest = servletRequest.getServletRequest();
 
-            // HttpOnly 쿠키에서 accessToken 추출
-            String token = Arrays.stream(httpRequest.getCookies())
-                    .filter(cookie -> JwtProvider.ACCESS_COOKIE.equals(cookie.getName()))
-                    .map(Cookie::getValue)
-                    .findFirst()
-                    .orElse(null);
-
-            if (token != null && jwtProvider.validateTokenWithoutRedis(token)) {
-                Long userId = jwtProvider.getUserIdFromToken(token);
-                attributes.put("userId", userId);
-                return true;
+            Cookie[] cookies = httpRequest.getCookies();
+            if (cookies == null) {
+                System.out.println("❌ WebSocket 연결 실패: 쿠키 없음");
+                return false;
             }
 
+            String token = null;
+            for (Cookie cookie : cookies) {
+                if (JwtProvider.ACCESS_COOKIE.equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+
+            if (token == null) {
+                System.out.println("❌ WebSocket 연결 실패: accessToken 쿠키 없음");
+                return false;
+            }
+
+            try {
+                if (jwtProvider.validateTokenWithoutRedis(token)) {
+                    Long userId = jwtProvider.getUserIdFromToken(token);
+                    attributes.put("userId", userId);
+                    System.out.println("✅ WebSocket 연결 성공: userId=" + userId);
+                    return true;
+                } else {
+                    System.out.println("❌ WebSocket 연결 실패: accessToken 검증 실패");
+                }
+            } catch (Exception e) {
+                System.out.println("❌ WebSocket 연결 실패: " + e.getMessage());
+            }
         }
-        return false; // 인증 실패 시 핸드셰이크 거절
+
+        return false;
     }
 
     @Override
@@ -48,6 +67,6 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                                ServerHttpResponse response,
                                WebSocketHandler wsHandler,
                                Exception exception) {
-        // Do nothing
+        // 필요 시 연결 후 처리 로직 작성 가능 (예: 로깅)
     }
 }

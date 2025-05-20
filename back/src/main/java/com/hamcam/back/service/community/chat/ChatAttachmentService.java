@@ -20,9 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.UUID;
@@ -31,20 +29,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ChatAttachmentService {
 
+    private static final String UPLOAD_DIR = "C:/FinalProject/uploads/chat";
+    private static final String BASE_FILE_URL = "/uploads/chat";
+
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final SecurityUtil securityUtil;
 
-    private static final String UPLOAD_DIR = "C:/FinalProject/uploads/chat";
-    private static final String BASE_FILE_URL = "/uploads/chat";
-
     /**
-     * 채팅방 내 파일 전송 (파일 저장 + 메시지 저장)
+     * 채팅 파일 업로드 및 메시지 저장
      */
     public ChatMessageResponse saveFileMessage(Long roomId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new CustomException(ErrorCode.MISSING_PARAMETER);
+        }
+
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-
         User sender = securityUtil.getCurrentUser();
 
         String originalFilename = file.getOriginalFilename();
@@ -52,15 +53,12 @@ public class ChatAttachmentService {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
-        String storedFilename = UUID.randomUUID() + "_" + originalFilename;
-        File savePath = new File(UPLOAD_DIR, storedFilename);
+        String storedFilename = generateStoredFilename(originalFilename);
+        ensureUploadDirectoryExists();
 
-        if (!savePath.getParentFile().exists()) {
-            savePath.getParentFile().mkdirs();
-        }
-
+        File destination = new File(UPLOAD_DIR, storedFilename);
         try {
-            file.transferTo(savePath);
+            file.transferTo(destination);
         } catch (IOException e) {
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
@@ -79,14 +77,14 @@ public class ChatAttachmentService {
     }
 
     /**
-     * 채팅 메시지에 첨부된 파일 다운로드용 리소스 반환
+     * 채팅 파일 다운로드용 리소스 반환
      */
     public Resource loadFileAsResource(Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
         try {
-            Path filePath = Paths.get(UPLOAD_DIR).resolve(message.getStoredFileName()).normalize();
+            Path filePath = resolveFilePath(message.getStoredFileName());
             Resource resource = new UrlResource(filePath.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {
@@ -100,23 +98,23 @@ public class ChatAttachmentService {
     }
 
     /**
-     * 이미지 파일 Base64 미리보기 생성
+     * 이미지 파일 Base64 미리보기
      */
     public ChatFilePreviewResponse previewFile(Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
-        String storedFileName = message.getStoredFileName();
-        String extension = getFileExtension(storedFileName).toLowerCase();
+        String filename = message.getStoredFileName();
+        String extension = getFileExtension(filename).toLowerCase();
 
         if (!isPreviewable(extension)) {
             throw new CustomException(ErrorCode.FILE_PREVIEW_NOT_SUPPORTED);
         }
 
         try {
-            Path filePath = Paths.get(UPLOAD_DIR).resolve(storedFileName).normalize();
-            byte[] fileBytes = Files.readAllBytes(filePath);
-            String base64 = Base64.getEncoder().encodeToString(fileBytes);
+            Path filePath = resolveFilePath(filename);
+            byte[] bytes = Files.readAllBytes(filePath);
+            String base64 = Base64.getEncoder().encodeToString(bytes);
             String mimeType = Files.probeContentType(filePath);
 
             return new ChatFilePreviewResponse(mimeType, base64);
@@ -125,19 +123,7 @@ public class ChatAttachmentService {
         }
     }
 
-    // ===== 내부 유틸 =====
-
-    private String getFileExtension(String filename) {
-        int dotIndex = filename.lastIndexOf('.');
-        return (dotIndex != -1) ? filename.substring(dotIndex + 1) : "";
-    }
-
-    private boolean isPreviewable(String ext) {
-        return switch (ext) {
-            case "png", "jpg", "jpeg", "gif", "bmp", "webp" -> true;
-            default -> false;
-        };
-    }
+    // ===== 유틸 =====
 
     private ChatMessageResponse toResponse(ChatMessage message) {
         User sender = message.getSender();
@@ -153,5 +139,32 @@ public class ChatAttachmentService {
                 .nickname(sender.getNickname())
                 .profileUrl(sender.getProfileImageUrl() != null ? sender.getProfileImageUrl() : "")
                 .build();
+    }
+
+    private Path resolveFilePath(String storedFilename) {
+        return Paths.get(UPLOAD_DIR).resolve(storedFilename).normalize();
+    }
+
+    private String generateStoredFilename(String original) {
+        return UUID.randomUUID() + "_" + original;
+    }
+
+    private void ensureUploadDirectoryExists() {
+        File dir = new File(UPLOAD_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+    }
+
+    private String getFileExtension(String filename) {
+        int dot = filename.lastIndexOf('.');
+        return (dot != -1) ? filename.substring(dot + 1) : "";
+    }
+
+    private boolean isPreviewable(String ext) {
+        return switch (ext) {
+            case "jpg", "jpeg", "png", "gif", "bmp", "webp" -> true;
+            default -> false;
+        };
     }
 }

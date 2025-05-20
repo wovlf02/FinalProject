@@ -8,11 +8,12 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Date;
 import java.time.Duration;
+import java.util.Date;
 
 @Component
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class JwtProvider {
     public static final String ACCESS_COOKIE = "accessToken";
     public static final String REFRESH_COOKIE = "refreshToken";
 
-    private static final long ACCESS_EXP = 1000L * 60 * 60;         // 1시간
+    private static final long ACCESS_EXP = 1000L * 60 * 60;           // 1시간
     private static final long REFRESH_EXP = 1000L * 60 * 60 * 24 * 14; // 14일
 
     @PostConstruct
@@ -36,6 +37,7 @@ public class JwtProvider {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
+    // 📌 토큰 생성
     public String generateAccessToken(User user) {
         String token = generateToken(user.getId(), ACCESS_EXP);
         redisTemplate.opsForValue().set("AT:" + user.getId(), token, Duration.ofMillis(ACCESS_EXP));
@@ -48,9 +50,9 @@ public class JwtProvider {
         return token;
     }
 
-    private String generateToken(Long userId, long exp) {
+    private String generateToken(Long userId, long expirationMillis) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + exp);
+        Date expiry = new Date(now.getTime() + expirationMillis);
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
@@ -60,8 +62,49 @@ public class JwtProvider {
                 .compact();
     }
 
+    // 📌 쿠키 생성
+    public ResponseCookie createAccessTokenCookie(String token) {
+        return ResponseCookie.from(ACCESS_COOKIE, token)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofMillis(ACCESS_EXP))
+                .build();
+    }
+
+    public ResponseCookie createRefreshTokenCookie(String token) {
+        return ResponseCookie.from(REFRESH_COOKIE, token)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(Duration.ofMillis(REFRESH_EXP))
+                .build();
+    }
+
+    // 📌 쿠키 삭제 (로그아웃 시)
+    public ResponseCookie deleteCookie(String cookieName) {
+        return ResponseCookie.from(cookieName, "")
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(0)
+                .build();
+    }
+
+    // 📌 토큰 파싱 및 유효성 검사
     public Long getUserIdFromToken(String token) {
         return Long.valueOf(parseClaims(token).getSubject());
+    }
+
+    public Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     public boolean validateAccessTokenWithRedis(String token, boolean fromHeader) {
@@ -70,8 +113,7 @@ public class JwtProvider {
             String userId = claims.getSubject();
 
             if (fromHeader) {
-                // 헤더에서 온 토큰은 Redis 검사 없이 JWT 자체 유효성만 검사
-                return true;
+                return true; // 헤더에서 온 경우: JWT 유효성만 확인
             }
 
             String redisToken = redisTemplate.opsForValue().get("AT:" + userId);
@@ -102,13 +144,5 @@ public class JwtProvider {
     public long getExpiration(String token) {
         Date expiration = parseClaims(token).getExpiration();
         return expiration.getTime() - new Date().getTime();
-    }
-
-    private Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
     }
 }

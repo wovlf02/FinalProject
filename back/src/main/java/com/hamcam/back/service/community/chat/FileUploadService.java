@@ -15,12 +15,13 @@ import java.util.UUID;
 public class FileUploadService {
 
     private static final String CHATROOM_IMAGE_DIR = "uploads/chatroom/";
+    private static final Path UPLOAD_BASE_PATH = Paths.get(CHATROOM_IMAGE_DIR);
 
     /**
-     * 채팅방 대표 이미지 파일을 저장하고 저장된 파일명을 반환합니다.
+     * 채팅방 대표 이미지 저장
      *
      * @param file 업로드된 MultipartFile
-     * @return 저장된 상대 경로 (e.g., "/uploads/chatroom/uuid_filename.jpg")
+     * @return 저장된 웹 경로 (ex: "/uploads/chatroom/uuid_name.jpg")
      */
     public String storeChatRoomImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
@@ -28,59 +29,62 @@ public class FileUploadService {
         }
 
         try {
-            Path dirPath = Paths.get(CHATROOM_IMAGE_DIR);
-            if (Files.notExists(dirPath)) {
-                Files.createDirectories(dirPath);
-            }
+            ensureDirectoryExists(UPLOAD_BASE_PATH);
 
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null || !originalFilename.contains(".")) {
-                throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+                throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED, "파일명이 유효하지 않습니다.");
             }
 
             String storedFilename = UUID.randomUUID() + "_" + originalFilename;
-            Path targetPath = dirPath.resolve(storedFilename);
+            Path targetPath = UPLOAD_BASE_PATH.resolve(storedFilename);
 
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // ✅ 웹 접근 경로 반환 (프론트와 연동 용이)
             return "/uploads/chatroom/" + storedFilename;
 
         } catch (IOException e) {
-            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED, "파일 업로드 실패", e);
         }
     }
 
     /**
-     * 저장된 대표 이미지 파일을 삭제합니다.
+     * 채팅방 대표 이미지 삭제
      *
-     * @param storedFilename 저장된 상대 경로 또는 파일명
+     * @param storedPath "/uploads/chatroom/uuid_파일명" 혹은 순수 파일명
      */
-    public void deleteChatRoomImage(String storedFilename) {
+    public void deleteChatRoomImage(String storedPath) {
+        if (storedPath == null || storedPath.isBlank()) return;
+
         try {
-            if (storedFilename == null || storedFilename.isBlank()) return;
-
-            // 웹 경로일 경우 실제 파일명만 추출
-            String fileName = storedFilename.contains("/") ?
-                    storedFilename.substring(storedFilename.lastIndexOf("/") + 1) :
-                    storedFilename;
-
-            Path filePath = Paths.get(CHATROOM_IMAGE_DIR).resolve(fileName).normalize();
+            String fileName = extractFileName(storedPath);
+            Path filePath = UPLOAD_BASE_PATH.resolve(fileName).normalize();
             Files.deleteIfExists(filePath);
         } catch (Exception e) {
-            throw new RuntimeException("대표 이미지 삭제 중 오류 발생", e);
+            throw new CustomException(ErrorCode.FILE_DELETE_FAILED, "대표 이미지 삭제 중 오류 발생", e);
         }
     }
 
     /**
-     * 미리보기 가능한 이미지 파일인지 확인합니다.
-     *
-     * @param filename 파일명 또는 content-type
-     * @return boolean
+     * 이미지 미리보기 가능 여부
      */
     public boolean isImagePreviewable(String filename) {
         if (filename == null) return false;
         String lower = filename.toLowerCase();
         return lower.matches(".*(jpg|jpeg|png|gif|bmp|webp)$") || lower.startsWith("image/");
+    }
+
+    // ===== 유틸 메서드 =====
+
+    private void ensureDirectoryExists(Path dir) throws IOException {
+        if (Files.notExists(dir)) {
+            Files.createDirectories(dir);
+        }
+    }
+
+    private String extractFileName(String fullPath) {
+        return fullPath.contains("/") ?
+                fullPath.substring(fullPath.lastIndexOf("/") + 1) :
+                fullPath;
     }
 }

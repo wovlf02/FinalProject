@@ -6,6 +6,8 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
 import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.chat.ChatRoom;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
@@ -20,28 +22,20 @@ public class WebSocketChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
-    private final SecurityUtil securityUtil; // ✅ 인증된 사용자 조회용
+    private final SecurityUtil securityUtil;
 
     /**
-     * 텍스트/파일 메시지를 저장하고 응답으로 변환합니다.
+     * WebSocket을 통해 수신된 채팅 메시지를 저장하고 응답으로 반환합니다.
      *
-     * @param request 클라이언트 요청 메시지
-     * @return 저장된 메시지 응답 DTO
+     * @param request 클라이언트 요청 DTO
+     * @return 저장된 메시지 DTO
      */
-    public ChatMessageResponse saveTextMessage(ChatMessageRequest request) {
+    public ChatMessageResponse saveMessage(ChatMessageRequest request) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 채팅방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
-        // ✅ 인증된 사용자 사용
         User sender = securityUtil.getCurrentUser();
-
-        // 문자열 type → enum 변환 (유효성 포함)
-        ChatMessageType messageType;
-        try {
-            messageType = ChatMessageType.valueOf(request.getType().toUpperCase());
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new IllegalArgumentException("유효하지 않은 메시지 타입입니다: " + request.getType());
-        }
+        ChatMessageType messageType = parseMessageType(request.getType());
 
         ChatMessage message = ChatMessage.builder()
                 .chatRoom(room)
@@ -53,7 +47,24 @@ public class WebSocketChatService {
                 .build();
 
         chatMessageRepository.save(message);
+
+        // 🔁 필요 시 채팅방의 마지막 메시지 갱신 로직 추가
+        room.setLastMessage(message.getContent());
+        room.setLastMessageAt(message.getSentAt());
+        chatRoomRepository.save(room);
+
         return toResponse(message);
+    }
+
+    /**
+     * 메시지 타입 문자열을 안전하게 enum으로 변환
+     */
+    private ChatMessageType parseMessageType(String type) {
+        try {
+            return ChatMessageType.valueOf(type.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new CustomException(ErrorCode.INVALID_INPUT, "유효하지 않은 메시지 타입입니다: " + type);
+        }
     }
 
     /**

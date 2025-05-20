@@ -6,10 +6,8 @@ import com.hamcam.back.dto.common.MessageResponse;
 import com.hamcam.back.dto.community.chat.request.ChatRoomCreateRequest;
 import com.hamcam.back.dto.community.chat.response.ChatRoomListResponse;
 import com.hamcam.back.dto.community.chat.response.ChatRoomResponse;
-import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.service.community.chat.ChatRoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -31,7 +29,6 @@ public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
     private final ObjectMapper objectMapper;
-    private final SecurityUtil securityUtil;
 
     /**
      * 채팅방 생성 (1:1 또는 그룹)
@@ -55,14 +52,12 @@ public class ChatRoomController {
                 .image(image)
                 .build();
 
-        User currentUser = securityUtil.getCurrentUser();
-        ChatRoomResponse createdRoom = chatRoomService.createChatRoom(currentUser, request);
-
+        ChatRoomResponse createdRoom = chatRoomService.createChatRoom(request);
         return ResponseEntity.ok(MessageResponse.of("채팅방이 생성되었습니다.", createdRoom));
     }
 
     /**
-     * [내 채팅방 목록 조회]
+     * 내 채팅방 목록 조회
      */
     @GetMapping
     public ResponseEntity<MessageResponse> getMyChatRooms() {
@@ -70,9 +65,8 @@ public class ChatRoomController {
         return ResponseEntity.ok(MessageResponse.of("채팅방 목록 조회 성공", rooms));
     }
 
-
     /**
-     * [채팅방 상세 조회]
+     * 채팅방 상세 조회
      */
     @GetMapping("/{roomId}")
     public ResponseEntity<MessageResponse> getChatRoom(@PathVariable Long roomId) {
@@ -81,7 +75,7 @@ public class ChatRoomController {
     }
 
     /**
-     * [채팅방 삭제]
+     * 채팅방 삭제
      */
     @DeleteMapping("/{roomId}")
     public ResponseEntity<MessageResponse> deleteChatRoom(@PathVariable Long roomId) {

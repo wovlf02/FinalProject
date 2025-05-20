@@ -1,14 +1,8 @@
 package com.hamcam.back.service.community.block;
 
-import com.hamcam.back.dto.community.block.response.BlockedCommentListResponse;
-import com.hamcam.back.dto.community.block.response.BlockedPostListResponse;
-import com.hamcam.back.dto.community.block.response.BlockedReplyListResponse;
-import com.hamcam.back.dto.community.block.response.BlockedTargetResponse;
+import com.hamcam.back.dto.community.block.response.*;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.community.Block;
-import com.hamcam.back.entity.community.Comment;
-import com.hamcam.back.entity.community.Post;
-import com.hamcam.back.entity.community.Reply;
+import com.hamcam.back.entity.community.*;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.security.SecurityUtil;
@@ -21,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,90 +33,78 @@ public class BlockService {
     // ================== 게시글 ==================
 
     public void blockPost(Long postId) {
-        User user = securityUtil.getCurrentUser();
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-
-        Block block = blockRepository.findByUserAndPost(user, post)
-                .orElse(Block.builder().user(user).post(post).build());
-
-        if (block.isDeleted()) {
-            block.restore();
-            blockRepository.save(block);
-        }
+        block(post);
     }
 
     public void unblockPost(Long postId) {
-        User user = securityUtil.getCurrentUser();
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-
-        blockRepository.findByUserAndPost(user, post)
-                .ifPresent(block -> {
-                    if (!block.isDeleted()) {
-                        block.softDelete();
-                        blockRepository.save(block);
-                    }
-                });
+        unblock(post);
     }
 
     public BlockedPostListResponse getBlockedPosts() {
-        User user = securityUtil.getCurrentUser();
-        List<Block> blocks = blockRepository.findByUserAndPostIsNotNullAndIsDeletedFalse(user);
-
-        return new BlockedPostListResponse(blocks.stream()
-                .map(block -> new BlockedTargetResponse(block.getPost().getId(), "POST"))
-                .collect(Collectors.toList()));
+        List<Block> blocks = blockRepository.findByUserAndPostIsNotNullAndIsDeletedFalse(getCurrentUser());
+        return new BlockedPostListResponse(
+                blocks.stream()
+                        .map(b -> new BlockedTargetResponse(b.getPost().getId(), "POST"))
+                        .collect(Collectors.toList())
+        );
     }
 
     // ================== 댓글 ==================
 
     public void blockComment(Long commentId) {
-        User user = securityUtil.getCurrentUser();
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-
-        Block block = blockRepository.findByUserAndComment(user, comment)
-                .orElse(Block.builder().user(user).comment(comment).build());
-
-        if (block.isDeleted()) {
-            block.restore();
-            blockRepository.save(block);
-        }
+        block(comment);
     }
 
     public void unblockComment(Long commentId) {
-        User user = securityUtil.getCurrentUser();
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-
-        blockRepository.findByUserAndComment(user, comment)
-                .ifPresent(block -> {
-                    if (!block.isDeleted()) {
-                        block.softDelete();
-                        blockRepository.save(block);
-                    }
-                });
+        unblock(comment);
     }
 
     public BlockedCommentListResponse getBlockedComments() {
-        User user = securityUtil.getCurrentUser();
-        List<Block> blocks = blockRepository.findByUserAndCommentIsNotNullAndIsDeletedFalse(user);
-
-        return new BlockedCommentListResponse(blocks.stream()
-                .map(block -> new BlockedTargetResponse(block.getComment().getId(), "COMMENT"))
-                .collect(Collectors.toList()));
+        List<Block> blocks = blockRepository.findByUserAndCommentIsNotNullAndIsDeletedFalse(getCurrentUser());
+        return new BlockedCommentListResponse(
+                blocks.stream()
+                        .map(b -> new BlockedTargetResponse(b.getComment().getId(), "COMMENT"))
+                        .collect(Collectors.toList())
+        );
     }
 
     // ================== 대댓글 ==================
 
     public void blockReply(Long replyId) {
-        User user = securityUtil.getCurrentUser();
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
+        block(reply);
+    }
 
-        Block block = blockRepository.findByUserAndReply(user, reply)
-                .orElse(Block.builder().user(user).reply(reply).build());
+    public void unblockReply(Long replyId) {
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
+        unblock(reply);
+    }
+
+    public BlockedReplyListResponse getBlockedReplies() {
+        List<Block> blocks = blockRepository.findByUserAndReplyIsNotNullAndIsDeletedFalse(getCurrentUser());
+        return new BlockedReplyListResponse(
+                blocks.stream()
+                        .map(b -> new BlockedTargetResponse(b.getReply().getId(), "REPLY"))
+                        .collect(Collectors.toList())
+        );
+    }
+
+    // ================== 공통 블록 로직 ==================
+
+    private void block(Object target) {
+        User user = getCurrentUser();
+
+        Block block = findBlock(user, target).orElseGet(() -> createBlock(user, target));
 
         if (block.isDeleted()) {
             block.restore();
@@ -128,26 +112,40 @@ public class BlockService {
         }
     }
 
-    public void unblockReply(Long replyId) {
-        User user = securityUtil.getCurrentUser();
-        Reply reply = replyRepository.findById(replyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
+    private void unblock(Object target) {
+        User user = getCurrentUser();
 
-        blockRepository.findByUserAndReply(user, reply)
-                .ifPresent(block -> {
-                    if (!block.isDeleted()) {
-                        block.softDelete();
-                        blockRepository.save(block);
-                    }
-                });
+        findBlock(user, target).ifPresent(block -> {
+            if (!block.isDeleted()) {
+                block.softDelete();
+                blockRepository.save(block);
+            }
+        });
     }
 
-    public BlockedReplyListResponse getBlockedReplies() {
-        User user = securityUtil.getCurrentUser();
-        List<Block> blocks = blockRepository.findByUserAndReplyIsNotNullAndIsDeletedFalse(user);
+    private Optional<Block> findBlock(User user, Object target) {
+        if (target instanceof Post post) {
+            return blockRepository.findByUserAndPost(user, post);
+        } else if (target instanceof Comment comment) {
+            return blockRepository.findByUserAndComment(user, comment);
+        } else if (target instanceof Reply reply) {
+            return blockRepository.findByUserAndReply(user, reply);
+        }
+        return Optional.empty();
+    }
 
-        return new BlockedReplyListResponse(blocks.stream()
-                .map(block -> new BlockedTargetResponse(block.getReply().getId(), "REPLY"))
-                .collect(Collectors.toList()));
+    private Block createBlock(User user, Object target) {
+        if (target instanceof Post post) {
+            return Block.builder().user(user).post(post).build();
+        } else if (target instanceof Comment comment) {
+            return Block.builder().user(user).comment(comment).build();
+        } else if (target instanceof Reply reply) {
+            return Block.builder().user(user).reply(reply).build();
+        }
+        throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    private User getCurrentUser() {
+        return securityUtil.getCurrentUser();
     }
 }

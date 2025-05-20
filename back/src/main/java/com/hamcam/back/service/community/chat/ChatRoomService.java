@@ -33,9 +33,11 @@ public class ChatRoomService {
     private final SecurityUtil securityUtil;
 
     /**
-     * 채팅방 생성
+     * 채팅방 생성 (1:1 또는 그룹)
      */
-    public ChatRoomResponse createChatRoom(User creator, ChatRoomCreateRequest request) {
+    public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request) {
+        User creator = securityUtil.getCurrentUser();
+
         List<Long> inviteeIds = request.getInvitedUserIds();
         if (inviteeIds == null || inviteeIds.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_CHATROOM_INVITEE);
@@ -62,7 +64,6 @@ public class ChatRoomService {
                 .toList();
 
         List<User> members = userRepository.findAllById(participantIds);
-
         List<ChatParticipant> chatMembers = members.stream()
                 .map(user -> ChatParticipant.builder()
                         .chatRoom(room)
@@ -72,12 +73,11 @@ public class ChatRoomService {
                 .toList();
 
         chatParticipantRepository.saveAll(chatMembers);
-
-        return ChatRoomResponse.fromEntity(room);
+        return toResponse(room);
     }
 
     /**
-     * [내 채팅방 목록 조회]
+     * 내 채팅방 목록 조회
      */
     public List<ChatRoomListResponse> getMyChatRooms() {
         User user = securityUtil.getCurrentUser();
@@ -106,18 +106,27 @@ public class ChatRoomService {
         }).toList();
     }
 
+    /**
+     * 채팅방 상세 조회
+     */
     public ChatRoomResponse getChatRoomById(Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         return toResponse(room);
     }
 
+    /**
+     * 채팅방 삭제
+     */
     public void deleteChatRoom(Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         chatRoomRepository.delete(room);
     }
 
+    /**
+     * 채팅방 참여 (권한 확인 후)
+     */
     @Transactional
     public void joinChatRoom(ChatJoinRequest request) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
@@ -125,38 +134,46 @@ public class ChatRoomService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        boolean alreadyJoined = chatParticipantRepository.findByChatRoomAndUser(room, user).isPresent();
-        if (!alreadyJoined) {
-            chatParticipantRepository.save(ChatParticipant.builder()
-                    .chatRoom(room)
-                    .user(user)
-                    .joinedAt(LocalDateTime.now())
-                    .build());
-        }
+        chatParticipantRepository.findByChatRoomAndUser(room, user)
+                .or(() -> {
+                    chatParticipantRepository.save(ChatParticipant.builder()
+                            .chatRoom(room)
+                            .user(user)
+                            .joinedAt(LocalDateTime.now())
+                            .build());
+                    return null;
+                });
     }
 
+    /**
+     * 채팅방 나가기 (마지막 사용자면 방도 삭제)
+     */
     @Transactional
     public void exitChatRoom(ChatJoinRequest request) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
         ChatParticipant participant = chatParticipantRepository.findByChatRoomAndUser(room, user)
                 .orElseThrow(() -> new CustomException(ErrorCode.ACCESS_DENIED));
 
         chatParticipantRepository.delete(participant);
-        if (chatParticipantRepository.findByChatRoom(room).isEmpty()) {
+
+        boolean noParticipantsLeft = chatParticipantRepository.findByChatRoom(room).isEmpty();
+        if (noParticipantsLeft) {
             chatRoomRepository.delete(room);
         }
     }
+
+    // ===== 내부 변환 유틸 =====
 
     private ChatRoomResponse toResponse(ChatRoom room) {
         List<ChatParticipantDto> participants = chatParticipantRepository.findByChatRoom(room).stream()
                 .map(p -> new ChatParticipantDto(
                         p.getUser().getId(),
                         p.getUser().getNickname(),
-                        p.getUser().getProfileImageUrl()
-                ))
+                        p.getUser().getProfileImageUrl()))
                 .collect(Collectors.toList());
 
         return ChatRoomResponse.builder()

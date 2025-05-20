@@ -10,6 +10,7 @@ import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
+import com.hamcam.back.service.util.FileService;
 import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Duration;
 import java.util.List;
@@ -32,6 +34,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
+    private final FileService fileService;
     private final SecurityUtil securityUtil;
 
     public Boolean checkUsername(UsernameCheckRequest request) {
@@ -68,27 +71,32 @@ public class AuthService {
         redisTemplate.delete("EMAIL:CODE:" + request.getEmail());
     }
 
-    public void register(RegisterRequest request) {
+    /**
+     * 회원가입: 요청 + 파일 업로드 처리 포함
+     */
+    public void register(RegisterRequest request, MultipartFile profileImage) {
         log.info("📥 [회원가입 요청] username={}, email={}, nickname={}",
                 request.getUsername(), request.getEmail(), request.getNickname());
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            log.warn("❌ 중복 아이디: {}", request.getUsername());
             throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            log.warn("❌ 중복 이메일: {}", request.getEmail());
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
-        String phone = request.getPhone();
-        if (phone != null && !isValidPhone(phone)) {
-            log.warn("❌ 유효하지 않은 전화번호: {}", phone);
+        if (request.getPhone() != null && !isValidPhone(request.getPhone())) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
-        // User 객체 먼저 생성
+        // 1. 프로필 이미지 저장
+        String profileImageUrl = null;
+        if (profileImage != null && !profileImage.isEmpty()) {
+            profileImageUrl = fileService.saveProfileImage(profileImage);
+        }
+
+        // 2. 사용자 엔티티 생성
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -97,35 +105,25 @@ public class AuthService {
                 .nickname(request.getNickname())
                 .grade(request.getGrade())
                 .studyHabit(request.getStudyHabit())
-                .phone(phone)
-                .profileImageUrl(request.getProfileImageUrl())
+                .phone(request.getPhone())
+                .profileImageUrl(profileImageUrl)
                 .build();
 
-        // Subject 리스트 생성 후 User 연관관계 설정
-        List<Subjects> subjectEntities = request.getSubjects().stream()
-                .map(name -> Subjects.builder()
-                        .name(name)
-                        .user(user) // 연관관계 주입
-                        .build())
+        // 3. 과목 등록
+        List<Subjects> subjects = request.getSubjects().stream()
+                .map(subject -> Subjects.builder().name(subject).user(user).build())
                 .toList();
-
-        user.setSubjects(subjectEntities);
-
-        log.info("✅ [DB 저장 전] 사용자 정보: {}, 과목 수: {}", user.getUsername(), subjectEntities.size());
+        user.setSubjects(subjects);
 
         try {
-            userRepository.save(user); // cascade = ALL → subject들도 자동 저장됨
-            log.info("✅ [회원가입 성공] ID={} 닉네임={}", user.getUsername(), user.getNickname());
+            userRepository.save(user);
+            log.info("✅ [회원가입 성공] {}", user.getUsername());
         } catch (Exception e) {
-            log.error("🔥 [회원가입 중 예외 발생]", e);
+            log.error("🔥 [회원가입 예외]", e);
             throw new CustomException("회원가입 처리 중 오류가 발생했습니다.");
         }
     }
 
-
-    /**
-     * 로그인: ID/PW 검증 수행 후 User 반환
-     */
     public User login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_USER_NOT_FOUND));
@@ -140,46 +138,33 @@ public class AuthService {
     public void logout(String accessToken) {
         Long userId = jwtProvider.getUserIdFromToken(accessToken);
 
-        // RefreshToken 삭제
-        redisTemplate.delete("RT:" + userId);
-
-        // AccessToken 블랙리스트 처리
-        long expiration = jwtProvider.getExpiration(accessToken);
-        redisTemplate.opsForValue().set("BL:" + accessToken, "logout", Duration.ofMillis(expiration));
+        redisTemplate.delete("RT:" + userId); // RefreshToken 제거
+        long exp = jwtProvider.getExpiration(accessToken);
+        redisTemplate.opsForValue().set("BL:" + accessToken, "logout", Duration.ofMillis(exp));
     }
 
-
     public TokenResponse reissue(String refreshToken) {
-        // 1. refreshToken 자체 유효성 검사 (만료 여부, 서명 등)
         if (!jwtProvider.validateTokenWithoutRedis(refreshToken)) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        // 2. 사용자 ID 추출
         Long userId = jwtProvider.getUserIdFromToken(refreshToken);
-
-        // 3. Redis에서 refreshToken 조회 후 비교
         String stored = redisTemplate.opsForValue().get("RT:" + userId);
+
         if (stored == null || !stored.equals(refreshToken)) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
 
-        // 4. 사용자 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 5. accessToken 새로 발급
         String newAccess = jwtProvider.generateAccessToken(user);
-
-        // 6. refreshToken도 새로 생성하고 Redis에 저장
         String newRefresh = jwtProvider.generateRefreshToken(user);
+
         redisTemplate.opsForValue().set("RT:" + userId, newRefresh, Duration.ofDays(14));
 
-        // 7. accessToken과 새 refreshToken 반환
         return new TokenResponse(newAccess, newRefresh, user.getUsername(), user.getName());
-
     }
-
 
     public String sendFindUsernameCode(EmailRequest request) {
         if (!userRepository.existsByEmail(request.getEmail())) {

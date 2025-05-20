@@ -37,6 +37,10 @@ public class DirectChatService {
         User other = userRepository.findById(request.getTargetUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        if (me.getId().equals(other.getId())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT, "자기 자신과는 1:1 채팅을 할 수 없습니다.");
+        }
+
         return findExistingDirectRoom(me, other)
                 .map(this::toResponse)
                 .orElseGet(() -> createNewDirectChat(me, other));
@@ -98,8 +102,10 @@ public class DirectChatService {
      * 새로운 1:1 채팅방 생성
      */
     private ChatRoomResponse createNewDirectChat(User me, User other) {
+        String roomName = String.format("%s ↔ %s", me.getNickname(), other.getNickname());
+
         ChatRoom room = ChatRoom.builder()
-                .name("DirectChat")
+                .name(roomName)
                 .type(ChatRoomType.DIRECT)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -112,7 +118,6 @@ public class DirectChatService {
         );
 
         chatParticipantRepository.saveAll(participants);
-
         return toResponse(room);
     }
 

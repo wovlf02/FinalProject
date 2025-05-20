@@ -8,6 +8,7 @@ import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.chat.ChatRoom;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * [ChatMessageService]
  * 채팅 메시지 처리 서비스
  * - WebSocket 및 REST 기반 메시지 저장 및 조회 처리
  */
@@ -30,20 +32,18 @@ public class ChatMessageService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatReadService chatReadService;
+    private final SecurityUtil securityUtil;
 
     /**
-     * 채팅 메시지 저장 (WebSocket / REST 공통)
-     *
-     * @param roomId 채팅방 ID
-     * @param sender 인증된 사용자
-     * @param request 메시지 요청 DTO
-     * @return 저장된 메시지 응답
+     * 채팅 메시지 저장 (REST & WebSocket 공통)
      */
-    public ChatMessageResponse sendMessage(Long roomId, User sender, ChatMessageRequest request) {
+    public ChatMessageResponse sendMessage(Long roomId, ChatMessageRequest request) {
+        User sender = securityUtil.getCurrentUser();
+
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
-        ChatMessage message = createChatMessage(room, sender, request);
+        ChatMessage message = createMessageEntity(room, sender, request);
         chatMessageRepository.save(message);
 
         // 채팅방 마지막 메시지 갱신
@@ -55,7 +55,7 @@ public class ChatMessageService {
     }
 
     /**
-     * 채팅 메시지 목록 조회 (오래된 순)
+     * 채팅 메시지 조회 (오래된 순)
      */
     public List<ChatMessageResponse> getMessages(Long roomId, int page, int size) {
         ChatRoom room = chatRoomRepository.findById(roomId)
@@ -69,13 +69,12 @@ public class ChatMessageService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * ChatMessage 생성 로직 (공통)
-     */
-    private ChatMessage createChatMessage(ChatRoom room, User sender, ChatMessageRequest request) {
-        ChatMessageType messageType;
+    // ===== 내부 유틸 =====
+
+    private ChatMessage createMessageEntity(ChatRoom room, User sender, ChatMessageRequest request) {
+        ChatMessageType type;
         try {
-            messageType = ChatMessageType.valueOf(request.getType().toUpperCase());
+            type = ChatMessageType.valueOf(request.getType().toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
@@ -84,15 +83,12 @@ public class ChatMessageService {
                 .chatRoom(room)
                 .sender(sender)
                 .content(request.getContent())
-                .type(messageType)
+                .type(type)
                 .storedFileName(request.getStoredFileName())
                 .sentAt(LocalDateTime.now())
                 .build();
     }
 
-    /**
-     * ChatMessage → ChatMessageResponse 변환
-     */
     private ChatMessageResponse toResponse(ChatMessage message) {
         User sender = message.getSender();
 

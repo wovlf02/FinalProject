@@ -32,9 +32,14 @@ public class AttachmentService {
     private final PostRepository postRepository;
     private final SecurityUtil securityUtil;
 
-    // ===== 첨부파일 업로드 =====
-
+    /**
+     * 게시글 첨부파일 업로드
+     */
     public int uploadPostFiles(Long postId, MultipartFile[] files) {
+        if (files == null || files.length == 0) {
+            throw new CustomException(ErrorCode.MISSING_PARAMETER);
+        }
+
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
@@ -52,15 +57,17 @@ public class AttachmentService {
         return attachments.size();
     }
 
-    // ===== 목록 조회 =====
-
+    /**
+     * 첨부파일 목록 조회
+     */
     public AttachmentListResponse getPostAttachments(Long postId) {
         List<Attachment> list = attachmentRepository.findByPostId(postId);
         return toListResponse(list);
     }
 
-    // ===== 파일 다운로드 =====
-
+    /**
+     * 첨부파일 다운로드
+     */
     public Resource downloadAttachment(Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
@@ -69,18 +76,20 @@ public class AttachmentService {
             Path path = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()).normalize();
             Resource resource = new UrlResource(path.toUri());
 
-            if (!resource.exists()) {
+            if (!resource.exists() || !resource.isReadable()) {
                 throw new CustomException(ErrorCode.FILE_NOT_FOUND);
             }
 
             return resource;
+
         } catch (MalformedURLException e) {
             throw new CustomException(ErrorCode.FILE_DOWNLOAD_FAILED);
         }
     }
 
-    // ===== 삭제 =====
-
+    /**
+     * 첨부파일 삭제
+     */
     public void deleteAttachment(Long attachmentId) {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
@@ -89,7 +98,7 @@ public class AttachmentService {
         Long ownerId = attachment.getPost().getWriter().getId();
 
         if (!ownerId.equals(currentUserId)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED); // 권한 없음
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
         Path filePath = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()).normalize();
@@ -114,6 +123,7 @@ public class AttachmentService {
                         .previewAvailable(file.isPreviewAvailable())
                         .build())
                 .collect(Collectors.toList());
+
         return new AttachmentListResponse(result);
     }
 
@@ -153,8 +163,8 @@ public class AttachmentService {
         }
     }
 
-    private boolean isPreviewable(String contentTypeOrExtension) {
-        String lower = contentTypeOrExtension.toLowerCase();
-        return lower.matches(".*(jpg|jpeg|png|gif|bmp|webp)$") || lower.startsWith("image/");
+    private boolean isPreviewable(String type) {
+        String lower = type.toLowerCase();
+        return lower.startsWith("image/") || lower.matches(".*(jpg|jpeg|png|gif|bmp|webp)$");
     }
 }

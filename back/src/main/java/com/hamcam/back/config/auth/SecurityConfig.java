@@ -56,9 +56,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // ✅ 세션 정책 수정: HttpOnly 쿠키 사용을 위해 세션 사용 허용
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+
+                // ✅ JWT 사용 시 세션 필요 없음 (stateless로 수정 권장)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
@@ -66,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/chat/**", "/chat/upload").permitAll()
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(
                         new JwtAuthenticationFilter(jwtProvider, userDetailsService, userRepository),
                         UsernamePasswordAuthenticationFilter.class
@@ -73,6 +77,7 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 
     /**
      * CORS 설정 - 쿠키 허용 위해 allowCredentials = true
