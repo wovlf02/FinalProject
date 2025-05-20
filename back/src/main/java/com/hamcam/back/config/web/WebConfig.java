@@ -1,5 +1,6 @@
 package com.hamcam.back.config.web;
 
+import com.hamcam.back.config.auth.JwtProvider;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.resource.PathResourceResolver;
@@ -16,6 +17,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     // 📁 업로드 파일이 저장되는 로컬 디렉터리
     private static final String LOCAL_UPLOAD_DIR = "C:/FinalProject/uploads/";
+
 
     /**
      * ✅ 정적 자원 핸들러 설정

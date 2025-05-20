@@ -113,7 +113,7 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
                                 onClick={() => handleSelect(friend.userId)}
                             >
                                 <img
-                                    src={friend.profileImageUrl ? BASE_URL + friend.profileImageUrl : baseProfile}
+                                    src={friend.profileImageUrl ? friend.profileImageUrl : baseProfile}
                                     alt={friend.nickname}
                                     className="friend-avatar"
                                 />

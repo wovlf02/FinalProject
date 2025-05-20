@@ -1,5 +1,6 @@
 package com.hamcam.back.handler;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -33,7 +34,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL); // ✅ null 필드 제외 없이 직렬화
 
     private final Map<Long, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
     private final Map<String, User> sessionUserMap = new ConcurrentHashMap<>();
@@ -43,13 +45,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String token = getTokenFromCookie(session);
         if (token == null) {
+            log.warn("❗ WebSocket 요청에 accessToken 쿠키가 없습니다. 세션: {}", session.getId());
             session.close(CloseStatus.NOT_ACCEPTABLE.withReason("JWT 토큰이 누락되었습니다."));
             return;
         }
 
         try {
-            // ✅ Redis 기반 토큰 유효성 검증
-            if (!jwtProvider.validateAccessTokenWithRedis(token)) {
+            if (!jwtProvider.validateTokenWithoutRedis(token)) {
+                log.warn("❌ 유효하지 않은 accessToken: {}", token);
                 session.close(CloseStatus.NOT_ACCEPTABLE.withReason("JWT 토큰이 유효하지 않거나 만료되었습니다."));
                 return;
             }
@@ -69,7 +72,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             session.close(CloseStatus.SERVER_ERROR.withReason("서버 오류 발생"));
         }
     }
-
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) {
@@ -111,13 +113,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-            // 일반 메시지
+            // 일반 메시지 처리
             ChatMessageRequest request = objectMapper.convertValue(jsonMap, ChatMessageRequest.class);
             Long roomId = request.getRoomId();
             ChatMessageResponse savedMessage = chatMessageService.sendMessage(roomId, user, request);
 
             roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
+
+            // ✅ senderId 포함 여부 로그 확인
             String payload = objectMapper.writeValueAsString(savedMessage);
+            log.info("📤 WebSocket 전송 메시지: {}", payload);
 
             for (WebSocketSession s : roomSessions.getOrDefault(roomId, Set.of())) {
                 if (s.isOpen()) s.sendMessage(new TextMessage(payload));
@@ -149,16 +154,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         log.info("❎ WebSocket 연결 종료 - 세션: {}", session.getId());
     }
 
-    /**
-     * WebSocket 요청의 Cookie 헤더에서 accessToken 추출
-     */
     private String getTokenFromCookie(WebSocketSession session) {
         List<String> cookies = session.getHandshakeHeaders().get("cookie");
         if (cookies != null) {
             for (String cookieHeader : cookies) {
                 String[] cookiePairs = cookieHeader.split(";");
                 for (String cookie : cookiePairs) {
-                    String[] pair = cookie.trim().split("=");
+                    String[] pair = cookie.trim().split("=", 2);
                     if (pair.length == 2 && pair[0].equals("accessToken")) {
                         return pair[1];
                     }

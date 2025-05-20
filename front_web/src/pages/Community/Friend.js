@@ -60,6 +60,9 @@ const Friend = () => {
                         placeholder="닉네임 또는 이메일 입력"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if(e.key === 'Enter') handleSearch();
+                        }}
                     />
                     <button className="friend-btn chat-btn" onClick={handleSearch}>
                         검색

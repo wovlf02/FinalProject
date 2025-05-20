@@ -13,7 +13,24 @@ const FriendCard = ({
                         onUnblock,
                         onRequestSent,
                     }) => {
-    const { nickname, email, profileImageUrl, userId, alreadyFriend, alreadyRequested, isBlocked } = user;
+    // 공통 필드 또는 타입별 분기
+    const userId =
+        type === 'received' ? user.senderId :
+            user.userId;
+
+    const nickname =
+        type === 'received' ? user.senderNickname :
+            user.nickname;
+
+    const profileImageUrl =
+        user.profileImageUrl || '/images/base_profile.png';
+
+    const email =
+        type === 'received' ? null : user.email;
+
+    const alreadyFriend = user.alreadyFriend;
+    const alreadyRequested = user.alreadyRequested;
+    const isBlocked = user.isBlocked;
 
     const handleSendRequest = async () => {
         try {
@@ -29,7 +46,7 @@ const FriendCard = ({
         <div className="friend-card">
             <div className="friend-left">
                 <img
-                    src={profileImageUrl || '/images/base_profile.png'}
+                    src={profileImageUrl}
                     alt={nickname}
                     className="friend-avatar"
                 />

@@ -15,8 +15,6 @@ const Chat = () => {
     const [roomSearch, setRoomSearch] = useState('');
     const [selectedRoomId, setSelectedRoomId] = useState(null); // ✅ 상태 관리 추가
 
-    const BASE_URL = '/uploads/chatroom/';
-
     useEffect(() => {
         fetchChatRooms();
         fetchFriends();

@@ -25,11 +25,18 @@ api.interceptors.response.use(
     }
 );
 
-// ✅ 파일 업로드용 메서드 (추가 파라미터 포함 가능)
-api.upload = async (url, file, data = {}) => {
+// ✅ 단일 파일 또는 복수 파일 업로드 지원 메서드
+api.upload = async (url, files, extraData = {}) => {
     const formData = new FormData();
-    formData.append('file', file);
-    Object.entries(data).forEach(([key, value]) => {
+
+    // 파일 배열로 처리 (단일 파일도 배열로 변환)
+    const fileArray = Array.isArray(files) ? files : [files];
+    fileArray.forEach((file, index) => {
+        formData.append('file', file);
+    });
+
+    // 추가 데이터 함께 전송
+    Object.entries(extraData).forEach(([key, value]) => {
         formData.append(key, value);
     });
 

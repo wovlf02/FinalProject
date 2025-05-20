@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '../../css/ChatRoom.css';
 import { FaPaperPlane, FaSmile, FaPaperclip, FaMicrophone } from 'react-icons/fa';
-import SockJS from 'sockjs-client';
 import api from '../../api/api';
 import moment from 'moment';
 
@@ -28,14 +27,14 @@ const ChatRoom = ({ roomId }) => {
             setRoomInfo(roomRes.data?.data || {});
             setMessages(messageRes.data?.data || []);
 
-            connectSocket(userRes.data, messageRes.data?.data || []);
+            connectWebSocket(userRes.data, messageRes.data?.data || []);
         } catch (err) {
             console.error('❌ 초기 데이터 로딩 실패:', err);
         }
     };
 
-    const connectSocket = (userData, loadedMessages) => {
-        const socket = new SockJS('/ws/chat');
+    const connectWebSocket = (userData, loadedMessages) => {
+        const socket = new WebSocket('ws://localhost:8080/ws/chat');
         socketRef.current = socket;
 
         socket.onopen = () => {
@@ -60,6 +59,8 @@ const ChatRoom = ({ roomId }) => {
         socket.onmessage = (e) => {
             try {
                 const msg = JSON.parse(e.data);
+                console.log("📥 수신된 메시지:", msg);
+
                 if (msg.type === 'READ_ACK') {
                     setMessages(prev =>
                         prev.map(m => m.messageId === msg.messageId
@@ -68,15 +69,15 @@ const ChatRoom = ({ roomId }) => {
                     );
                 } else {
                     setMessages(prev => [...prev, msg]);
-                    scrollToBottom();
+                    setTimeout(scrollToBottom, 50);
                 }
             } catch (err) {
                 console.error('❌ 메시지 파싱 실패:', err);
             }
         };
 
-        socket.onerror = (e) => console.error('소켓 오류:', e);
-        socket.onclose = () => console.log('🛑 연결 종료');
+        socket.onerror = (e) => console.error('❌ WebSocket 오류:', e);
+        socket.onclose = () => console.log('🛑 WebSocket 연결 종료');
     };
 
     useEffect(() => {
@@ -95,16 +96,15 @@ const ChatRoom = ({ roomId }) => {
             nickname: user.nickname,
             profileUrl: user.profileImageUrl,
             content: message,
-            time: new Date().toISOString(),
+            time: new Date().toISOString(), // 백엔드는 sentAt 사용
         };
 
         socketRef.current.send(JSON.stringify(msg));
-        setMessages(prev => [...prev, msg]);
         setMessage('');
-        scrollToBottom();
+        setTimeout(scrollToBottom, 50);
     };
 
-    if (!roomId) {
+    if (!roomId || !user) {
         return <div className="chat-room-empty">채팅방을 선택해주세요.</div>;
     }
 
@@ -112,7 +112,7 @@ const ChatRoom = ({ roomId }) => {
         <div className="chat-room">
             <div className="chat-room-header">
                 <img
-                    src={roomInfo?.profileImageUrl ? `/uploads/chatroom/${roomInfo.profileImageUrl}` : '/images/profile.png'}
+                    src={roomInfo?.profileImageUrl ? `${roomInfo.profileImageUrl}` : '/images/profile.png'}
                     alt="room"
                     className="chat-room-profile"
                 />
@@ -123,17 +123,17 @@ const ChatRoom = ({ roomId }) => {
             </div>
 
             <div className="chat-room-body">
-                {messages.map((msg, index) => {
-                    const isMe = msg.senderId === user?.id;
+                {user && messages.map((msg, index) => {
+                    const isMe = String(msg.senderId) === String(user.id);
                     const isFile = msg.type === 'FILE';
-                    const formattedTime = moment(msg.time).format('A hh:mm');
+                    const formattedTime = moment(msg.sentAt || msg.time).format('A hh:mm');
 
                     return (
                         <div key={index} className={`message-wrapper ${isMe ? 'right' : 'left'}`}>
                             {!isMe && (
                                 <div className="message-header">
                                     <img
-                                        src={msg.profileUrl ? `/uploads/${msg.profileUrl}` : '/images/profile.png'}
+                                        src={msg.profileUrl ? `${msg.profileUrl}` : '/images/profile.png'}
                                         alt="profile"
                                         className="message-avatar"
                                     />
