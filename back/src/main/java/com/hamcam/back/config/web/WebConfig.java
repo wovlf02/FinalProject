@@ -1,12 +1,9 @@
 package com.hamcam.back.config.web;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
-import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -15,53 +12,50 @@ import java.util.List;
  * - CORS 정책 설정 (/api/**, /ws/**)
  */
 @Configuration
-@RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
 
     /**
-     * 📁 업로드 파일 디렉토리 (application.yml에서 주입)
-     * 예: upload.dir=C:/FinalProject/uploads/
+     * 📁 업로드 파일 디렉토리 (직접 지정)
      */
-    @Value("${upload.dir}")
-    private String uploadDir;
+    private static final String FILE_UPLOAD_DIR = "file:///C:/FinalProject/uploads/"; // 반드시 file:/// 로 시작해야 함
 
     /**
-     * 🌐 허용할 CORS origin 목록 (application.yml에서 주입)
+     * 🌐 허용할 CORS origin 목록 (직접 지정)
      */
-    @Value("#{'${cors.allowed-origins}'.split(',')}")
-    private List<String> allowedOrigins;
+    private static final List<String> ALLOWED_ORIGINS = List.of(
+            "http://localhost:3000",
+            "http://127.0.0.1:3000"
+    );
 
     /**
      * ✅ 정적 자원 핸들러 설정
-     * - 브라우저에서 "/uploads/**" 경로로 접근하면 로컬 디렉터리에서 파일 제공
-     * - 예: /uploads/chatroom/uuid.png → {uploadDir}/chatroom/uuid.png
+     * - /uploads/** 경로 요청 시 로컬 C:/FinalProject/uploads/ 폴더에서 파일을 제공
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String uploadPath = Paths.get(uploadDir).toUri().toString();
-
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations(uploadPath)
-                .setCachePeriod(3600) // 1시간 캐시
+                .addResourceLocations(FILE_UPLOAD_DIR)
+                .setCachePeriod(3600)
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver());
     }
 
     /**
      * ✅ CORS 정책 설정
-     * - API + WebSocket 핸드셰이크 경로에 대해 설정
-     * - 자격 증명 포함, 모든 메서드 허용
+     * - API 및 WebSocket 핸드셰이크 경로에 대해 설정
      */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        String[] origins = ALLOWED_ORIGINS.toArray(new String[0]);
+
         registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins.toArray(new String[0]))
+                .allowedOrigins(origins)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
 
         registry.addMapping("/ws/**")
-                .allowedOrigins(allowedOrigins.toArray(new String[0]))
+                .allowedOrigins(origins)
                 .allowedMethods("GET", "POST", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);

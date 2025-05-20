@@ -13,7 +13,7 @@ const Chat = () => {
     const [friends, setFriends] = useState([]);
     const [friendSearch, setFriendSearch] = useState('');
     const [roomSearch, setRoomSearch] = useState('');
-    const [selectedRoomId, setSelectedRoomId] = useState(null); // ✅ 상태 관리 추가
+    const [selectedRoomId, setSelectedRoomId] = useState(null);
 
     useEffect(() => {
         fetchChatRooms();
@@ -23,10 +23,16 @@ const Chat = () => {
     const fetchChatRooms = async () => {
         try {
             const res = await api.get('/chat/rooms');
-            const rooms = Array.isArray(res.data?.data) ? res.data.data : [];
-            setChatRooms(rooms);
-            if (rooms.length > 0 && !selectedRoomId) {
-                setSelectedRoomId(rooms[0].roomId); // ✅ 첫 채팅방 자동 선택
+            const rooms = Array.isArray(res.data) ? res.data : [];
+            const mappedRooms = rooms.map(room => ({
+                ...room,
+                profileImageUrl: room.profileImageUrl
+                    ? `http://localhost:8080${room.profileImageUrl}`
+                    : '',
+            }));
+            setChatRooms(mappedRooms);
+            if (mappedRooms.length > 0 && !selectedRoomId) {
+                setSelectedRoomId(mappedRooms[0].roomId);
             }
         } catch (err) {
             console.error('❌ 채팅방 목록 불러오기 실패:', err);
@@ -38,10 +44,12 @@ const Chat = () => {
         try {
             const res = await api.get('/friends');
             const mapped = res.data?.friends.map(f => ({
-                id: f.userId,
+                id: f.user_id,
                 name: f.nickname,
                 email: f.email,
-                avatar: f.profileImageUrl || base_profile,
+                avatar: f.profile_image_url
+                    ? `http://localhost:8080${f.profile_image_url}`
+                    : base_profile,
             })) || [];
             setFriends(mapped);
         } catch (err) {
@@ -50,7 +58,7 @@ const Chat = () => {
     };
 
     const handleRoomClick = (roomId) => {
-        setSelectedRoomId(roomId); // ✅ 페이지 이동 X, 상태 변경으로
+        setSelectedRoomId(roomId);
     };
 
     const getPreviewMessage = (msg) => {
@@ -84,7 +92,7 @@ const Chat = () => {
                             onChange={(e) => setFriendSearch(e.target.value)}
                         />
                     </div>
-                    <ChatFriendList searchKeyword={friendSearch} />
+                    <ChatFriendList searchKeyword={friendSearch} friends={friends} />
                 </div>
 
                 {/* 채팅방 리스트 */}
@@ -117,13 +125,9 @@ const Chat = () => {
                                     onClick={() => handleRoomClick(room.roomId)}
                                 >
                                     <img
-                                        src={
-                                            room.profileImageUrl
-                                                ? `
-                                                ${room.profileImageUrl}`
-                                                : base_profile
-                                        }
+                                        src={room.profileImageUrl || base_profile}
                                         alt={room.roomName}
+                                        onError={(e) => { e.target.src = base_profile; }}
                                     />
                                     <div className="chat-room-info">
                                         <div className="chat-room-top">
@@ -158,7 +162,7 @@ const Chat = () => {
                     onCreate={(room) => {
                         if (room && room.roomId && room.roomName) {
                             setChatRooms(prev => [...prev, room]);
-                            setSelectedRoomId(room.roomId); // ✅ 생성 직후 자동 진입
+                            setSelectedRoomId(room.roomId);
                         }
                         setShowCreateModal(false);
                     }}

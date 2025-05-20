@@ -63,7 +63,7 @@ public class WebSocketChatService {
         try {
             return ChatMessageType.valueOf(type.toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-            throw new CustomException(ErrorCode.INVALID_INPUT, "유효하지 않은 메시지 타입입니다: " + type);
+            throw new CustomException(ErrorCode.INVALID_INPUT);
         }
     }
 

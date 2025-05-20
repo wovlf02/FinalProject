@@ -33,7 +33,7 @@ public class FileUploadService {
 
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null || !originalFilename.contains(".")) {
-                throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED, "파일명이 유효하지 않습니다.");
+                throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
             }
 
             String storedFilename = UUID.randomUUID() + "_" + originalFilename;
@@ -44,7 +44,7 @@ public class FileUploadService {
             return "/uploads/chatroom/" + storedFilename;
 
         } catch (IOException e) {
-            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED, "파일 업로드 실패", e);
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }
 
@@ -61,7 +61,7 @@ public class FileUploadService {
             Path filePath = UPLOAD_BASE_PATH.resolve(fileName).normalize();
             Files.deleteIfExists(filePath);
         } catch (Exception e) {
-            throw new CustomException(ErrorCode.FILE_DELETE_FAILED, "대표 이미지 삭제 중 오류 발생", e);
+            throw new CustomException(ErrorCode.FILE_DELETE_FAILED);
         }
     }
 

@@ -55,6 +55,7 @@ public enum ErrorCode {
     EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "E4046", "해당 이메일을 찾을 수 없습니다,"),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4047", "첨부파일을 찾을 수 없습니다."),
     VIDEO_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "E4048", "해당 학습방을 찾을 수 없습니다."),
+    MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4049", "해당 메시지를 찾을 수 없습니다."),
 
     // 🛠 서버 내부 오류 (500)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E5001", "서버 내부 오류가 발생했습니다."),

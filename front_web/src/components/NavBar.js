@@ -1,9 +1,10 @@
-import React, {useState, useEffect} from 'react';
-import {useNavigate, useLocation} from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../css/Navbar.css';
 import api from '../api/api';
+import base_profile from '../icons/base_profile.png'; // ✅ 이미지 import로 수정
 
-const SideMenu = ({menuItems, handleNavigation, selectedTab, selectedSubTab, user}) => {
+const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab, user }) => {
     return (
         <div className="side-menu">
             <div className="side-menu-logo">로고</div>
@@ -40,14 +41,15 @@ const SideMenu = ({menuItems, handleNavigation, selectedTab, selectedSubTab, use
                 ))}
             </ul>
 
-            {/* ✅ 사용자 프로필 (마이페이지 위에 표시) */}
+            {/* ✅ 사용자 프로필 */}
             {user && (
                 <div className="side-user-profile">
                     <img
-                        src={`http://localhost:8080${user.profileImageUrl || '/uploads/profile/base_profile.png'}`}
+                        src={user.profile_image_url ? user.profile_image_url : base_profile}
                         alt="프로필"
                         className="side-user-image"
                     />
+
                     <div className="side-user-nickname">{user.nickname}</div>
                 </div>
             )}
@@ -76,18 +78,18 @@ const NavBar = () => {
     const hideSidebarPaths = ['/unit-evaluation/start'];
 
     const menuItems = [
-        {name: '대시보드', path: '/dashboard'},
-        {name: '공부 시작', path: '/StudyStart'},
-        {name: '단원 평가', path: '/evaluation'},
-        {name: '통계', path: '/statistics'},
+        { name: '대시보드', path: '/dashboard' },
+        { name: '공부 시작', path: '/StudyStart' },
+        { name: '단원 평가', path: '/evaluation' },
+        { name: '통계', path: '/statistics' },
         {
             name: '커뮤니티',
             path: '/community',
             subItems: [
-                {name: '공지사항', path: '/community/notice'},
-                {name: '채팅', path: '/community/chat'},
-                {name: '게시판', path: '/community/post'},
-                {name: '친구', path: '/community/friend'},
+                { name: '공지사항', path: '/community/notice' },
+                { name: '채팅', path: '/community/chat' },
+                { name: '게시판', path: '/community/post' },
+                { name: '친구', path: '/community/friend' },
             ],
         },
     ];
@@ -108,17 +110,16 @@ const NavBar = () => {
         }
     }, [location.pathname]);
 
-    // ✅ 로그인 사용자 정보 불러오기
     useEffect(() => {
         const fetchUserInfo = async () => {
             try {
-                const res = await api.get('/users/me'); // ✅ 변경
-                setUser(res.data);
+                const res = await api.get('/users/me');
+                console.log(res);
+                setUser(res.data); // ✅ 반드시 data 안쪽으로!
             } catch (error) {
                 console.error('프로필 조회 실패:', error);
             }
         };
-
         fetchUserInfo();
     }, []);
 

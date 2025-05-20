@@ -1,18 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
-import '../../css/ChatRoom.css';
-import { FaPaperPlane, FaSmile, FaPaperclip, FaMicrophone } from 'react-icons/fa';
-import api from '../../api/api';
+import { Stomp } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 import moment from 'moment';
-import base_profile from '../../icons/base_profile.png'
+import api from '../../api/api';
+import base_profile from '../../icons/base_profile.png';
+import { FaPaperPlane, FaSmile, FaPaperclip, FaMicrophone } from 'react-icons/fa';
+import '../../css/ChatRoom.css';
 
 const ChatRoom = ({ roomId }) => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [user, setUser] = useState(null);
     const [roomInfo, setRoomInfo] = useState(null);
-
-    const socketRef = useRef(null);
     const scrollRef = useRef(null);
+    const stompClient = useRef(null);
 
     const scrollToBottom = () => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -28,82 +29,60 @@ const ChatRoom = ({ roomId }) => {
             setRoomInfo(roomRes.data?.data || {});
             setMessages(messageRes.data?.data || []);
 
-            connectWebSocket(userRes.data, messageRes.data?.data || []);
+            connectStomp(userRes.data);
         } catch (err) {
             console.error('❌ 초기 데이터 로딩 실패:', err);
         }
     };
 
-    const connectWebSocket = (userData, loadedMessages) => {
-        const socket = new WebSocket('ws://localhost:8080/ws/chat');
-        socketRef.current = socket;
+    const connectStomp = (userData) => {
+        const socket = new SockJS('http://localhost:8080/ws/chat');
+        const client = Stomp.over(socket);
+        stompClient.current = client;
 
-        socket.onopen = () => {
-            socket.send(JSON.stringify({
-                type: 'ENTER',
-                roomId,
-                content: `${userData.nickname}님이 입장하셨습니다.`,
-                time: new Date().toISOString(),
-            }));
-
-            loadedMessages.forEach(msg => {
-                if (msg.senderId !== userData.id && msg.unreadCount > 0) {
-                    socket.send(JSON.stringify({
-                        type: 'READ',
-                        roomId,
-                        messageId: msg.messageId,
-                    }));
-                }
+        client.connect({}, () => {
+            client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
+                const message = JSON.parse(msg.body);
+                console.log('📥 받은 메시지:', message);
+                setMessages(prev => [...prev, message]);
+                setTimeout(scrollToBottom, 50);
             });
+
+            // 입장 메시지 (type: ENTER)
+            client.send('/pub/chat/send', {}, JSON.stringify({
+                roomId,
+                type: 'ENTER',
+                content: `${userData.nickname}님이 입장하셨습니다.`,
+            }));
+        }, (error) => {
+            console.error('❌ STOMP 연결 실패:', error);
+        });
+    };
+
+    const handleSend = () => {
+        if (!message.trim() || !user || !stompClient.current?.connected) return;
+
+        const payload = {
+            roomId,
+            type: 'TEXT',
+            content: message,
         };
 
-        socket.onmessage = (e) => {
-            try {
-                const msg = JSON.parse(e.data);
-                console.log("📥 수신된 메시지:", msg);
-
-                if (msg.type === 'READ_ACK') {
-                    setMessages(prev =>
-                        prev.map(m => m.messageId === msg.messageId
-                            ? { ...m, unreadCount: msg.unreadCount }
-                            : m)
-                    );
-                } else {
-                    setMessages(prev => [...prev, msg]);
-                    setTimeout(scrollToBottom, 50);
-                }
-            } catch (err) {
-                console.error('❌ 메시지 파싱 실패:', err);
-            }
-        };
-
-        socket.onerror = (e) => console.error('❌ WebSocket 오류:', e);
-        socket.onclose = () => console.log('🛑 WebSocket 연결 종료');
+        stompClient.current.send('/pub/chat/send', {}, JSON.stringify(payload));
+        setMessage('');
+        setTimeout(scrollToBottom, 50);
     };
 
     useEffect(() => {
         if (!roomId) return;
         fetchInitialData();
-        return () => socketRef.current?.close();
-    }, [roomId]);
 
-    const handleSend = () => {
-        if (!message.trim() || !user || !socketRef.current) return;
-
-        const msg = {
-            type: 'TEXT',
-            roomId,
-            senderId: user.id,
-            nickname: user.nickname,
-            profileUrl: user.profileImageUrl,
-            content: message,
-            time: new Date().toISOString(), // 백엔드는 sentAt 사용
+        return () => {
+            stompClient.current?.disconnect(() => {
+                console.log('🛑 STOMP 연결 해제됨');
+            });
         };
-
-        socketRef.current.send(JSON.stringify(msg));
-        setMessage('');
-        setTimeout(scrollToBottom, 50);
-    };
+    }, [roomId]);
 
     if (!roomId || !user) {
         return <div className="chat-room-empty">채팅방을 선택해주세요.</div>;
@@ -113,7 +92,7 @@ const ChatRoom = ({ roomId }) => {
         <div className="chat-room">
             <div className="chat-room-header">
                 <img
-                    src={roomInfo?.profileImageUrl ? `${roomInfo.profileImageUrl}` : base_profile}
+                    src={roomInfo?.profileImageUrl || base_profile}
                     alt="room"
                     className="chat-room-profile"
                 />
@@ -124,7 +103,7 @@ const ChatRoom = ({ roomId }) => {
             </div>
 
             <div className="chat-room-body">
-                {user && messages.map((msg, index) => {
+                {messages.map((msg, index) => {
                     const isMe = String(msg.senderId) === String(user.id);
                     const isFile = msg.type === 'FILE';
                     const formattedTime = moment(msg.sentAt || msg.time).format('A hh:mm');
@@ -134,7 +113,7 @@ const ChatRoom = ({ roomId }) => {
                             {!isMe && (
                                 <div className="message-header">
                                     <img
-                                        src={msg.profileUrl ? `${msg.profileUrl}` : '/images/profile.png'}
+                                        src={msg.profileUrl || base_profile}
                                         alt="profile"
                                         className="message-avatar"
                                     />
@@ -142,34 +121,19 @@ const ChatRoom = ({ roomId }) => {
                                 </div>
                             )}
                             <div className={`message-content-group ${isMe ? 'right' : 'left'}`}>
-                                {isMe ? (
-                                    <div className="message-bubble-wrapper right">
-                                        <div className="message-bubble-container">
-                                            {msg.unreadCount > 0 && (
-                                                <div className="chat-unread-top-left">{msg.unreadCount}</div>
-                                            )}
-                                            <div className="message-bubble me">
-                                                {isFile ? (
-                                                    <a href={msg.content} target="_blank" rel="noreferrer">📎 첨부파일</a>
-                                                ) : (
-                                                    msg.content
-                                                )}
-                                            </div>
-                                            <div className="message-time-bottom-left">{formattedTime}</div>
-                                        </div>
+                                <div className={`message-bubble-wrapper ${isMe ? 'right' : 'left'}`}>
+                                    <div className={`message-bubble ${isMe ? 'me' : ''}`}>
+                                        {isFile ? (
+                                            <a href={msg.content} target="_blank" rel="noreferrer">📎 첨부파일</a>
+                                        ) : (
+                                            msg.content
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="message-bubble-wrapper left">
-                                        <div className="message-bubble">
-                                            {isFile ? (
-                                                <a href={msg.content} target="_blank" rel="noreferrer">📎 첨부파일</a>
-                                            ) : (
-                                                msg.content
-                                            )}
-                                        </div>
-                                        <div className="message-time left">{formattedTime}</div>
-                                    </div>
-                                )}
+                                    <div className={`message-time ${isMe ? 'bottom-left' : 'left'}`}>{formattedTime}</div>
+                                    {isMe && msg.unreadCount > 0 && (
+                                        <div className="chat-unread-top-left">{msg.unreadCount}</div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     );

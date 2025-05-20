@@ -4,6 +4,7 @@
   "proxy": "http://localhost:8080",
   "private": true,
   "dependencies": {
+    "@stomp/stompjs": "^7.1.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",

@@ -2,6 +2,8 @@ package com.hamcam.back.controller.community.chat;
 
 import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
+import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.service.community.chat.ChatMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import java.util.List;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
+    private final SecurityUtil securityUtil;
 
     /**
      * [채팅 메시지 목록 조회]
@@ -48,6 +51,8 @@ public class ChatMessageController {
             @PathVariable Long roomId,
             @RequestBody @Valid ChatMessageRequest request
     ) {
-        return ResponseEntity.ok(chatMessageService.sendMessage(roomId, request));
+        User sender = securityUtil.getCurrentUser(); // ✅ 인증된 사용자 추출
+        return ResponseEntity.ok(chatMessageService.sendMessage(roomId, sender, request));
     }
+
 }

@@ -38,7 +38,7 @@ public class DirectChatService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (me.getId().equals(other.getId())) {
-            throw new CustomException(ErrorCode.INVALID_INPUT, "자기 자신과는 1:1 채팅을 할 수 없습니다.");
+            throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
         return findExistingDirectRoom(me, other)

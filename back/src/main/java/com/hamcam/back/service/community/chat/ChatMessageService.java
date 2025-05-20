@@ -37,13 +37,12 @@ public class ChatMessageService {
     /**
      * 채팅 메시지 저장 (REST & WebSocket 공통)
      */
-    public ChatMessageResponse sendMessage(Long roomId, ChatMessageRequest request) {
-        User sender = securityUtil.getCurrentUser();
-
+    // 오버로드된 메서드 추가
+    public ChatMessageResponse sendMessage(Long roomId, User user, ChatMessageRequest request) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
-        ChatMessage message = createMessageEntity(room, sender, request);
+        ChatMessage message = createMessageEntity(room, user, request);
         chatMessageRepository.save(message);
 
         // 채팅방 마지막 메시지 갱신
@@ -53,6 +52,7 @@ public class ChatMessageService {
 
         return toResponse(message);
     }
+
 
     /**
      * 채팅 메시지 조회 (오래된 순)
