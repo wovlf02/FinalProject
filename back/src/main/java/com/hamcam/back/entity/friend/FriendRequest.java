@@ -7,7 +7,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 친구 요청 엔티티 (MySQL 호환)
+ * 친구 요청 엔티티
  */
 @Entity
 @Table(
@@ -67,26 +67,12 @@ public class FriendRequest {
     private FriendRequestStatus status;
 
     /**
-     * 논리 삭제 여부
-     */
-    @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
-
-    /**
-     * 삭제 시각
-     */
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
-    /**
      * 요청 생성 시 기본값 자동 설정
      */
     @PrePersist
     protected void onCreate() {
         if (this.requestedAt == null) this.requestedAt = LocalDateTime.now();
         if (this.status == null) this.status = FriendRequestStatus.PENDING;
-        this.isDeleted = false;
     }
 
     // ===== 비즈니스 로직 =====
@@ -101,16 +87,6 @@ public class FriendRequest {
         if (this.status != FriendRequestStatus.PENDING) return;
         this.status = FriendRequestStatus.REJECTED;
         this.respondedAt = LocalDateTime.now();
-    }
-
-    public void softDelete() {
-        this.isDeleted = true;
-        this.deletedAt = LocalDateTime.now();
-    }
-
-    public void restore() {
-        this.isDeleted = false;
-        this.deletedAt = null;
     }
 
     // ===== 상태 유틸 =====

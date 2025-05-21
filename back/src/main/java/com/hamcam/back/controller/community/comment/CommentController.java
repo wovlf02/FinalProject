@@ -21,9 +21,10 @@ public class CommentController {
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<MessageResponse> createComment(
             @PathVariable Long postId,
+            @RequestParam("userId") Long userId,
             @RequestBody CommentCreateRequest request
     ) {
-        Long commentId = commentService.createComment(postId, request);
+        Long commentId = commentService.createComment(postId, userId, request);
         return ResponseEntity.ok(MessageResponse.of("댓글이 등록되었습니다.", commentId));
     }
 
@@ -31,9 +32,10 @@ public class CommentController {
     @PostMapping("/comments/{commentId}/replies")
     public ResponseEntity<MessageResponse> createReply(
             @PathVariable Long commentId,
+            @RequestParam("userId") Long userId,
             @RequestBody ReplyCreateRequest request
     ) {
-        Long replyId = commentService.createReply(commentId, request);
+        Long replyId = commentService.createReply(commentId, userId, request);
         return ResponseEntity.ok(MessageResponse.of("대댓글이 등록되었습니다.", replyId));
     }
 
@@ -41,9 +43,10 @@ public class CommentController {
     @PutMapping("/comments/{commentId}/update")
     public ResponseEntity<MessageResponse> updateComment(
             @PathVariable Long commentId,
+            @RequestParam("userId") Long userId,
             @RequestBody CommentUpdateRequest request
     ) {
-        commentService.updateComment(commentId, request.getContent());
+        commentService.updateComment(commentId, userId, request.getContent());
         return ResponseEntity.ok(MessageResponse.of("댓글이 수정되었습니다."));
     }
 
@@ -51,23 +54,30 @@ public class CommentController {
     @PutMapping("/replies/{replyId}/update")
     public ResponseEntity<MessageResponse> updateReply(
             @PathVariable Long replyId,
+            @RequestParam("userId") Long userId,
             @RequestBody CommentUpdateRequest request
     ) {
-        commentService.updateReply(replyId, request.getContent());
+        commentService.updateReply(replyId, userId, request.getContent());
         return ResponseEntity.ok(MessageResponse.of("대댓글이 수정되었습니다."));
     }
 
     /** 댓글 삭제 */
     @DeleteMapping("/comments/{commentId}/delete")
-    public ResponseEntity<MessageResponse> deleteComment(@PathVariable Long commentId) {
-        commentService.deleteComment(commentId);
+    public ResponseEntity<MessageResponse> deleteComment(
+            @PathVariable Long commentId,
+            @RequestParam("userId") Long userId
+    ) {
+        commentService.deleteComment(commentId, userId);
         return ResponseEntity.ok(MessageResponse.of("댓글이 삭제되었습니다."));
     }
 
     /** 대댓글 삭제 */
     @DeleteMapping("/replies/{replyId}/delete")
-    public ResponseEntity<MessageResponse> deleteReply(@PathVariable Long replyId) {
-        commentService.deleteReply(replyId);
+    public ResponseEntity<MessageResponse> deleteReply(
+            @PathVariable Long replyId,
+            @RequestParam("userId") Long userId
+    ) {
+        commentService.deleteReply(replyId, userId);
         return ResponseEntity.ok(MessageResponse.of("대댓글이 삭제되었습니다."));
     }
 

@@ -68,7 +68,7 @@ public class FileService {
             Files.deleteIfExists(path);
 
         } catch (Exception e) {
-            throw new RuntimeException("프로필 이미지 삭제 중 오류 발생", e);
+            throw new CustomException(ErrorCode.FILE_DELETE_FAILED);
         }
     }
 }

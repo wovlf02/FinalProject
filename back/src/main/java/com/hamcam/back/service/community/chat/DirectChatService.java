@@ -8,7 +8,6 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.*;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatParticipantRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
@@ -27,13 +26,13 @@ public class DirectChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final UserRepository userRepository;
-    private final SecurityUtil securityUtil;
 
     /**
      * 상대방과의 1:1 채팅방이 존재하면 반환, 없으면 새로 생성
      */
     public ChatRoomResponse startOrGetDirectChat(DirectChatRequest request) {
-        User me = securityUtil.getCurrentUser();
+        User me = userRepository.findById(request.getMyUserId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         User other = userRepository.findById(request.getTargetUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -49,8 +48,9 @@ public class DirectChatService {
     /**
      * 내가 참여 중인 모든 1:1 채팅방 목록 조회
      */
-    public List<ChatRoomListResponse> getMyDirectChatRooms() {
-        User me = securityUtil.getCurrentUser();
+    public List<ChatRoomListResponse> getMyDirectChatRooms(Long myUserId) {
+        User me = userRepository.findById(myUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         return chatParticipantRepository.findByUser(me).stream()
                 .map(ChatParticipant::getChatRoom)
@@ -68,8 +68,9 @@ public class DirectChatService {
     /**
      * 특정 사용자와의 1:1 채팅방 조회 (없으면 예외)
      */
-    public ChatRoomResponse getDirectChatWithUser(Long otherUserId) {
-        User me = securityUtil.getCurrentUser();
+    public ChatRoomResponse getDirectChatWithUser(Long myUserId, Long otherUserId) {
+        User me = userRepository.findById(myUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         User other = userRepository.findById(otherUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 

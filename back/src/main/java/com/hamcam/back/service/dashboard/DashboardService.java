@@ -12,7 +12,7 @@ import com.hamcam.back.dto.dashboard.todo.request.TodoUpdateRequest;
 import com.hamcam.back.dto.dashboard.todo.response.TodoResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.dashboard.*;
-import com.hamcam.back.global.security.SecurityUtil;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.dashboard.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,12 +32,12 @@ public class DashboardService {
     private final ExamScheduleRepository examScheduleRepository;
     private final StudySessionRepository studySessionRepository;
     private final GoalRepository goalRepository;
-    private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
 
     // =============== 📆 캘린더 및 TODO 기능 ===============
 
-    public List<CalendarEventDto> getMonthlyCalendarEvents(YearMonth month) {
-        User user = securityUtil.getCurrentUser();
+    public List<CalendarEventDto> getMonthlyCalendarEvents(Long userId, YearMonth month) {
+        User user = getUser(userId);
         LocalDate start = month.atDay(1);
         LocalDate end = month.atEndOfMonth();
 
@@ -59,28 +59,27 @@ public class DashboardService {
                 .collect(Collectors.toList());
     }
 
-    public List<TodoResponse> getTodosByDate(LocalDate date) {
-        User user = securityUtil.getCurrentUser();
+    public List<TodoResponse> getTodosByDate(Long userId, LocalDate date) {
+        User user = getUser(userId);
         return todoRepository.findAllByUserAndTodoDateOrderByPriorityDesc(user, date)
                 .stream().map(this::toTodoResponse).collect(Collectors.toList());
     }
 
-    public TodoResponse createTodo(TodoRequest request) {
-        User user = securityUtil.getCurrentUser();
+    public TodoResponse createTodo(Long userId, TodoRequest request) {
+        User user = getUser(userId);
 
         Todo todo = Todo.builder()
                 .user(user)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .todoDate(request.getDate()) // ✅ getDate() 그대로 사용
-                .priority(request.getPriority()) // ✅ enum 그대로 사용
+                .todoDate(request.getDate())
+                .priority(request.getPriority())
                 .completed(false)
                 .build();
 
         Todo saved = todoRepository.save(todo);
         return toTodoResponse(saved);
     }
-
 
     public void updateTodo(Long todoId, TodoUpdateRequest request) {
         Todo todo = getTodoOrThrow(todoId);
@@ -103,8 +102,8 @@ public class DashboardService {
 
     // =============== 🗓️ 시험 일정 ===============
 
-    public List<ExamScheduleResponse> getAllExamSchedules() {
-        User user = securityUtil.getCurrentUser();
+    public List<ExamScheduleResponse> getAllExamSchedules(Long userId) {
+        User user = getUser(userId);
         return examScheduleRepository.findAllByUserOrderByExamDateAsc(user)
                 .stream().map(e -> ExamScheduleResponse.builder()
                         .id(e.getId())
@@ -113,8 +112,8 @@ public class DashboardService {
                         .build()).collect(Collectors.toList());
     }
 
-    public void createExamSchedule(ExamScheduleRequest request) {
-        User user = securityUtil.getCurrentUser();
+    public void createExamSchedule(Long userId, ExamScheduleRequest request) {
+        User user = getUser(userId);
         examScheduleRepository.save(ExamSchedule.builder()
                 .user(user)
                 .title(request.getTitle())
@@ -122,8 +121,8 @@ public class DashboardService {
                 .build());
     }
 
-    public DDayInfoResponse getNearestExamSchedule() {
-        User user = securityUtil.getCurrentUser();
+    public DDayInfoResponse getNearestExamSchedule(Long userId) {
+        User user = getUser(userId);
         return examScheduleRepository.findNearestExamSchedule(user, LocalDate.now())
                 .map(e -> {
                     long diff = LocalDate.now().until(e.getExamDate()).getDays();
@@ -138,8 +137,8 @@ public class DashboardService {
 
     // =============== 📊 학습 통계 ===============
 
-    public TotalStatsResponse getTotalStudyStats() {
-        User user = securityUtil.getCurrentUser();
+    public TotalStatsResponse getTotalStudyStats(Long userId) {
+        User user = getUser(userId);
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, LocalDate.of(2000, 1, 1), LocalDate.now());
         return TotalStatsResponse.builder()
                 .totalStudyMinutes(sessions.stream().mapToInt(StudySession::getDurationMinutes).sum())
@@ -148,8 +147,8 @@ public class DashboardService {
                 .build();
     }
 
-    public WeeklyStatsResponse getWeeklyStats() {
-        User user = securityUtil.getCurrentUser();
+    public WeeklyStatsResponse getWeeklyStats(Long userId) {
+        User user = getUser(userId);
         LocalDate now = LocalDate.now();
         LocalDate start = now.minusDays(6);
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, start, now);
@@ -173,8 +172,8 @@ public class DashboardService {
                 .build();
     }
 
-    public MonthlyStatsResponse getMonthlyStats() {
-        User user = securityUtil.getCurrentUser();
+    public MonthlyStatsResponse getMonthlyStats(Long userId) {
+        User user = getUser(userId);
         YearMonth currentMonth = YearMonth.now();
         LocalDate start = currentMonth.atDay(1);
         LocalDate end = currentMonth.atEndOfMonth();
@@ -197,8 +196,8 @@ public class DashboardService {
                 .build();
     }
 
-    public BestFocusDayResponse getBestFocusDay() {
-        User user = securityUtil.getCurrentUser();
+    public BestFocusDayResponse getBestFocusDay(Long userId) {
+        User user = getUser(userId);
         LocalDate start = LocalDate.now().minusDays(30);
         return studySessionRepository.findTopFocusDay(user, start).stream().findFirst()
                 .map(s -> BestFocusDayResponse.builder()
@@ -217,8 +216,8 @@ public class DashboardService {
                 .build();
     }
 
-    public void updateGoalManually(GoalUpdateRequest request) {
-        User user = securityUtil.getCurrentUser();
+    public void updateGoalManually(Long userId, GoalUpdateRequest request) {
+        User user = getUser(userId);
         goalRepository.save(Goal.builder()
                 .user(user)
                 .dailyGoalMinutes(request.getDailyGoalMinutes())
@@ -229,8 +228,8 @@ public class DashboardService {
 
     // =============== 📊 과목별 통계 ===============
 
-    public List<SubjectStatsResponse> getSubjectStats() {
-        User user = securityUtil.getCurrentUser();
+    public List<SubjectStatsResponse> getSubjectStats(Long userId) {
+        User user = getUser(userId);
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
                 user, LocalDate.of(2000, 1, 1), LocalDate.now());
 
@@ -255,8 +254,6 @@ public class DashboardService {
                 .collect(Collectors.toList());
     }
 
-
-    // =============== 내부 유틸 ===============
     private Todo getTodoOrThrow(Long id) {
         return todoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 할 일입니다."));
@@ -271,5 +268,10 @@ public class DashboardService {
                 .priority(todo.getPriority())
                 .completed(todo.isCompleted())
                 .build();
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
     }
 }

@@ -6,7 +6,6 @@ import com.hamcam.back.entity.community.Attachment;
 import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.community.attachment.AttachmentRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +29,6 @@ public class AttachmentService {
 
     private final AttachmentRepository attachmentRepository;
     private final PostRepository postRepository;
-    private final SecurityUtil securityUtil;
 
     /**
      * 게시글 첨부파일 업로드
@@ -94,13 +92,7 @@ public class AttachmentService {
         Attachment attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
-        Long currentUserId = securityUtil.getCurrentUserId();
-        Long ownerId = attachment.getPost().getWriter().getId();
-
-        if (!ownerId.equals(currentUserId)) {
-            throw new CustomException(ErrorCode.ACCESS_DENIED);
-        }
-
+        // 💡 프로토타입이라 인증 제거: 현재 사용자 ID 체크 생략
         Path filePath = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()).normalize();
         try {
             Files.deleteIfExists(filePath);

@@ -26,8 +26,7 @@ public class WebSocketEventListener {
      */
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String sessionId = accessor.getSessionId();
+        String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
         log.info("🔌 WebSocket 연결됨: sessionId = {}", sessionId);
     }
 
@@ -44,18 +43,16 @@ public class WebSocketEventListener {
 
         // Redis 세션 정보 삭제
         String redisKey = "ws:session:" + sessionId;
-        Boolean deleted = redisTemplate.delete(redisKey);
-        if (Boolean.TRUE.equals(deleted)) {
+        if (Boolean.TRUE.equals(redisTemplate.delete(redisKey))) {
             log.info("🧹 Redis 세션 삭제 완료: key = {}", redisKey);
         } else {
             log.warn("⚠️ Redis 세션 삭제 실패 또는 없음: key = {}", redisKey);
         }
 
-        // 선택: 세션에서 사용자 ID 확인 (로그 추적 용도)
+        // 사용자 ID 로그 (있으면)
         Object userId = accessor.getSessionAttributes() != null
                 ? accessor.getSessionAttributes().get("userId")
                 : null;
-
         if (userId != null) {
             log.info("⛔ 종료된 사용자 ID: {}", userId);
         }

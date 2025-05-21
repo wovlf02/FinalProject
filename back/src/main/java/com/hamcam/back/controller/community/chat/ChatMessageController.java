@@ -2,8 +2,6 @@ package com.hamcam.back.controller.community.chat;
 
 import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
-import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.service.community.chat.ChatMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +12,7 @@ import java.util.List;
 
 /**
  * [ChatMessageController]
- *
- * 채팅 메시지 REST API 컨트롤러
- * WebSocket 외 REST 방식으로도 채팅 메시지를 처리할 수 있도록 지원
+ * 채팅 메시지 REST API 컨트롤러 (보안 제거 버전)
  */
 @RestController
 @RequestMapping("/api/chat/rooms")
@@ -24,12 +20,9 @@ import java.util.List;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
-    private final SecurityUtil securityUtil;
 
     /**
-     * [채팅 메시지 목록 조회]
-     *
-     * - 채팅방 ID와 페이지 정보를 기반으로 채팅 메시지를 조회
+     * 채팅 메시지 목록 조회
      */
     @GetMapping("/{roomId}/messages")
     public ResponseEntity<List<ChatMessageResponse>> getChatMessages(
@@ -41,18 +34,15 @@ public class ChatMessageController {
     }
 
     /**
-     * [REST 메시지 전송]
-     *
-     * - 텍스트 또는 파일 메시지를 REST 방식으로 전송
-     * - 인증된 사용자 정보는 서비스 내에서 추출
+     * REST 메시지 전송 (보안 제거 버전)
+     * - 사용자 ID를 프론트에서 직접 전달받음
      */
     @PostMapping("/{roomId}/messages")
     public ResponseEntity<ChatMessageResponse> sendRestMessage(
             @PathVariable Long roomId,
+            @RequestParam("userId") Long userId,
             @RequestBody @Valid ChatMessageRequest request
     ) {
-        User sender = securityUtil.getCurrentUser(); // ✅ 인증된 사용자 추출
-        return ResponseEntity.ok(chatMessageService.sendMessage(roomId, sender, request));
+        return ResponseEntity.ok(chatMessageService.sendMessage(roomId, userId, request));
     }
-
 }

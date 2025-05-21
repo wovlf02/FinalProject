@@ -6,7 +6,7 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.study.TeamRoom;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.study.TeamRoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,16 +24,18 @@ import java.util.stream.Collectors;
 public class TeamRoomService {
 
     private final TeamRoomRepository teamRoomRepository;
-    private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
 
     /**
      * 팀 학습방 생성
      *
+     * @param userId  사용자 ID
      * @param request 학습방 생성 요청
      * @return 생성된 학습방 정보
      */
-    public TeamRoomResponse createTeamRoom(TeamRoomCreateRequest request) {
-        User host = securityUtil.getCurrentUser();
+    public TeamRoomResponse createTeamRoom(Long userId, TeamRoomCreateRequest request) {
+        User host = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         TeamRoom room = TeamRoom.builder()
                 .title(request.getTitle())

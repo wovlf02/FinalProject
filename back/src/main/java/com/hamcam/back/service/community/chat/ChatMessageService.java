@@ -8,7 +8,7 @@ import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.chat.ChatRoom;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,16 +32,19 @@ public class ChatMessageService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatReadService chatReadService;
-    private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
 
     /**
      * 채팅 메시지 저장 (WebSocket & REST 공통)
      */
-    public ChatMessageResponse sendMessage(Long roomId, User user, ChatMessageRequest request) {
+    public ChatMessageResponse sendMessage(Long roomId, Long senderId, ChatMessageRequest request) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
-        ChatMessage message = createMessageEntity(room, user, request);
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        ChatMessage message = createMessageEntity(room, sender, request);
         chatMessageRepository.save(message);
 
         // 마지막 메시지 갱신 (파일인 경우 [파일] 표시)

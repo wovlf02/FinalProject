@@ -9,7 +9,7 @@ import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.entity.community.Reply;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.like.LikeRepository;
@@ -25,12 +25,10 @@ public class LikeService {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
-    private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
 
-    // ===== 게시글 좋아요 =====
-
-    public boolean togglePostLike(Long postId) {
-        User user = securityUtil.getCurrentUser();
+    public boolean togglePostLike(Long postId, Long userId) {
+        User user = getUser(userId);
         Post post = getPost(postId);
 
         return likeRepository.findByUserAndPost(user, post)
@@ -52,17 +50,15 @@ public class LikeService {
         return new LikeCountResponse(likeRepository.countByPostId(postId));
     }
 
-    public LikeStatusResponse hasLikedPost(Long postId) {
-        User user = securityUtil.getCurrentUser();
+    public LikeStatusResponse hasLikedPost(Long postId, Long userId) {
+        User user = getUser(userId);
         Post post = getPost(postId);
         boolean liked = likeRepository.findByUserAndPost(user, post).isPresent();
         return new LikeStatusResponse(liked);
     }
 
-    // ===== 댓글 좋아요 =====
-
-    public boolean toggleCommentLike(Long commentId) {
-        User user = securityUtil.getCurrentUser();
+    public boolean toggleCommentLike(Long commentId, Long userId) {
+        User user = getUser(userId);
         Comment comment = getComment(commentId);
 
         return likeRepository.findByUserAndComment(user, comment)
@@ -84,17 +80,15 @@ public class LikeService {
         return new LikeCountResponse(likeRepository.countByCommentId(commentId));
     }
 
-    public LikeStatusResponse hasLikedComment(Long commentId) {
-        User user = securityUtil.getCurrentUser();
+    public LikeStatusResponse hasLikedComment(Long commentId, Long userId) {
+        User user = getUser(userId);
         Comment comment = getComment(commentId);
         boolean liked = likeRepository.findByUserAndComment(user, comment).isPresent();
         return new LikeStatusResponse(liked);
     }
 
-    // ===== 대댓글 좋아요 =====
-
-    public boolean toggleReplyLike(Long replyId) {
-        User user = securityUtil.getCurrentUser();
+    public boolean toggleReplyLike(Long replyId, Long userId) {
+        User user = getUser(userId);
         Reply reply = getReply(replyId);
 
         return likeRepository.findByUserAndReply(user, reply)
@@ -116,14 +110,12 @@ public class LikeService {
         return new LikeCountResponse(likeRepository.countByReplyId(replyId));
     }
 
-    public LikeStatusResponse hasLikedReply(Long replyId) {
-        User user = securityUtil.getCurrentUser();
+    public LikeStatusResponse hasLikedReply(Long replyId, Long userId) {
+        User user = getUser(userId);
         Reply reply = getReply(replyId);
         boolean liked = likeRepository.findByUserAndReply(user, reply).isPresent();
         return new LikeStatusResponse(liked);
     }
-
-    // ===== 내부 헬퍼 메서드 =====
 
     private Post getPost(Long postId) {
         return postRepository.findById(postId)
@@ -138,5 +130,10 @@ public class LikeService {
     private Reply getReply(Long replyId) {
         return replyRepository.findById(replyId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }

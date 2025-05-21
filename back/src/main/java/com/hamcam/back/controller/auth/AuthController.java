@@ -1,31 +1,19 @@
 package com.hamcam.back.controller.auth;
 
-import com.hamcam.back.config.auth.JwtProvider;
 import com.hamcam.back.dto.auth.request.*;
-import com.hamcam.back.dto.auth.response.TokenResponse;
 import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
-import com.hamcam.back.global.exception.CustomException;
-import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.auth.AuthService;
 import com.hamcam.back.service.user.UserService;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
-import java.time.Duration;
-import java.util.List;
-
-/**
- * 인증 및 회원 관련 API를 제공하는 컨트롤러입니다.
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
@@ -34,7 +22,6 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
-    private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
 
     // ---------------- 회원가입 & 인증 ----------------
@@ -70,64 +57,23 @@ public class AuthController {
         return ApiResponse.ok();
     }
 
-    /**
-     * 회원가입 요청 (Multipart + JSON 혼합)
-     */
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<String> register(@ModelAttribute RegisterRequest request,
-                                        @RequestPart(value = "profileImage", required = false) MultipartFile file) {
+    public ApiResponse<String> register(
+            @RequestPart("request") RegisterRequest request,
+            @RequestPart(value = "profileImage", required = false) MultipartFile file) {
         authService.register(request, file);
         return ApiResponse.ok("회원가입이 완료되었습니다.");
     }
 
-    // ---------------- 로그인 / 로그아웃 / 토큰 재발급 ----------------
+    // ---------------- 로그인 (보안 제거) ----------------
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+    public ApiResponse<Long> login(@RequestBody @Valid LoginRequest request) {
         authService.login(request);
-
-        var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        String accessToken = jwtProvider.generateAccessToken(user);
-        String refreshToken = jwtProvider.generateRefreshToken(user);
-
-        response.addHeader("Set-Cookie", jwtProvider.createAccessTokenCookie(accessToken).toString());
-        response.addHeader("Set-Cookie", jwtProvider.createRefreshTokenCookie(refreshToken).toString());
-
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
-            @CookieValue(name = JwtProvider.ACCESS_COOKIE, required = false) String accessToken,
-            HttpServletResponse response) {
-
-        if (accessToken == null) {
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
-        }
-
-        authService.logout(accessToken);
-
-        response.addHeader("Set-Cookie", jwtProvider.deleteCookie(JwtProvider.ACCESS_COOKIE).toString());
-        response.addHeader("Set-Cookie", jwtProvider.deleteCookie(JwtProvider.REFRESH_COOKIE).toString());
-
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/reissue")
-    public ResponseEntity<Void> reissue(
-            @CookieValue(name = JwtProvider.REFRESH_COOKIE, required = false) String refreshToken,
-            HttpServletResponse response) {
-
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
-        }
-
-        TokenResponse token = authService.reissue(refreshToken);
-
-        response.addHeader("Set-Cookie", jwtProvider.createAccessTokenCookie(token.getAccessToken()).toString());
-        return ResponseEntity.ok().build();
+        Long userId = userRepository.findByUsername(request.getUsername())
+                .orElseThrow()
+                .getId();
+        return ApiResponse.ok(userId);
     }
 
     // ---------------- 아이디/비밀번호 찾기 ----------------

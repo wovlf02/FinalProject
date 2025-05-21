@@ -71,11 +71,11 @@ public class MailService {
     private String buildEmailContent(String code, String type) {
         String action = convertTypeToKorean(type);
         return String.format("""
-                <div style="padding: 20px; font-family: 'Arial', sans-serif; border: 1px solid #ddd;">
-                    <h2 style="color: #3478ff;">Hamcam 인증코드 안내</h2>
+                <div style=\"padding: 20px; font-family: 'Arial', sans-serif; border: 1px solid #ddd;\">
+                    <h2 style=\"color: #3478ff;\">Hamcam 인증코드 안내</h2>
                     <p>아래 인증코드를 입력하여 %s를 완료해 주세요.</p>
-                    <div style="font-size: 24px; font-weight: bold; margin-top: 10px; color: #222;">%s</div>
-                    <p style="font-size: 12px; color: #777; margin-top: 20px;">※ 인증코드는 3분 동안 유효합니다.</p>
+                    <div style=\"font-size: 24px; font-weight: bold; margin-top: 10px; color: #222;\">%s</div>
+                    <p style=\"font-size: 12px; color: #777; margin-top: 20px;\">※ 인증코드는 3분 동안 유효합니다.</p>
                 </div>
                 """, action, code);
     }

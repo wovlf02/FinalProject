@@ -23,7 +23,7 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-     @Column(nullable = false, length = 50) // ✅ 추가된 name 필드
+    @Column(nullable = false, length = 50) // ✅ 추가된 name 필드
     private String name;
 
     @Column(nullable = false)
@@ -41,9 +41,6 @@ public class User {
     @Column(nullable = false)
     private Integer grade; // ✅ 학년
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Subjects> subjects = new ArrayList<>();
-
     @Column(nullable = false, length = 50)
     private String studyHabit; // ✅ 공부 습관
 
@@ -55,6 +52,11 @@ public class User {
 
     @Column(length = 15)
     private String phone; // 추가된 전화번호 필드
+
+    @ElementCollection
+    @CollectionTable(name = "user_subjects", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "subject", nullable = false)
+    private List<String> subjects = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

@@ -19,8 +19,7 @@ import java.util.List;
 
 /**
  * [ChatRoomController]
- *
- * 채팅방 생성, 조회, 삭제 등을 처리하는 컨트롤러
+ * 채팅방 생성, 조회, 삭제 등을 처리하는 컨트롤러 (보안 제거 및 사용자 ID 명시 전달)
  */
 @RestController
 @RequestMapping("/api/chat/rooms")
@@ -35,6 +34,7 @@ public class ChatRoomController {
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MessageResponse> createChatRoom(
+            @RequestParam("userId") Long userId,
             @RequestPart("roomName") String roomName,
             @RequestPart("invitedUserIds") String invitedUserIdsJson,
             @RequestPart(value = "image", required = false) MultipartFile image
@@ -48,6 +48,7 @@ public class ChatRoomController {
 
         ChatRoomCreateRequest request = ChatRoomCreateRequest.builder()
                 .roomName(roomName)
+                .creatorId(userId) // ✅ 생성자 명시
                 .invitedUserIds(invitedUserIds)
                 .image(image)
                 .build();
@@ -60,8 +61,8 @@ public class ChatRoomController {
      * 내 채팅방 목록 조회
      */
     @GetMapping
-    public ResponseEntity<MessageResponse> getMyChatRooms() {
-        List<ChatRoomListResponse> rooms = chatRoomService.getMyChatRooms();
+    public ResponseEntity<MessageResponse> getMyChatRooms(@RequestParam("userId") Long userId) {
+        List<ChatRoomListResponse> rooms = chatRoomService.getMyChatRooms(userId);
         return ResponseEntity.ok(MessageResponse.of("채팅방 목록 조회 성공", rooms));
     }
 
@@ -78,8 +79,11 @@ public class ChatRoomController {
      * 채팅방 삭제
      */
     @DeleteMapping("/{roomId}")
-    public ResponseEntity<MessageResponse> deleteChatRoom(@PathVariable Long roomId) {
-        chatRoomService.deleteChatRoom(roomId);
+    public ResponseEntity<MessageResponse> deleteChatRoom(
+            @PathVariable Long roomId,
+            @RequestParam("userId") Long userId
+    ) {
+        chatRoomService.deleteChatRoom(roomId, userId); // ✅ 삭제 요청자 전달
         return ResponseEntity.ok(MessageResponse.of("채팅방이 삭제되었습니다."));
     }
 }

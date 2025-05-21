@@ -8,7 +8,7 @@ import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.chat.ChatRoom;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,19 +34,20 @@ public class ChatAttachmentService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
-    private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
 
     /**
      * 채팅 파일 업로드 및 메시지 저장
      */
-    public ChatMessageResponse saveFileMessage(Long roomId, MultipartFile file) {
+    public ChatMessageResponse saveFileMessage(Long roomId, MultipartFile file, Long senderId) {
         if (file == null || file.isEmpty()) {
             throw new CustomException(ErrorCode.MISSING_PARAMETER);
         }
 
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-        User sender = securityUtil.getCurrentUser();
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || originalFilename.isBlank()) {

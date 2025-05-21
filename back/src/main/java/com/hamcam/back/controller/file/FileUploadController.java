@@ -14,43 +14,43 @@ import java.util.UUID;
 /**
  * [FileUploadController]
  *
- * 로컬 환경에서 파일 업로드 처리
- * - 파일은 지정된 로컬 경로(C:/upload)에 저장됨
- * - 저장된 파일명은 UUID를 붙여 중복 방지
- * - 저장 결과는 표준 MessageResponse로 반환
+ * 로컬 환경에서 파일 업로드 처리 (userId 기반 확장 적용)
+ * - 저장 경로: C:/upload/{userId}/
+ * - 파일명 중복 방지: UUID 추가
  */
 @RestController
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
 public class FileUploadController {
 
-    private static final String UPLOAD_DIR = "C:/upload"; // ✅ 실제 서버/로컬에 해당 폴더가 존재해야 함
+    private static final String BASE_UPLOAD_DIR = "C:/upload"; // ✅ 실제 폴더 존재해야 함
 
     /**
-     * [파일 업로드]
-     * MultipartFile을 받아 로컬에 저장하고 저장된 파일명을 반환
-     *
-     * @param file Multipart 파일
-     * @return 저장된 파일명 포함 성공 메시지
+     * 파일 업로드 (userId 하위 경로에 저장)
      */
     @PostMapping("/upload")
-    public ResponseEntity<MessageResponse> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<MessageResponse> uploadFile(
+            @RequestParam("userId") Long userId,
+            @RequestParam("file") MultipartFile file
+    ) {
         try {
-            // 디렉토리 없으면 생성
-            File dir = new File(UPLOAD_DIR);
-            if (!dir.exists() && !dir.mkdirs()) {
+            // 파일명 null 검사
+            String originalFilename = Objects.requireNonNull(file.getOriginalFilename(), "파일명이 없습니다.");
+            String storedFilename = UUID.randomUUID() + "_" + originalFilename;
+
+            // userId별 업로드 디렉토리 생성
+            File userDir = new File(BASE_UPLOAD_DIR + "/" + userId);
+            if (!userDir.exists() && !userDir.mkdirs()) {
                 return ResponseEntity.internalServerError().body(
                         MessageResponse.of("업로드 디렉토리 생성 실패"));
             }
 
-            // 파일명 null 방지 처리
-            String originalFilename = Objects.requireNonNull(file.getOriginalFilename(), "파일명이 없습니다.");
-            String storedFilename = UUID.randomUUID() + "_" + originalFilename;
-
-            File dest = new File(UPLOAD_DIR, storedFilename);
+            // 저장
+            File dest = new File(userDir, storedFilename);
             file.transferTo(dest);
 
-            return ResponseEntity.ok(MessageResponse.of("파일이 업로드되었습니다.", storedFilename));
+            String relativePath = "/upload/" + userId + "/" + storedFilename;
+            return ResponseEntity.ok(MessageResponse.of("파일이 업로드되었습니다.", relativePath));
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body(
                     MessageResponse.of("파일 업로드 중 오류 발생: " + e.getMessage()));

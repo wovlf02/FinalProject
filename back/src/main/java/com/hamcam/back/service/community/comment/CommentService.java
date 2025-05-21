@@ -10,10 +10,10 @@ import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.entity.community.Reply;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
+import com.hamcam.back.repository.auth.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,14 +28,15 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final ReplyRepository replyRepository;
     private final PostRepository postRepository;
-    private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
 
     /** 댓글 등록 */
     public Long createComment(Long postId, CommentCreateRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
-        User user = securityUtil.getCurrentUser();
+        User user = userRepository.findById(request.getWriterId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Comment comment = Comment.builder()
                 .post(post)
@@ -54,7 +55,8 @@ public class CommentService {
         Comment parent = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        User user = securityUtil.getCurrentUser();
+        User user = userRepository.findById(request.getWriterId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Reply reply = Reply.builder()
                 .comment(parent)
@@ -102,11 +104,9 @@ public class CommentService {
     }
 
     /** 게시글 기준 댓글 + 대댓글 계층 조회 */
-    public CommentListResponse getCommentsByPost(Long postId) {
+    public CommentListResponse getCommentsByPost(Long postId, Long currentUserId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-
-        Long currentUserId = securityUtil.getCurrentUserId();
 
         List<Comment> comments = commentRepository.findByPostAndIsDeletedFalseOrderByCreatedAtAsc(post);
 

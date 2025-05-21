@@ -8,7 +8,7 @@ import com.hamcam.back.entity.community.PostCategory;
 import com.hamcam.back.entity.community.PostFavorite;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.post.PostFavoriteRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
 import com.hamcam.back.service.community.attachment.AttachmentService;
@@ -29,25 +29,15 @@ public class PostService {
     private final PostRepository postRepository;
     private final PostFavoriteRepository postFavoriteRepository;
     private final AttachmentService attachmentService;
-    private final SecurityUtil securityUtil;
+    private final UserRepository userRepository;
 
     private Post getPostOrThrow(Long postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
     }
 
-    private PostCategory parseCategory(String categoryStr) {
-        try {
-            return PostCategory.valueOf(categoryStr.toUpperCase());
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
-    }
-
-    // ====================== 게시글 CRUD ======================
-
-    public Long createPost(PostCreateRequest request, MultipartFile[] files) {
-        User writer = securityUtil.getCurrentUser();
+    public Long createPost(PostCreateRequest request, MultipartFile[] files, Long userId) {
+        User writer = getUser(userId);
 
         Post post = Post.builder()
                 .writer(writer)
@@ -67,10 +57,10 @@ public class PostService {
     }
 
     @Transactional
-    public void updatePost(Long postId, PostUpdateRequest request, MultipartFile[] files) {
+    public void updatePost(Long postId, PostUpdateRequest request, MultipartFile[] files, Long userId) {
         Post post = getPostOrThrow(postId);
 
-        if (!post.getWriter().getId().equals(securityUtil.getCurrentUserId())) {
+        if (!post.getWriter().getId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -82,7 +72,6 @@ public class PostService {
             post.setCategory(request.getCategory());
         }
 
-
         if (request.getDeleteFileIds() != null) {
             request.getDeleteFileIds().forEach(attachmentService::deleteAttachment);
         }
@@ -92,9 +81,9 @@ public class PostService {
         }
     }
 
-    public void deletePost(Long postId) {
+    public void deletePost(Long postId, Long userId) {
         Post post = getPostOrThrow(postId);
-        if (!post.getWriter().getId().equals(securityUtil.getCurrentUserId())) {
+        if (!post.getWriter().getId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
         postRepository.delete(post);
@@ -112,8 +101,6 @@ public class PostService {
         Page<Post> posts = postRepository.findAll(pageable);
         return PostListResponse.from(posts);
     }
-
-    // ====================== 검색 / 필터 ======================
 
     public PostListResponse searchPosts(String keyword, Pageable pageable) {
         Page<Post> result = (keyword == null || keyword.isBlank())
@@ -142,8 +129,6 @@ public class PostService {
         return PostListResponse.from(result);
     }
 
-    // ====================== 통계 / 랭킹 ======================
-
     public PopularPostListResponse getPopularPosts() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Post> result = postRepository.findPopularPosts(pageable);
@@ -155,19 +140,15 @@ public class PostService {
         return RankingResponse.from(ranking.getContent());
     }
 
-    // ====================== 자동완성 (AI 기반) ======================
-
     public PostAutoFillResponse autoFillPost(ProblemReferenceRequest request) {
         String title = "추천 제목: " + request.getProblemTitle();
         String content = "이 문제는 " + request.getCategory() + "에 속하며, 해결 전략은 다음과 같습니다...";
         return PostAutoFillResponse.builder().title(title).content(content).build();
     }
 
-    // ====================== 즐겨찾기 기능 ======================
-
     @Transactional
-    public void favoritePost(Long postId) {
-        User user = securityUtil.getCurrentUser();
+    public void favoritePost(Long postId, Long userId) {
+        User user = getUser(userId);
         Post post = getPostOrThrow(postId);
 
         if (postFavoriteRepository.existsByUserAndPost(user, post)) {
@@ -182,8 +163,8 @@ public class PostService {
     }
 
     @Transactional
-    public void unfavoritePost(Long postId) {
-        User user = securityUtil.getCurrentUser();
+    public void unfavoritePost(Long postId, Long userId) {
+        User user = getUser(userId);
         Post post = getPostOrThrow(postId);
 
         PostFavorite favorite = postFavoriteRepository.findByUserAndPost(user, post)
@@ -192,8 +173,8 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public FavoritePostListResponse getFavoritePosts() {
-        User user = securityUtil.getCurrentUser();
+    public FavoritePostListResponse getFavoritePosts(Long userId) {
+        User user = getUser(userId);
         List<PostFavorite> favorites = postFavoriteRepository.findAllByUser(user);
         List<PostSummaryResponse> posts = favorites.stream()
                 .map(f -> PostSummaryResponse.from(f.getPost()))
@@ -201,11 +182,14 @@ public class PostService {
         return new FavoritePostListResponse(posts);
     }
 
-    // ====================== 조회수 증가 ======================
-
     public void increaseViewCount(Long postId) {
         Post post = getPostOrThrow(postId);
         post.incrementViewCount();
         postRepository.save(post);
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }

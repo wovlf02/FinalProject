@@ -1,9 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../../css/Friend.css';
-import api from "../../api/api";
-import base_profile from '../../icons/base_profile.png'; // 예시 경로, 프로젝트에 맞게 조정
-
+import api from '../../api/api';
+import base_profile from '../../icons/base_profile.png';
 
 const Friend = () => {
     const navigate = useNavigate();
@@ -24,48 +23,11 @@ const Friend = () => {
     const [addMsg, setAddMsg] = useState('');
     const [searchResults, setSearchResults] = useState([]);
 
-
     useEffect(() => {
         fetchFriendList();
         fetchRequests();
         fetchBlocked();
     }, []);
-
-    const searchUsersByNickname = async (nickname) => {
-        if (!nickname.trim()) {
-            setSearchResults([]);
-            return;
-        }
-
-        try {
-            const res = await api.get('/friends/search', {
-                params: { nickname }
-            });
-            setSearchResults(res.data.results || []);
-        } catch (err) {
-            console.error('❌ 친구 검색 실패:', err);
-        }
-    };
-
-    const handleSendRequest = async (targetUserId) => {
-        try {
-            await api.post('/friends/request', {
-                targetUserId,
-                message: addMsg || ''
-            });
-            alert('친구 요청을 보냈습니다.');
-            setAddName('');
-            setAddMsg('');
-            setShowAddModal(false);
-            setSearchResults([]);
-            fetchRequests();
-        } catch (err) {
-            alert('친구 요청 실패');
-            console.error('❌ 요청 전송 실패:', err);
-        }
-    };
-
-
 
     const fetchFriendList = async () => {
         try {
@@ -73,8 +35,8 @@ const Friend = () => {
             setOnlineFriends(res.data.onlineFriends || []);
             setOfflineFriends(res.data.offlineFriends || []);
         } catch (err) {
-            alert('친구 목록을 불러오지 못했습니다.');
             console.error('❌ 친구 목록 조회 실패:', err);
+            alert('친구 목록을 불러오지 못했습니다.');
         }
     };
 
@@ -83,8 +45,8 @@ const Friend = () => {
             const res = await api.get('/friends/requests');
             setFriendRequests(res.data.requests || []);
         } catch (err) {
-            alert('친구 요청 목록을 불러오지 못했습니다.');
             console.error('❌ 요청 목록 조회 실패:', err);
+            alert('친구 요청 목록을 불러오지 못했습니다.');
         }
     };
 
@@ -93,49 +55,63 @@ const Friend = () => {
             const res = await api.get('/friends/blocked');
             setBlockedFriends(res.data.blocked || []);
         } catch (err) {
-            alert('차단 목록을 불러오지 못했습니다.');
             console.error('❌ 차단 목록 조회 실패:', err);
+            alert('차단 목록을 불러오지 못했습니다.');
         }
     };
 
     const handleAccept = async (requestId) => {
         try {
-            await api.post(`/friends/request/${requestId}/accept`, {requestId});
+            await api.post(`/friends/request/${requestId}/accept`, { requestId });
             setFriendRequests(prev => prev.filter(req => req.id !== requestId));
             fetchFriendList();
         } catch (err) {
-            alert('친구 요청 수락에 실패했습니다.');
             console.error('❌ 요청 수락 실패:', err);
+            alert('친구 요청 수락에 실패했습니다.');
         }
     };
 
     const handleReject = async (requestId) => {
         try {
-            await api.post(`/friends/request/${requestId}/reject`, {requestId});
+            await api.post(`/friends/request/${requestId}/reject`, { requestId });
             setFriendRequests(prev => prev.filter(req => req.id !== requestId));
         } catch (err) {
-            alert('친구 요청 거절에 실패했습니다.');
             console.error('❌ 요청 거절 실패:', err);
+            alert('친구 요청 거절에 실패했습니다.');
         }
     };
 
-    const handleAddFriend = async (e) => {
-        e.preventDefault();
+    const searchUsersByNickname = async (nickname) => {
+        if (!nickname.trim()) {
+            setSearchResults([]);
+            return;
+        }
+        try {
+            const res = await api.get('/friends/search', { params: { nickname } });
+            setSearchResults(res.data.results || []);
+        } catch (err) {
+            console.error('❌ 친구 검색 실패:', err);
+        }
+    };
+
+    const handleAddFriend = async (user_id) => {
         try {
             await api.post('/friends/request', {
-                nickname: addName,
-                message: addMsg || ''
+                targetUserId: user_id,
             });
+            console.log("🧾 친구 요청 대상:", user_id);
             alert('친구 요청이 전송되었습니다.');
             setAddName('');
             setAddMsg('');
+            setSearchResults([]);
             setShowAddModal(false);
             fetchRequests();
         } catch (err) {
-            alert('친구 요청 전송에 실패했습니다.');
             console.error('❌ 요청 전송 실패:', err);
+            alert('친구 요청 전송에 실패했습니다.');
         }
     };
+
 
     const handleRemoveFriend = async (id) => {
         try {
@@ -143,8 +119,8 @@ const Friend = () => {
             setOnlineFriends(prev => prev.filter(f => f.id !== id));
             setOfflineFriends(prev => prev.filter(f => f.id !== id));
         } catch (err) {
-            alert('친구 삭제에 실패했습니다.');
             console.error('❌ 친구 삭제 실패:', err);
+            alert('친구 삭제에 실패했습니다.');
         }
     };
 
@@ -155,8 +131,8 @@ const Friend = () => {
             setOfflineFriends(prev => prev.filter(f => f.id !== id));
             fetchBlocked();
         } catch (err) {
-            alert('친구 차단에 실패했습니다.');
             console.error('❌ 친구 차단 실패:', err);
+            alert('친구 차단에 실패했습니다.');
         }
     };
 
@@ -166,15 +142,13 @@ const Friend = () => {
             setBlockedFriends(prev => prev.filter(f => f.id !== id));
             fetchFriendList();
         } catch (err) {
-            alert('차단 해제에 실패했습니다.');
             console.error('❌ 차단 해제 실패:', err);
+            alert('차단 해제에 실패했습니다.');
         }
     };
 
     const filterFn = (f) =>
-        (!search ||
-            f.name.toLowerCase().includes(search.toLowerCase()) ||
-            (f.message && f.message.toLowerCase().includes(search.toLowerCase()))) &&
+        (!search || f.name.toLowerCase().includes(search.toLowerCase())) &&
         (filterType === '전체' ||
             (filterType === '온라인' && onlineFriends.some(o => o.id === f.id)) ||
             (filterType === '오프라인' && offlineFriends.some(o => o.id === f.id)));
@@ -281,10 +255,10 @@ const Friend = () => {
 
                         <div className="friend-search-result-list">
                             {searchResults.map((user) => (
-                                <div key={user.userId} className="friend-row">
+                                <div key={user.user_id} className="friend-row">
                                     <img
-                                        src={user.profileImageUrl || base_profile}
-                                        alt={user.nickname}
+                                        src={user.profile_image_url || base_profile}
+                                        alt={`${user.nickname}의 프로필 이미지`}
                                         className="friend-avatar"
                                     />
                                     <div className="friend-info">
@@ -292,18 +266,25 @@ const Friend = () => {
                                     </div>
                                     <button
                                         className="friend-accept"
-                                        onClick={() => handleSendRequest(user.userId)}
+                                        onClick={() => {
+                                            if (!user.user_id) {
+                                                console.warn('❗ user.user_id가 undefined입니다:', user);
+                                                alert('유효하지 않은 사용자입니다.');
+                                                return;
+                                            }
+                                            handleAddFriend(user.user_id);
+                                        }}
                                         disabled={
-                                            user.alreadyFriend ||
-                                            user.alreadyRequested ||
-                                            user.isBlocked
+                                            user.already_friend ||
+                                            user.already_requested ||
+                                            user.blocked
                                         }
                                     >
-                                        {user.alreadyFriend
+                                        {user.already_friend
                                             ? '이미 친구'
-                                            : user.alreadyRequested
+                                            : user.already_requested
                                                 ? '요청 보냄'
-                                                : user.isBlocked
+                                                : user.blocked
                                                     ? '차단됨'
                                                     : '요청'}
                                     </button>

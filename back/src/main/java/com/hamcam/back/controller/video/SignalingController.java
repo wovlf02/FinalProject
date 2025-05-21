@@ -5,62 +5,105 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.util.Map;
+import java.net.URI;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * [SignalingController]
  *
- * WebRTC 통신을 위한 Signaling 서버 역할을 수행하는 WebSocket 핸들러
- * - 모든 세션에 시그널링 메시지를 브로드캐스팅
- * - Peer 간 offer, answer, candidate 메시지를 중계
+ * WebRTC 통신을 위한 signaling WebSocket 핸들러 (방 기반 확장)
  */
 @Slf4j
 @Component
 public class SignalingController extends TextWebSocketHandler {
 
-    private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
+    // roomId → [세션 목록]
+    private final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
 
     /**
-     * 클라이언트로부터 메시지를 수신했을 때 동작
-     * - 모든 연결된 사용자에게 메시지를 브로드캐스트 (단순한 방 구조)
+     * 클라이언트로부터 메시지 수신 시
+     * - 같은 roomId에 속한 세션에만 메시지를 브로드캐스트
      */
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
-        log.info("📨 수신 메시지 from {}: {}", session.getId(), payload);
+        String roomId = getRoomIdFromSession(session);
 
-        // 모든 세션에 메시지 전송 (자기 자신 포함)
-        for (WebSocketSession s : sessions.values()) {
-            if (s.isOpen()) {
-                s.sendMessage(new TextMessage(payload));
+        log.info("📨 메시지 수신 | session={}, roomId={}, message={}", session.getId(), roomId, payload);
+
+        if (roomId != null) {
+            for (WebSocketSession s : roomSessions.getOrDefault(roomId, Set.of())) {
+                if (s.isOpen()) {
+                    s.sendMessage(new TextMessage(payload));
+                }
             }
         }
     }
 
     /**
-     * 새로운 클라이언트가 WebSocket에 연결되었을 때 호출됨
+     * 연결 시 roomId 파라미터로 방 등록
      */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        sessions.put(session.getId(), session);
-        log.info("🔌 연결됨: {}", session.getId());
+        String roomId = getRoomIdFromSession(session);
+        if (roomId == null) {
+            log.warn("❌ 연결 거부됨: roomId 없음");
+            session.close(CloseStatus.BAD_DATA);
+            return;
+        }
+
+        roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
+        log.info("🔌 연결됨: session={}, roomId={}", session.getId(), roomId);
     }
 
     /**
-     * 클라이언트 연결 종료 시 호출됨
+     * 연결 종료 시 방에서 제거
      */
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        sessions.remove(session.getId());
-        log.info("❎ 연결 종료: {} ({})", session.getId(), status.getReason());
+        String roomId = getRoomIdFromSession(session);
+        if (roomId != null) {
+            Set<WebSocketSession> sessions = roomSessions.get(roomId);
+            if (sessions != null) {
+                sessions.remove(session);
+                log.info("❎ 연결 종료: session={}, roomId={}", session.getId(), roomId);
+                if (sessions.isEmpty()) {
+                    roomSessions.remove(roomId);
+                }
+            }
+        }
     }
 
     /**
-     * 예외 발생 시 로깅 처리
+     * 에러 핸들링
      */
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("🚨 WebSocket 오류 (세션: {}): {}", session.getId(), exception.getMessage());
+        log.error("🚨 WebSocket 오류 | session={}: {}", session.getId(), exception.getMessage());
+    }
+
+    /**
+     * URI 쿼리에서 roomId 파라미터 추출
+     * ex: ws://localhost:8080/ws/signal?roomId=abc123&userId=1
+     */
+    private String getRoomIdFromSession(WebSocketSession session) {
+        try {
+            URI uri = session.getUri();
+            if (uri == null) return null;
+
+            String query = uri.getQuery(); // roomId=abc123&userId=1
+            if (query == null) return null;
+
+            for (String param : query.split("&")) {
+                String[] parts = param.split("=");
+                if (parts.length == 2 && parts[0].equals("roomId")) {
+                    return parts[1];
+                }
+            }
+        } catch (Exception e) {
+            log.warn("roomId 파싱 실패: {}", e.getMessage());
+        }
+        return null;
     }
 }

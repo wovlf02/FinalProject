@@ -9,7 +9,6 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.friend.*;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.friend.FriendBlockRepository;
 import com.hamcam.back.repository.friend.FriendReportRepository;
@@ -31,18 +30,10 @@ public class FriendService {
     private final FriendBlockRepository friendBlockRepository;
     private final FriendReportRepository friendReportRepository;
     private final UserRepository userRepository;
-    private final SecurityUtil securityUtil;
-
-    private User getCurrentUser() {
-        return securityUtil.getCurrentUser();
-    }
-
-    private Long getCurrentUserId() {
-        return securityUtil.getCurrentUserId();
-    }
 
     public void sendFriendRequest(FriendRequestSendRequest request) {
-        User sender = getCurrentUser();
+        User sender = userRepository.findById(request.getSenderId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         User receiver = userRepository.findById(request.getTargetUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -55,7 +46,7 @@ public class FriendService {
             throw new CustomException("이미 친구 관계입니다.");
         }
 
-        if (friendRequestRepository.findBySenderAndReceiver(sender, receiver).isPresent()) {
+        if (friendRequestRepository.existsBySenderAndReceiver(sender, receiver)) {
             throw new CustomException("이미 친구 요청을 보냈습니다.");
         }
 
@@ -66,7 +57,8 @@ public class FriendService {
     }
 
     public void acceptFriendRequest(FriendAcceptRequest request) {
-        User receiver = getCurrentUser();
+        User receiver = userRepository.findById(request.getReceiverId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         User sender = userRepository.findById(request.getRequestId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -80,20 +72,21 @@ public class FriendService {
     }
 
     public void rejectFriendRequest(FriendRejectRequest request) {
-        User receiver = getCurrentUser();
+        User receiver = userRepository.findById(request.getReceiverId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         FriendRequest friendRequest = friendRequestRepository.findById(request.getRequestId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (!friendRequest.getReceiver().getId().equals(receiver.getId())) {
-            throw new CustomException("요청 수신자와 로그인 사용자가 일치하지 않습니다.");
+            throw new CustomException("요청 수신자와 사용자 정보가 일치하지 않습니다.");
         }
 
         friendRequestRepository.delete(friendRequest);
     }
 
-    public FriendListResponse getFriendList() {
-        User me = getCurrentUser();
+    public FriendListResponse getFriendList(Long userId) {
+        User me = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         List<Friend> friends = friendRepository.findAllFriendsOfUser(me);
 
         return new FriendListResponse(
@@ -105,8 +98,8 @@ public class FriendService {
         );
     }
 
-    public FriendRequestListResponse getReceivedFriendRequests() {
-        User me = getCurrentUser();
+    public FriendRequestListResponse getReceivedFriendRequests(Long userId) {
+        User me = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         List<FriendRequest> requests = friendRequestRepository.findByReceiver(me);
         return new FriendRequestListResponse(
                 requests.stream()
@@ -115,9 +108,9 @@ public class FriendService {
         );
     }
 
-    public SentFriendRequestListResponse getSentFriendRequests() {
-        User me = getCurrentUser();
-        List<FriendRequest> requests = friendRequestRepository.findBySenderAndIsDeletedFalse(me);
+    public SentFriendRequestListResponse getSentFriendRequests(Long userId) {
+        User me = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        List<FriendRequest> requests = friendRequestRepository.findBySender(me);
 
         List<SentFriendRequestListResponse.SentFriendRequestDto> result = requests.stream()
                 .map(req -> SentFriendRequestListResponse.SentFriendRequestDto.builder()
@@ -127,15 +120,14 @@ public class FriendService {
                         .receiverProfileImageUrl(req.getReceiver().getProfileImageUrl())
                         .requestedAt(req.getRequestedAt())
                         .status(req.getStatus().name())
-                        .message("") // 메시지 필드 존재 시 수정
-                        .build()
-                ).collect(Collectors.toList());
+                        .build())
+                .collect(Collectors.toList());
 
         return new SentFriendRequestListResponse(result);
     }
 
-    public void cancelSentFriendRequest(Long requestId) {
-        User me = getCurrentUser();
+    public void cancelSentFriendRequest(Long requestId, Long senderId) {
+        User me = userRepository.findById(senderId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         FriendRequest request = friendRequestRepository.findById(requestId)
                 .orElseThrow(() -> new CustomException("요청이 존재하지 않습니다."));
 
@@ -146,8 +138,8 @@ public class FriendService {
         friendRequestRepository.delete(request);
     }
 
-    public FriendSearchResponse searchUsersByNickname(String nickname) {
-        User me = getCurrentUser();
+    public FriendSearchResponse searchUsersByNickname(String nickname, Long userId) {
+        User me = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         List<User> users = userRepository.findByNicknameContaining(nickname);
 
         return new FriendSearchResponse(
@@ -172,8 +164,8 @@ public class FriendService {
         );
     }
 
-    public void deleteFriend(Long friendId) {
-        User me = getCurrentUser();
+    public void deleteFriend(Long userId, Long friendId) {
+        User me = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         User target = userRepository.findById(friendId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -181,9 +173,9 @@ public class FriendService {
         friendRepository.findByUserAndFriend(target, me).ifPresent(friendRepository::delete);
     }
 
-    public void blockUser(Long userId) {
-        User me = getCurrentUser();
-        User target = userRepository.findById(userId)
+    public void blockUser(Long userId, Long targetId) {
+        User me = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User target = userRepository.findById(targetId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (me.getId().equals(target.getId())) {
@@ -197,20 +189,20 @@ public class FriendService {
                     .build());
         }
 
-        deleteFriend(userId);
+        deleteFriend(userId, targetId);
     }
 
-    public void unblockUser(Long userId) {
-        User me = getCurrentUser();
-        User target = userRepository.findById(userId)
+    public void unblockUser(Long userId, Long targetId) {
+        User me = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User target = userRepository.findById(targetId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         friendBlockRepository.findByBlockerAndBlocked(me, target)
                 .ifPresent(friendBlockRepository::delete);
     }
 
-    public BlockedFriendListResponse getBlockedUsers() {
-        User me = getCurrentUser();
+    public BlockedFriendListResponse getBlockedUsers(Long userId) {
+        User me = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         List<FriendBlock> blocks = friendBlockRepository.findByBlocker(me);
         return new BlockedFriendListResponse(
                 blocks.stream()
@@ -219,13 +211,13 @@ public class FriendService {
         );
     }
 
-    public void reportUser(Long reportedUserId, ReportRequest request) {
-        User reporter = getCurrentUser();
-
-        if (reporter.getId().equals(reportedUserId)) {
+    public void reportUser(Long reporterId, Long reportedUserId, ReportRequest request) {
+        if (reporterId.equals(reportedUserId)) {
             throw new CustomException("자기 자신은 신고할 수 없습니다.");
         }
 
+        User reporter = userRepository.findById(reporterId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         User reported = userRepository.findById(reportedUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 

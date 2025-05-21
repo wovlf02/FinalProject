@@ -2,7 +2,6 @@ package com.hamcam.back.service.community.chat;
 
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,8 +9,13 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.UUID;
 
+/**
+ * [FileUploadService]
+ *
+ * 채팅방 대표 이미지 업로드 및 삭제 유틸 서비스
+ * 컨트롤러와 직접 연동되어 파일 저장 및 미리보기 지원
+ */
 @Service
-@RequiredArgsConstructor
 public class FileUploadService {
 
     private static final String CHATROOM_IMAGE_DIR = "uploads/chatroom/";
@@ -20,13 +24,11 @@ public class FileUploadService {
     /**
      * 채팅방 대표 이미지 저장
      *
-     * @param file 업로드된 MultipartFile
-     * @return 저장된 웹 경로 (ex: "/uploads/chatroom/uuid_name.jpg")
+     * @param file Multipart 업로드 파일
+     * @return 저장된 이미지의 URL 경로
      */
     public String storeChatRoomImage(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            return null;
-        }
+        if (file == null || file.isEmpty()) return null;
 
         try {
             ensureDirectoryExists(UPLOAD_BASE_PATH);
@@ -51,7 +53,7 @@ public class FileUploadService {
     /**
      * 채팅방 대표 이미지 삭제
      *
-     * @param storedPath "/uploads/chatroom/uuid_파일명" 혹은 순수 파일명
+     * @param storedPath 저장된 경로 또는 파일명
      */
     public void deleteChatRoomImage(String storedPath) {
         if (storedPath == null || storedPath.isBlank()) return;
@@ -66,7 +68,7 @@ public class FileUploadService {
     }
 
     /**
-     * 이미지 미리보기 가능 여부
+     * 확장자 기준 미리보기 가능 여부 확인
      */
     public boolean isImagePreviewable(String filename) {
         if (filename == null) return false;
@@ -74,7 +76,7 @@ public class FileUploadService {
         return lower.matches(".*(jpg|jpeg|png|gif|bmp|webp)$") || lower.startsWith("image/");
     }
 
-    // ===== 유틸 메서드 =====
+    // ===== 유틸 =====
 
     private void ensureDirectoryExists(Path dir) throws IOException {
         if (Files.notExists(dir)) {

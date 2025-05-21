@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * [TeamRoomController]
- * 팀 기반 스터디 방 생성 및 조회 API 컨트롤러
+ * 팀 기반 스터디 방 생성 및 조회 API 컨트롤러 (보안 제거 및 userId 전달 방식 확장)
  */
 @RestController
 @RequestMapping("/api/study/team/rooms")
@@ -23,20 +23,21 @@ public class TeamRoomController {
     /**
      * [스터디 방 생성]
      *
+     * @param userId  생성자 ID (프론트에서 명시적으로 전달)
      * @param request 스터디 방 생성 요청 DTO
      * @return 생성된 스터디 방 정보
      */
     @PostMapping("/create")
-    public ResponseEntity<TeamRoomResponse> create(@RequestBody TeamRoomCreateRequest request) {
-        TeamRoomResponse response = teamRoomService.createTeamRoom(request);
+    public ResponseEntity<TeamRoomResponse> create(
+            @RequestParam("userId") Long userId,
+            @RequestBody TeamRoomCreateRequest request
+    ) {
+        TeamRoomResponse response = teamRoomService.createTeamRoom(userId, request);
         return ResponseEntity.ok(response);
     }
 
     /**
      * [스터디 방 단건 조회]
-     *
-     * @param id 팀방 ID
-     * @return 팀방 상세 정보
      */
     @GetMapping("/{id}")
     public ResponseEntity<TeamRoomResponse> getById(@PathVariable Long id) {
@@ -46,8 +47,6 @@ public class TeamRoomController {
 
     /**
      * [전체 팀 스터디 방 목록 조회]
-     *
-     * @return 전체 스터디 방 리스트
      */
     @GetMapping
     public ResponseEntity<List<TeamRoomResponse>> getAllRooms() {

@@ -9,7 +9,6 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.*;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
-import com.hamcam.back.global.security.SecurityUtil;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.*;
 import jakarta.transaction.Transactional;
@@ -30,13 +29,10 @@ public class ChatRoomService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
-    private final SecurityUtil securityUtil;
 
-    /**
-     * 채팅방 생성 (1:1 또는 그룹)
-     */
     public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request) {
-        User creator = securityUtil.getCurrentUser();
+        User creator = userRepository.findById(request.getCreatorId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         List<Long> inviteeIds = request.getInvitedUserIds();
         if (inviteeIds == null || inviteeIds.isEmpty()) {
@@ -76,11 +72,9 @@ public class ChatRoomService {
         return toResponse(room);
     }
 
-    /**
-     * 내 채팅방 목록 조회
-     */
-    public List<ChatRoomListResponse> getMyChatRooms() {
-        User user = securityUtil.getCurrentUser();
+    public List<ChatRoomListResponse> getMyChatRooms(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         List<ChatParticipant> participants = chatParticipantRepository.findByUser(user);
 
         return participants.stream().map(participant -> {
@@ -106,27 +100,18 @@ public class ChatRoomService {
         }).toList();
     }
 
-    /**
-     * 채팅방 상세 조회
-     */
     public ChatRoomResponse getChatRoomById(Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         return toResponse(room);
     }
 
-    /**
-     * 채팅방 삭제
-     */
     public void deleteChatRoom(Long roomId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         chatRoomRepository.delete(room);
     }
 
-    /**
-     * 채팅방 참여 (권한 확인 후)
-     */
     @Transactional
     public void joinChatRoom(ChatJoinRequest request) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
@@ -134,20 +119,16 @@ public class ChatRoomService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        chatParticipantRepository.findByChatRoomAndUser(room, user)
-                .or(() -> {
-                    chatParticipantRepository.save(ChatParticipant.builder()
-                            .chatRoom(room)
-                            .user(user)
-                            .joinedAt(LocalDateTime.now())
-                            .build());
-                    return null;
-                });
+        boolean alreadyJoined = chatParticipantRepository.findByChatRoomAndUser(room, user).isPresent();
+        if (!alreadyJoined) {
+            chatParticipantRepository.save(ChatParticipant.builder()
+                    .chatRoom(room)
+                    .user(user)
+                    .joinedAt(LocalDateTime.now())
+                    .build());
+        }
     }
 
-    /**
-     * 채팅방 나가기 (마지막 사용자면 방도 삭제)
-     */
     @Transactional
     public void exitChatRoom(ChatJoinRequest request) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
@@ -165,8 +146,6 @@ public class ChatRoomService {
             chatRoomRepository.delete(room);
         }
     }
-
-    // ===== 내부 변환 유틸 =====
 
     private ChatRoomResponse toResponse(ChatRoom room) {
         List<ChatParticipantDto> participants = chatParticipantRepository.findByChatRoom(room).stream()

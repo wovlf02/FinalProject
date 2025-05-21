@@ -3,8 +3,6 @@ package com.hamcam.back.service.video;
 import com.hamcam.back.dto.video.VideoRoomRequest;
 import com.hamcam.back.dto.video.VideoRoomResponse;
 import com.hamcam.back.entity.video.VideoRoom;
-import com.hamcam.back.global.exception.CustomException;
-import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.video.VideoRoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -29,31 +27,23 @@ public class VideoRoomService {
 
     private static final String USER_COUNT_KEY = "videoRoom:userCount:";
 
-    /**
-     * Redis: 사용자 수 증가
-     */
+    /** 사용자 수 증가 */
     public void increaseUserCount(Long roomId) {
         redisTemplate.opsForValue().increment(USER_COUNT_KEY + roomId);
     }
 
-    /**
-     * Redis: 사용자 수 감소
-     */
+    /** 사용자 수 감소 */
     public void decreaseUserCount(Long roomId) {
         redisTemplate.opsForValue().decrement(USER_COUNT_KEY + roomId);
     }
 
-    /**
-     * Redis: 현재 사용자 수 조회
-     */
+    /** 현재 사용자 수 조회 */
     public Long getUserCount(Long roomId) {
         Object count = redisTemplate.opsForValue().get(USER_COUNT_KEY + roomId);
         return count == null ? 0 : Long.parseLong(count.toString());
     }
 
-    /**
-     * DB: 화상채팅방 생성
-     */
+    /** 화상채팅방 생성 */
     public VideoRoomResponse createRoom(VideoRoomRequest request) {
         VideoRoom room = VideoRoom.builder()
                 .teamId(request.getTeamId())
@@ -61,25 +51,20 @@ public class VideoRoomService {
                 .isActive(true)
                 .build();
 
-        VideoRoom saved = videoRoomRepository.save(room);
-        return VideoRoomResponse.fromEntity(saved);
+        return VideoRoomResponse.fromEntity(videoRoomRepository.save(room));
     }
 
-    /**
-     * DB: 팀 ID 기준 방 목록 조회
-     */
+    /** 팀 ID 기준 방 목록 조회 */
     public List<VideoRoomResponse> getRoomsByTeam(Long teamId) {
         return videoRoomRepository.findByTeamId(teamId).stream()
                 .map(VideoRoomResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * DB: 방 ID 기준 단건 조회
-     */
+    /** 방 ID 기준 단건 조회 */
     public VideoRoomResponse getRoomById(Long id) {
-        VideoRoom room = videoRoomRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.VIDEO_ROOM_NOT_FOUND));
-        return VideoRoomResponse.fromEntity(room);
+        return videoRoomRepository.findById(id)
+                .map(VideoRoomResponse::fromEntity)
+                .orElseThrow(() -> new RuntimeException("해당 화상 학습방을 찾을 수 없습니다."));
     }
 }

@@ -55,6 +55,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     /**
+     * 주어진 닉네임(nickname)으로 사용자 정보를 조회합니다.
+     *
+     * @param nickname 사용자 닉네임
+     * @return 사용자 정보 (Optional)
+     */
+    Optional<User> findByNickname(String nickname);
+
+
+    /**
      * 닉네임에 특정 키워드가 포함된 사용자 목록을 조회합니다.
      * (친구 검색 기능 등에서 사용)
      *
