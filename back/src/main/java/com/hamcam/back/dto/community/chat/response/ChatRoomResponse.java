@@ -50,6 +50,21 @@ public class ChatRoomResponse {
     private List<ChatParticipantDto> participants;
 
     /**
+     * ✅ 채팅방의 마지막 메시지 내용 (optional)
+     */
+    private String lastMessage;
+
+    /**
+     * ✅ 마지막 메시지 전송 시간 (optional)
+     */
+    private LocalDateTime lastMessageAt;
+
+    /**
+     * ✅ 현재 로그인한 사용자가 읽지 않은 메시지 개수
+     */
+    private Integer unreadCount;
+
+    /**
      * 참여자 수 반환 (필드 저장 대신 계산 방식)
      */
     public int getParticipantCount() {
@@ -58,7 +73,7 @@ public class ChatRoomResponse {
 
     /**
      * ChatRoom 엔티티 → ChatRoomResponse 변환
-     * (단순 생성용 — 참여자 정보는 이후에 별도로 세팅 필요)
+     * (단순 생성용 — 참여자, 메시지 정보는 이후에 별도로 세팅)
      */
     public static ChatRoomResponse fromEntity(ChatRoom room) {
         return ChatRoomResponse.builder()
@@ -67,7 +82,10 @@ public class ChatRoomResponse {
                 .roomType(room.getType().name())
                 .createdAt(room.getCreatedAt())
                 .representativeImageUrl(room.getRepresentativeImageUrl())
-                .participants(List.of()) // 또는 null, 필요 시 setter 사용
+                .participants(List.of()) // 이후 setParticipants()로 주입
+                .lastMessage(null)       // 이후 주입
+                .lastMessageAt(null)
+                .unreadCount(0)
                 .build();
     }
 }

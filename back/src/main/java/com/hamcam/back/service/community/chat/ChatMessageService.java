@@ -35,9 +35,8 @@ public class ChatMessageService {
     private final SecurityUtil securityUtil;
 
     /**
-     * 채팅 메시지 저장 (REST & WebSocket 공통)
+     * 채팅 메시지 저장 (WebSocket & REST 공통)
      */
-    // 오버로드된 메서드 추가
     public ChatMessageResponse sendMessage(Long roomId, User user, ChatMessageRequest request) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
@@ -45,14 +44,17 @@ public class ChatMessageService {
         ChatMessage message = createMessageEntity(room, user, request);
         chatMessageRepository.save(message);
 
-        // 채팅방 마지막 메시지 갱신
-        room.setLastMessage(request.getContent());
+        // 마지막 메시지 갱신 (파일인 경우 [파일] 표시)
+        String preview = switch (message.getType()) {
+            case FILE, IMAGE -> "[파일]";
+            case TEXT -> message.getContent();
+        };
+        room.setLastMessage(preview);
         room.setLastMessageAt(message.getSentAt());
         chatRoomRepository.save(room);
 
         return toResponse(message);
     }
-
 
     /**
      * 채팅 메시지 조회 (오래된 순)
@@ -72,10 +74,8 @@ public class ChatMessageService {
     // ===== 내부 유틸 =====
 
     private ChatMessage createMessageEntity(ChatRoom room, User sender, ChatMessageRequest request) {
-        ChatMessageType type;
-        try {
-            type = request.getType();
-        } catch (IllegalArgumentException | NullPointerException e) {
+        ChatMessageType type = request.getType();
+        if (type == null) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 

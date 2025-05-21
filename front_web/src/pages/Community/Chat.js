@@ -70,6 +70,16 @@ const Chat = () => {
         setSelectedRoomId(roomId);
     };
 
+    const handleReadAllMessages = (roomId) => {
+        setChatRooms(prev =>
+            prev.map(room =>
+                room.roomId === roomId
+                    ? { ...room, unreadCount: 0 }
+                    : room
+            )
+        );
+    };
+
     const getPreviewMessage = (msg) => {
         if (!msg) return '(아직 메시지 없음)';
         const lowered = msg.toLowerCase();
@@ -160,7 +170,10 @@ const Chat = () => {
                 </div>
 
                 {/* 채팅방 본문 */}
-                <ChatRoom roomId={selectedRoomId} />
+                <ChatRoom
+                    roomId={selectedRoomId}
+                    onReadAllMessages={handleReadAllMessages}
+                />
             </div>
 
             {/* 그룹채팅 생성 모달 */}

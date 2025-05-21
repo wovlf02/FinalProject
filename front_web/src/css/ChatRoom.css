@@ -135,8 +135,8 @@
 .message-time {
     font-size: 11px;
     color: #999;
-    align-self: flex-end;
     white-space: nowrap;
+    margin: 0 4px;
 }
 
 .message-time.left {
@@ -240,4 +240,34 @@
     font-size: 11px;
     color: #999;
     white-space: nowrap;
+}
+
+.chat-unread-count {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+    padding: 0 6px;
+    white-space: nowrap;
+}
+
+.chat-unread-count.left {
+    margin-left: 6px;
+    text-align: left;
+}
+
+.chat-unread-count.right {
+    margin-right: 6px;
+    text-align: right;
+}
+
+.message-bubble-wrapper.right {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    align-items: flex-end;
+}
+
+.message-bubble-wrapper.left {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-end;
 }

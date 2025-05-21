@@ -1,6 +1,7 @@
 package com.hamcam.back.controller.community.chat;
 
 import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
+import com.hamcam.back.dto.community.chat.request.ChatReadRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
@@ -43,19 +44,38 @@ public class StompChatController {
         // 1. 메시지 저장
         ChatMessageResponse response = webSocketChatService.saveMessage(messageRequest, userId);
 
-        // 2. 읽음 처리
+        // 2. 보낸 사람 기준 읽음 처리
         chatReadService.markReadAsUserId(response.getRoomId(), response.getMessageId(), userId);
 
-        // 3. 메시지 브로드캐스트
-        messagingTemplate.convertAndSend(
-                "/sub/chat/room/" + response.getRoomId(),
-                response
-        );
+        // 3. 브로드캐스트
+        messagingTemplate.convertAndSend("/sub/chat/room/" + response.getRoomId(), response);
     }
 
     /**
-     * WebSocket 연결 시 전달된 Principal에서 userId를 추출
-     * (예: UsernamePasswordAuthenticationToken 또는 String userId 등)
+     * 클라이언트가 /pub/chat/read 로 읽음 요청을 보내면
+     * 서버는 읽음 처리 후 READ_ACK 메시지를 브로드캐스트합니다.
+     */
+    @MessageMapping("/chat/read")
+    public void handleReadMessage(@Payload @Valid ChatReadRequest request, Principal principal) {
+        Long userId = extractUserIdFromPrincipal(principal);
+
+        log.info("📖 읽음 요청 수신: userId={}, roomId={}, messageId={}", userId, request.getRoomId(), request.getMessageId());
+
+        int unreadCount = chatReadService.markReadAsUserId(request.getRoomId(), request.getMessageId(), userId);
+
+        ChatMessageResponse ack = ChatMessageResponse.builder()
+                .type("READ_ACK")
+                .messageId(request.getMessageId())
+                .unreadCount(unreadCount)
+                .roomId(request.getRoomId())
+                .build();
+
+        messagingTemplate.convertAndSend("/sub/chat/room/" + request.getRoomId(), ack);
+        log.info("✅ READ_ACK 브로드캐스트 완료: messageId={}, unreadCount={}", request.getMessageId(), unreadCount);
+    }
+
+    /**
+     * WebSocket 연결 시 전달된 Principal에서 userId 추출
      */
     private Long extractUserIdFromPrincipal(Principal principal) {
         if (principal instanceof UsernamePasswordAuthenticationToken token) {
@@ -71,5 +91,4 @@ public class StompChatController {
         log.warn("❌ Principal에서 userId 추출 실패: {}", principal);
         throw new CustomException(ErrorCode.UNAUTHORIZED);
     }
-
 }

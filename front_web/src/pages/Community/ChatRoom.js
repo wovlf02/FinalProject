@@ -7,7 +7,7 @@ import base_profile from '../../icons/base_profile.png';
 import { FaPaperPlane, FaSmile, FaPaperclip, FaMicrophone } from 'react-icons/fa';
 import '../../css/ChatRoom.css';
 
-const ChatRoom = ({ roomId }) => {
+const ChatRoom = ({ roomId, onReadAllMessages }) => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const [user, setUser] = useState(null);
@@ -27,7 +27,8 @@ const ChatRoom = ({ roomId }) => {
                 api.get(`/chat/rooms/${roomId}/messages`)
             ]);
 
-            setUser(userRes.data);
+            const currentUser = userRes.data;
+            setUser(currentUser);
 
             setRoomInfo({
                 ...roomRes.data.data,
@@ -38,20 +39,20 @@ const ChatRoom = ({ roomId }) => {
                 roomType: roomRes.data.data.room_type
             });
 
-            const normalizedMessages = (messageRes.data?.data || []).map(msg => ({
+            const normalizedMessages = (messageRes.data || []).map(msg => ({
                 ...msg,
-                isMe: String(msg.senderId) === String(userRes.data.id),
+                isMe: String(msg.senderId) === String(currentUser.id),
                 profileUrl: msg.profileUrl ? `http://localhost:8080${msg.profileUrl}` : base_profile,
             }));
-
             setMessages(normalizedMessages);
-            connectStomp(userRes.data);
+
+            connectStomp(currentUser, normalizedMessages);
         } catch (err) {
             console.error('❌ 초기 데이터 로딩 실패:', err);
         }
     };
 
-    const connectStomp = (userData) => {
+    const connectStomp = (userData, loadedMessages) => {
         const socket = new SockJS('http://localhost:8080/ws/chat');
         const client = Stomp.over(socket);
         stompClient.current = client;
@@ -59,16 +60,47 @@ const ChatRoom = ({ roomId }) => {
         client.connect({}, () => {
             client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
                 const newMsg = JSON.parse(msg.body);
-                const normalizedMsg = {
-                    ...newMsg,
-                    isMe: String(newMsg.senderId) === String(userData.id),
-                    profileUrl: newMsg.profileUrl ? `http://localhost:8080${newMsg.profileUrl}` : base_profile,
-                };
-                setMessages(prev => [...prev, normalizedMsg]);
+
+                if (newMsg.type === 'READ_ACK') {
+                    setMessages(prev =>
+                        prev.map(m =>
+                            m.messageId === newMsg.messageId
+                                ? { ...m, unreadCount: newMsg.unreadCount }
+                                : m
+                        )
+                    );
+                } else {
+                    const normalizedMsg = {
+                        ...newMsg,
+                        isMe: String(newMsg.senderId) === String(userData.id),
+                        profileUrl: newMsg.profileUrl ? `http://localhost:8080${newMsg.profileUrl}` : base_profile,
+                    };
+                    setMessages(prev => [...prev, normalizedMsg]);
+
+                    if (normalizedMsg.senderId !== userData.id) {
+                        client.send('/pub/chat/read', {}, JSON.stringify({
+                            type: 'READ',
+                            roomId,
+                            messageId: normalizedMsg.messageId,
+                        }));
+                    }
+                }
+
                 setTimeout(scrollToBottom, 50);
             });
 
-            // ❌ 서버에서 입장 메시지를 처리하거나 추후 추가
+            // ✅ 방 입장 시 마지막 메시지 읽음 처리
+            if (loadedMessages.length > 0) {
+                const last = loadedMessages[loadedMessages.length - 1];
+                if (!last.isMe) {
+                    client.send('/pub/chat/read', {}, JSON.stringify({
+                        type: 'READ',
+                        roomId,
+                        messageId: last.messageId,
+                    }));
+                }
+                onReadAllMessages(roomId); // 뱃지 제거
+            }
         }, (error) => {
             console.error('❌ STOMP 연결 실패:', error);
         });
@@ -83,8 +115,6 @@ const ChatRoom = ({ roomId }) => {
             content: message,
             storedFileName: null,
         };
-
-        console.log('📤 보내는 메시지:', payload); // 디버깅용
 
         stompClient.current.send('/pub/chat/send', {}, JSON.stringify(payload));
         setMessage('');
@@ -124,7 +154,6 @@ const ChatRoom = ({ roomId }) => {
             <div className="chat-room-body">
                 {messages.map((msg, index) => {
                     const formattedTime = moment(msg.sentAt || msg.time).format('A hh:mm');
-
                     return (
                         <div key={index} className={`message-wrapper ${msg.isMe ? 'right' : 'left'}`}>
                             {!msg.isMe && (
@@ -148,8 +177,12 @@ const ChatRoom = ({ roomId }) => {
                                         )}
                                     </div>
                                     <div className={`message-time ${msg.isMe ? 'bottom-left' : 'left'}`}>{formattedTime}</div>
-                                    {msg.isMe && msg.unreadCount > 0 && (
-                                        <div className="chat-unread-top-left">{msg.unreadCount}</div>
+
+                                    {/* ✅ 읽지 않은 사람 수 표시 */}
+                                    {msg.unreadCount > 0 && (
+                                        <div className={`chat-unread-count ${msg.isMe ? 'right' : 'left'}`}>
+                                            {msg.unreadCount}
+                                        </div>
                                     )}
                                 </div>
                             </div>

@@ -1,5 +1,7 @@
 package com.hamcam.back.dto.community.chat.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -14,22 +16,20 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ChatReadRequest {
-
-    /**
-     * 메시지 타입 구분 (예: "READ")
-     */
-    private String type;
 
     /**
      * 읽음 처리를 수행할 채팅방 ID
      */
+    @JsonProperty("roomId")
     @NotNull(message = "roomId는 필수 입력 값입니다.")
     private Long roomId;
 
     /**
-     * 읽음 처리 대상이 되는 마지막 메시지 ID
+     * 읽음 처리 대상이 되는 메시지 ID
      */
+    @JsonProperty("messageId")
     @NotNull(message = "messageId는 필수 입력 값입니다.")
     private Long messageId;
 }

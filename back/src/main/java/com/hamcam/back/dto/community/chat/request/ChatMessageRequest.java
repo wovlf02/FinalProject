@@ -50,4 +50,10 @@ public class ChatMessageRequest {
      */
     @JsonProperty("storedFileName")
     private String storedFileName;
+
+    /**
+     * ✅ 읽음 처리 시 필요한 메시지 ID
+     */
+    @JsonProperty("messageId")
+    private Long messageId;
 }
