@@ -73,4 +73,10 @@ public class User {
     public void updatePassword(String newPassword) {
         this.password = newPassword;
     }
+
+    public static User of(Long id) {
+        User user = new User();
+        user.setId(id);
+        return user;
+    }
 }

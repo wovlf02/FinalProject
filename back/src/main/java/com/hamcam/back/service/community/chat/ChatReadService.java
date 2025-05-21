@@ -28,17 +28,18 @@ public class ChatReadService {
     private final SecurityUtil securityUtil;
 
     /**
-     * 메시지를 아직 읽지 않은 사용자 수를 반환합니다.
+     * 특정 메시지에 대해 아직 읽지 않은 사용자 수 반환
      */
     @Transactional(readOnly = true)
     public int getUnreadCountForMessage(Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MESSAGE_NOT_FOUND));
+
         return calculateUnreadCount(message);
     }
 
     /**
-     * 사용자가 방에 입장했을 때 마지막 읽은 메시지 갱신
+     * 사용자가 채팅방에 입장했을 때 마지막 읽은 메시지 ID 갱신
      */
     @Transactional
     public void updateLastReadMessage(Long roomId, Long userId) {
@@ -53,7 +54,7 @@ public class ChatReadService {
     }
 
     /**
-     * 인증된 사용자 기준 마지막 메시지 갱신 (SecurityUtil 사용)
+     * 인증된 사용자 기준으로 마지막 읽은 메시지 ID 갱신
      */
     @Transactional
     public void updateLastReadMessageByAuthenticatedUser(Long roomId) {
@@ -62,20 +63,23 @@ public class ChatReadService {
     }
 
     /**
-     * ✅ 명시적 userId를 전달받아 읽음 처리 수행
+     * 명시적 사용자 기준으로 메시지 읽음 처리
      */
     @Transactional
     public int markReadAsUserId(Long roomId, Long messageId, Long userId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
                 .orElseThrow(() -> new CustomException(ErrorCode.MESSAGE_NOT_FOUND));
 
+        // 보낸 사람 자신은 읽음 처리하지 않음
         if (!message.getSender().getId().equals(userId)) {
-            User reader = new User();
-            reader.setId(userId);
+            // 최소 User 객체 생성 (ID만 사용)
+            User userRef = new User();
+            userRef.setId(userId);
 
-            boolean alreadyRead = chatReadRepository.existsByMessageAndUser(message, reader);
+            boolean alreadyRead = chatReadRepository.existsByMessageAndUser(message, userRef);
             if (!alreadyRead) {
-                chatReadRepository.save(ChatRead.create(message, reader));
+                ChatRead read = ChatRead.create(message, userRef);
+                chatReadRepository.save(read);
             }
         }
 
@@ -83,7 +87,7 @@ public class ChatReadService {
     }
 
     /**
-     * 📌 이전 버전: 인증된 사용자 기준으로 읽음 처리 (호환용)
+     * 인증된 사용자 기준으로 메시지 읽음 처리
      */
     @Transactional
     public int markReadAsAuthenticatedUser(Long roomId, Long messageId) {
@@ -92,7 +96,7 @@ public class ChatReadService {
     }
 
     /**
-     * 내부 공통 로직: 읽지 않은 사용자 수 계산
+     * 내부 전용: 메시지의 미읽은 참여자 수 계산
      */
     private int calculateUnreadCount(ChatMessage message) {
         Long roomId = message.getChatRoom().getId();

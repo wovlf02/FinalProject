@@ -23,11 +23,11 @@ public interface ChatReadRepository extends JpaRepository<ChatRead, Long> {
     long countByMessage(ChatMessage message);
 
     /**
-     * [사용자의 메시지 읽음 여부 확인]
+     * [특정 메시지를 특정 사용자가 읽었는지 여부]
      *
      * @param message 대상 메시지
-     * @param user 확인할 사용자
-     * @return 읽었으면 true, 읽지 않았으면 false
+     * @param user 사용자
+     * @return 읽었으면 true, 아니면 false
      */
     boolean existsByMessageAndUser(ChatMessage message, User user);
 }

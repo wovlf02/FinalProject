@@ -54,4 +54,7 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
      * @return 존재 여부
      */
     boolean existsBySenderAndReceiver(User sender, User receiver);
+
+    List<FriendRequest> findBySenderAndIsDeletedFalse(User sender);
+
 }

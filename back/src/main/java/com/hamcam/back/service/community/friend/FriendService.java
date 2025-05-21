@@ -3,10 +3,7 @@ package com.hamcam.back.service.community.friend;
 import com.hamcam.back.dto.community.friend.request.FriendAcceptRequest;
 import com.hamcam.back.dto.community.friend.request.FriendRejectRequest;
 import com.hamcam.back.dto.community.friend.request.FriendRequestSendRequest;
-import com.hamcam.back.dto.community.friend.response.BlockedFriendListResponse;
-import com.hamcam.back.dto.community.friend.response.FriendListResponse;
-import com.hamcam.back.dto.community.friend.response.FriendRequestListResponse;
-import com.hamcam.back.dto.community.friend.response.FriendSearchResponse;
+import com.hamcam.back.dto.community.friend.response.*;
 import com.hamcam.back.dto.community.report.request.ReportRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.friend.*;
@@ -85,16 +82,13 @@ public class FriendService {
     public void rejectFriendRequest(FriendRejectRequest request) {
         User receiver = getCurrentUser();
 
-        // 요청 ID로 친구 요청 엔티티 조회
         FriendRequest friendRequest = friendRequestRepository.findById(request.getRequestId())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND)); // 요청이 없을 경우 예외
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 요청 수신자가 현재 로그인 사용자와 일치하는지 확인
         if (!friendRequest.getReceiver().getId().equals(receiver.getId())) {
             throw new CustomException("요청 수신자와 로그인 사용자가 일치하지 않습니다.");
         }
 
-        // 요청 삭제 (거절)
         friendRequestRepository.delete(friendRequest);
     }
 
@@ -119,6 +113,37 @@ public class FriendService {
                         .map(FriendRequestListResponse.FriendRequestDto::from)
                         .collect(Collectors.toList())
         );
+    }
+
+    public SentFriendRequestListResponse getSentFriendRequests() {
+        User me = getCurrentUser();
+        List<FriendRequest> requests = friendRequestRepository.findBySenderAndIsDeletedFalse(me);
+
+        List<SentFriendRequestListResponse.SentFriendRequestDto> result = requests.stream()
+                .map(req -> SentFriendRequestListResponse.SentFriendRequestDto.builder()
+                        .requestId(req.getId())
+                        .receiverId(req.getReceiver().getId())
+                        .receiverNickname(req.getReceiver().getNickname())
+                        .receiverProfileImageUrl(req.getReceiver().getProfileImageUrl())
+                        .requestedAt(req.getRequestedAt())
+                        .status(req.getStatus().name())
+                        .message("") // 메시지 필드 존재 시 수정
+                        .build()
+                ).collect(Collectors.toList());
+
+        return new SentFriendRequestListResponse(result);
+    }
+
+    public void cancelSentFriendRequest(Long requestId) {
+        User me = getCurrentUser();
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new CustomException("요청이 존재하지 않습니다."));
+
+        if (!request.getSender().getId().equals(me.getId())) {
+            throw new CustomException("해당 요청을 취소할 권한이 없습니다.");
+        }
+
+        friendRequestRepository.delete(request);
     }
 
     public FriendSearchResponse searchUsersByNickname(String nickname) {
