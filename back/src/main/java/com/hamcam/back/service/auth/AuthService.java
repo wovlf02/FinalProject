@@ -15,9 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -54,10 +52,6 @@ public class AuthService {
 
     public Boolean verifyCode(EmailVerifyRequest request) {
         return request.getCode() != null && request.getCode().matches("\\d{6}");
-    }
-
-    public void deleteTempData(EmailRequest request) {
-        // Redis 제거 → 비워두기
     }
 
     // ==== 회원가입 ====
@@ -106,10 +100,6 @@ public class AuthService {
         return user;
     }
 
-    public void logout(String dummyToken) {
-        // 로그아웃 로직 없음
-    }
-
     // ==== 아이디/비밀번호 찾기 ====
 
     public String sendFindUsernameCode(EmailRequest request) {
@@ -141,10 +131,12 @@ public class AuthService {
         return sendVerificationCode(new EmailSendRequest(request.getEmail(), "reset-pw"));
     }
 
-    public void updatePassword(UpdatePasswordRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
+    public void updatePassword(Long userId, UpdatePasswordRequest request) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        // 현재 비밀번호 확인 생략 가능 (보안 제거 기준)
         user.updatePassword(request.getNewPassword());
     }
+
 }

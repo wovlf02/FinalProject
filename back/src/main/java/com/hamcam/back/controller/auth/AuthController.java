@@ -9,10 +9,9 @@ import com.hamcam.back.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.MediaType;
 
 @Slf4j
 @RestController
@@ -51,12 +50,6 @@ public class AuthController {
         return ApiResponse.ok(authService.verifyCode(request));
     }
 
-    @DeleteMapping("/temp")
-    public ApiResponse<Void> deleteTempData(@RequestBody @Valid EmailRequest request) {
-        authService.deleteTempData(request);
-        return ApiResponse.ok();
-    }
-
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<String> register(
             @RequestPart("request") RegisterRequest request,
@@ -93,15 +86,15 @@ public class AuthController {
         return ApiResponse.ok(authService.requestPasswordReset(request));
     }
 
-    @PutMapping("/password/update")
-    public ApiResponse<Void> updatePassword(@RequestBody @Valid UpdatePasswordRequest request) {
-        authService.updatePassword(request);
+    @PutMapping("/password/update/{userId}")
+    public ApiResponse<Void> updatePassword(@PathVariable Long userId, @RequestBody @Valid UpdatePasswordRequest request) {
+        authService.updatePassword(userId, request);
         return ApiResponse.ok();
     }
 
-    @DeleteMapping("/withdraw")
-    public ApiResponse<Void> withdraw(@RequestBody @Valid PasswordConfirmRequest request) {
-        userService.withdraw(request);
+    @DeleteMapping("/withdraw/{userId}")
+    public ApiResponse<Void> withdraw(@PathVariable Long userId, @RequestBody @Valid PasswordConfirmRequest request) {
+        userService.withdraw(userId, request);
         return ApiResponse.ok();
     }
 }
