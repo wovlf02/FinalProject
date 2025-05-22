@@ -1,6 +1,5 @@
 package com.hamcam.back.controller.user;
 
-import com.hamcam.back.dto.auth.request.PasswordConfirmRequest;
 import com.hamcam.back.dto.auth.response.UserProfileResponse;
 import com.hamcam.back.dto.user.request.*;
 import com.hamcam.back.entity.auth.User;

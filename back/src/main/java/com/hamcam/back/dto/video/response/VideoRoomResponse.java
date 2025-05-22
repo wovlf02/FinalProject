@@ -1,4 +1,4 @@
-package com.hamcam.back.dto.video;
+package com.hamcam.back.dto.video.response;
 
 import com.hamcam.back.entity.video.VideoRoom;
 import lombok.Builder;

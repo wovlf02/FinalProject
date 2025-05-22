@@ -1,4 +1,4 @@
-package com.hamcam.back.dto.study;
+package com.hamcam.back.dto.study.team.request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

@@ -1,13 +1,13 @@
 package com.hamcam.back.service.auth;
 
-import com.hamcam.back.dto.auth.request.*;
-import com.hamcam.back.dto.user.request.UpdatePasswordRequest;
+import com.hamcam.back.dto.auth.request.LoginRequest;
+import com.hamcam.back.dto.auth.request.RegisterRequest;
+import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.util.FileService;
-import com.hamcam.back.service.util.MailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,43 +24,18 @@ import java.util.Optional;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final MailService mailService;
     private final FileService fileService;
 
-    // ==== 중복 체크 ====
-
-    public Boolean checkUsername(UsernameCheckRequest request) {
-        return !userRepository.existsByUsername(request.getUsername());
-    }
-
-    public Boolean checkNickname(NicknameCheckRequest request) {
-        return !userRepository.existsByNickname(request.getNickname());
-    }
-
-    public Boolean checkEmail(EmailRequest request) {
-        return !userRepository.existsByEmail(request.getEmail());
-    }
-
-    // ==== 이메일 인증 (mock) ====
-
-    public String sendVerificationCode(EmailSendRequest request) {
-        String code = String.valueOf((int) (Math.random() * 900000) + 100000);
-        mailService.sendVerificationCode(request.getEmail(), code, request.getType());
-        // 실제 인증코드 검증은 프론트에서 저장하고 비교하도록 위임
-        return "인증코드가 이메일로 발송되었습니다. (코드: " + code + ")";
-    }
-
-    public Boolean verifyCode(EmailVerifyRequest request) {
-        return request.getCode() != null && request.getCode().matches("\\d{6}");
-    }
-
-    // ==== 회원가입 ====
-
+    /**
+     * 회원가입 처리
+     * - 사용자명, 이메일 중복 확인
+     * - 비밀번호 암호화 없이 저장
+     * - 프로필 이미지 저장 시 경로 저장
+     */
     public void register(RegisterRequest request, MultipartFile profileImage) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
         }
-
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
@@ -72,7 +47,7 @@ public class AuthService {
 
         User user = User.builder()
                 .username(request.getUsername())
-                .password(request.getPassword())  // 실제 비밀번호 암호화 생략
+                .password(request.getPassword())  // ✅ 암호화 없음
                 .email(request.getEmail())
                 .name(request.getName())
                 .nickname(request.getNickname())
@@ -80,16 +55,18 @@ public class AuthService {
                 .studyHabit(request.getStudyHabit())
                 .phone(request.getPhone())
                 .profileImageUrl(profileImageUrl)
-                .subjects(Optional.ofNullable(request.getSubjects())
-                        .orElseGet(ArrayList::new))
+                .subjects(Optional.ofNullable(request.getSubjects()).orElseGet(ArrayList::new))
                 .build();
 
         userRepository.save(user);
     }
 
-    // ==== 로그인 ====
-
-    public User login(LoginRequest request) {
+    /**
+     * 로그인 처리
+     * - 아이디/비밀번호 검증
+     * - 성공 시 DB의 전체 유저 정보 반환 → 프론트 LocalStorage 저장
+     */
+    public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_USER_NOT_FOUND));
 
@@ -97,46 +74,19 @@ public class AuthService {
             throw new CustomException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
         }
 
-        return user;
+        return LoginResponse.from(user); // ✅ 변환
     }
 
-    // ==== 아이디/비밀번호 찾기 ====
 
-    public String sendFindUsernameCode(EmailRequest request) {
-        if (!userRepository.existsByEmail(request.getEmail())) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
-
-        return sendVerificationCode(new EmailSendRequest(request.getEmail(), "find-id"));
-    }
-
-    public String verifyFindUsernameCode(EmailVerifyRequest request) {
-        if (!verifyCode(request)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
-
-        return userRepository.findByEmail(request.getEmail())
-                .map(User::getUsername)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    public String requestPasswordReset(PasswordResetRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        if (!user.getEmail().equals(request.getEmail())) {
-            throw new CustomException(ErrorCode.EMAIL_MISMATCH);
-        }
-
-        return sendVerificationCode(new EmailSendRequest(request.getEmail(), "reset-pw"));
-    }
-
-    public void updatePassword(Long userId, UpdatePasswordRequest request) {
+    /**
+     * 회원 탈퇴 처리
+     * - userId에 해당하는 사용자 DB에서 즉시 삭제
+     * - 비밀번호 확인 생략
+     */
+    public void withdraw(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 현재 비밀번호 확인 생략 가능 (보안 제거 기준)
-        user.updatePassword(request.getNewPassword());
+        userRepository.delete(user);
     }
-
 }

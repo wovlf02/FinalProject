@@ -5,8 +5,13 @@ import lombok.*;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * [CalendarEventDto]
+ *
+ * 캘린더 날짜별 이벤트 DTO
+ * - 특정 날짜에 대한 Todo, 시험, 공부 시간 정보를 포함
+ */
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -18,17 +23,17 @@ public class CalendarEventDto {
     private LocalDate date;
 
     /**
-     * 해당 날짜의 Todo 제목 리스트
+     * 해당 날짜에 등록된 할 일(Todo) 제목 리스트
      */
     private List<String> todos;
 
     /**
-     * 해당 날짜의 시험 제목 리스트
+     * 해당 날짜에 예정된 시험 제목 리스트
      */
     private List<String> exams;
 
     /**
-     * 해당 날짜의 공부 시간 (분 단위 합계)
+     * 해당 날짜의 총 공부 시간 (분 단위)
      */
     private int totalStudyMinutes;
 }

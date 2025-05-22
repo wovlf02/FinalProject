@@ -40,7 +40,7 @@ public class ApiResponse<T> {
     private T data;
 
     /**
-     * [성공 응답] - 데이터 포함
+     * ✅ [성공 응답] - 데이터 포함
      *
      * @param data 응답 데이터
      * @return ApiResponse 객체
@@ -50,23 +50,21 @@ public class ApiResponse<T> {
     }
 
     /**
-     * [성공 응답] - 데이터 없음
+     * ✅ [성공 응답] - 데이터 없음
      *
      * @return ApiResponse 객체
      */
-    @SuppressWarnings("unchecked")
     public static <T> ApiResponse<T> ok() {
-        return (ApiResponse<T>) new ApiResponse<>(true, "요청이 성공적으로 처리되었습니다.", null);
+        return new ApiResponse<>(true, "요청이 성공적으로 처리되었습니다.", null);
     }
 
     /**
-     * [실패 응답]
+     * ✅ [실패 응답]
      *
      * @param message 사용자에게 보여줄 에러 메시지
      * @return ApiResponse 객체
      */
-    @SuppressWarnings("unchecked")
     public static <T> ApiResponse<T> fail(String message) {
-        return (ApiResponse<T>) new ApiResponse<>(false, message, null);
+        return new ApiResponse<>(false, message, null);
     }
 }

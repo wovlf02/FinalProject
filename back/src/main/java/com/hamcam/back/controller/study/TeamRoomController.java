@@ -1,7 +1,10 @@
 package com.hamcam.back.controller.study;
 
-import com.hamcam.back.dto.study.TeamRoomCreateRequest;
-import com.hamcam.back.dto.study.TeamRoomResponse;
+import com.hamcam.back.dto.common.MessageResponse;
+import com.hamcam.back.dto.study.team.request.FocusRoomCreateRequest;
+import com.hamcam.back.dto.study.team.request.QuizRoomCreateRequest;
+import com.hamcam.back.dto.study.team.request.RoomPasswordCheckRequest;
+import com.hamcam.back.dto.study.team.response.TeamRoomResponse;
 import com.hamcam.back.service.study.TeamRoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +14,7 @@ import java.util.List;
 
 /**
  * [TeamRoomController]
- * 팀 기반 스터디 방 생성 및 조회 API 컨트롤러 (보안 제거 및 userId 전달 방식 확장)
+ * 팀 학습 모드 방 (문제풀이/공부시간 경쟁) 생성 및 조회 API 컨트롤러
  */
 @RestController
 @RequestMapping("/api/study/team/rooms")
@@ -21,36 +24,67 @@ public class TeamRoomController {
     private final TeamRoomService teamRoomService;
 
     /**
-     * [스터디 방 생성]
-     *
-     * @param userId  생성자 ID (프론트에서 명시적으로 전달)
-     * @param request 스터디 방 생성 요청 DTO
-     * @return 생성된 스터디 방 정보
+     * ✅ 문제풀이방(Quiz Mode) 생성
      */
-    @PostMapping("/create")
-    public ResponseEntity<TeamRoomResponse> create(
-            @RequestParam("userId") Long userId,
-            @RequestBody TeamRoomCreateRequest request
+    @PostMapping("/quiz/create")
+    public ResponseEntity<TeamRoomResponse> createQuizRoom(
+            @RequestBody QuizRoomCreateRequest request
     ) {
-        TeamRoomResponse response = teamRoomService.createTeamRoom(userId, request);
+        TeamRoomResponse response = teamRoomService.createQuizRoom(request);
         return ResponseEntity.ok(response);
     }
 
     /**
-     * [스터디 방 단건 조회]
+     * ✅ 공부시간 경쟁방(Focus Mode) 생성
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<TeamRoomResponse> getById(@PathVariable Long id) {
-        TeamRoomResponse response = teamRoomService.getTeamRoomById(id);
+    @PostMapping("/focus/create")
+    public ResponseEntity<TeamRoomResponse> createFocusRoom(
+            @RequestBody FocusRoomCreateRequest request
+    ) {
+        TeamRoomResponse response = teamRoomService.createFocusRoom(request);
         return ResponseEntity.ok(response);
     }
 
     /**
-     * [전체 팀 스터디 방 목록 조회]
+     * ✅ 방 단건 조회 (공통)
+     */
+    @GetMapping("/{roomId}")
+    public ResponseEntity<TeamRoomResponse> getRoomById(@PathVariable Long roomId) {
+        TeamRoomResponse response = teamRoomService.getTeamRoomById(roomId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * ✅ 전체 팀 스터디방 목록 조회
      */
     @GetMapping
     public ResponseEntity<List<TeamRoomResponse>> getAllRooms() {
-        List<TeamRoomResponse> response = teamRoomService.getAllTeamRooms();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(teamRoomService.getAllTeamRooms());
+    }
+
+    /**
+     * ✅ 방 비밀번호 확인 (입장 전)
+     */
+    @PostMapping("/{roomId}/check-password")
+    public ResponseEntity<MessageResponse> checkRoomPassword(
+            @PathVariable Long roomId,
+            @RequestBody RoomPasswordCheckRequest request
+    ) {
+        boolean success = teamRoomService.checkRoomPassword(roomId, request.getPassword());
+        return ResponseEntity.ok(
+                MessageResponse.of(success ? "입장 가능" : "비밀번호가 일치하지 않습니다.", success)
+        );
+    }
+
+    /**
+     * ✅ 방 삭제 (방장 전용)
+     */
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<MessageResponse> deleteRoom(
+            @PathVariable Long roomId,
+            @RequestParam("userId") Long userId
+    ) {
+        teamRoomService.deleteRoom(roomId, userId);
+        return ResponseEntity.ok(MessageResponse.of("스터디 방이 삭제되었습니다."));
     }
 }

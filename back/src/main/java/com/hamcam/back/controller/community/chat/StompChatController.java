@@ -15,7 +15,7 @@ import org.springframework.stereotype.Controller;
 
 /**
  * [StompChatController]
- * STOMP 기반 WebSocket 채팅 메시지를 처리하는 컨트롤러 (보안 제거 + 확장)
+ * WebSocket STOMP 채팅 메시지 수신 및 브로드캐스트 담당 컨트롤러
  */
 @Slf4j
 @Controller
@@ -26,42 +26,54 @@ public class StompChatController {
     private final ChatReadService chatReadService;
     private final SimpMessagingTemplate messagingTemplate;
 
+    private static final String CHAT_DEST_PREFIX = "/sub/chat/room/";
+    private static final String TYPE_READ_ACK = "READ_ACK";
+
     /**
-     * 클라이언트가 /pub/chat/send 로 메시지를 전송하면
-     * 해당 채팅방의 구독자에게 /sub/chat/room/{roomId} 로 브로드캐스트
+     * ✅ 채팅 메시지 전송
+     * 클라이언트 → /pub/chat/send
+     * 서버 → /sub/chat/room/{roomId}
      */
     @MessageMapping("/chat/send")
     public void handleChatMessage(@Payload @Valid ChatMessageRequest messageRequest) {
-        Long userId = messageRequest.getUserId(); // ✅ 프론트에서 전달
+        Long userId = messageRequest.getUserId();
+        log.info("📥 [채팅 메시지 수신] roomId={}, userId={}", messageRequest.getRoomId(), userId);
 
-        log.info("📥 WebSocket 메시지 수신: roomId={}, userId={}", messageRequest.getRoomId(), userId);
-
+        // 메시지 저장 및 응답 생성
         ChatMessageResponse response = webSocketChatService.saveMessage(messageRequest, userId);
+
+        // 보낸 사람은 바로 읽음 처리
         chatReadService.markReadAsUserId(response.getRoomId(), response.getMessageId(), userId);
 
-        messagingTemplate.convertAndSend("/sub/chat/room/" + response.getRoomId(), response);
+        // 브로드캐스트
+        messagingTemplate.convertAndSend(CHAT_DEST_PREFIX + response.getRoomId(), response);
     }
 
     /**
-     * 클라이언트가 /pub/chat/read 로 읽음 요청을 보내면
-     * 서버는 읽음 처리 후 READ_ACK 메시지를 브로드캐스트
+     * ✅ 채팅 메시지 읽음 처리
+     * 클라이언트 → /pub/chat/read
+     * 서버 → /sub/chat/room/{roomId}
      */
     @MessageMapping("/chat/read")
     public void handleReadMessage(@Payload @Valid ChatReadRequest request) {
-        Long userId = request.getUserId(); // ✅ 프론트에서 전달
+        Long userId = request.getUserId();
+        log.info("📖 [읽음 처리 수신] roomId={}, messageId={}, userId={}",
+                request.getRoomId(), request.getMessageId(), userId);
 
-        log.info("📖 읽음 요청 수신: userId={}, roomId={}, messageId={}", userId, request.getRoomId(), request.getMessageId());
-
-        int unreadCount = chatReadService.markReadAsUserId(request.getRoomId(), request.getMessageId(), userId);
+        int unreadCount = chatReadService.markReadAsUserId(
+                request.getRoomId(),
+                request.getMessageId(),
+                userId
+        );
 
         ChatMessageResponse ack = ChatMessageResponse.builder()
-                .type("READ_ACK")
+                .type(TYPE_READ_ACK)
+                .roomId(request.getRoomId())
                 .messageId(request.getMessageId())
                 .unreadCount(unreadCount)
-                .roomId(request.getRoomId())
                 .build();
 
-        messagingTemplate.convertAndSend("/sub/chat/room/" + request.getRoomId(), ack);
-        log.info("✅ READ_ACK 브로드캐스트 완료: messageId={}, unreadCount={}", request.getMessageId(), unreadCount);
+        messagingTemplate.convertAndSend(CHAT_DEST_PREFIX + request.getRoomId(), ack);
+        log.info("✅ [READ_ACK 전송] messageId={}, unreadCount={}", request.getMessageId(), unreadCount);
     }
 }

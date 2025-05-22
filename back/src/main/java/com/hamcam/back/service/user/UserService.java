@@ -1,6 +1,5 @@
 package com.hamcam.back.service.user;
 
-import com.hamcam.back.dto.auth.request.PasswordConfirmRequest;
 import com.hamcam.back.dto.auth.response.UserProfileResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;

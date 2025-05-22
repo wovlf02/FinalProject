@@ -6,12 +6,23 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
+/**
+ * [RangeReflectionRequest]
+ *
+ * 기간 기반 회고 요청 DTO
+ * - 사용자 ID, 시작일, 종료일 포함
+ */
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class RangeReflectionRequest {
+
+    /**
+     * 사용자 ID
+     */
+    @NotNull(message = "userId는 필수입니다.")
+    private Long userId;
 
     /**
      * 회고 시작일 (yyyy-MM-dd)

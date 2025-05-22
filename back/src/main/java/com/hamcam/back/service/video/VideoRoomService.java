@@ -1,7 +1,7 @@
 package com.hamcam.back.service.video;
 
-import com.hamcam.back.dto.video.VideoRoomRequest;
-import com.hamcam.back.dto.video.VideoRoomResponse;
+import com.hamcam.back.dto.video.request.VideoRoomRequest;
+import com.hamcam.back.dto.video.response.VideoRoomResponse;
 import com.hamcam.back.entity.video.VideoRoom;
 import com.hamcam.back.repository.video.VideoRoomRepository;
 import lombok.RequiredArgsConstructor;

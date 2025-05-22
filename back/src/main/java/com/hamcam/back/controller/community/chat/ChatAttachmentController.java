@@ -14,8 +14,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * [ChatAttachmentController]
- * 채팅 파일 첨부 관련 API 컨트롤러
- * - 파일 업로드, 다운로드, 미리보기 기능 제공
+ * 채팅 파일 첨부 관련 REST API
+ * - 업로드, 다운로드, 이미지 미리보기 처리
  */
 @RestController
 @RequestMapping("/api/chat/files")
@@ -25,37 +25,40 @@ public class ChatAttachmentController {
     private final ChatAttachmentService chatAttachmentService;
 
     /**
-     * 채팅 파일 다운로드
-     */
-    @GetMapping("/{messageId}/download")
-    public ResponseEntity<Resource> downloadFile(@PathVariable Long messageId) {
-        Resource resource = chatAttachmentService.loadFileAsResource(messageId);
-
-        String encodedFilename = URLEncoder.encode(resource.getFilename(), StandardCharsets.UTF_8)
-                .replaceAll("\\+", "%20");
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFilename)
-                .body(resource);
-    }
-
-    /**
-     * 채팅 이미지 미리보기
-     */
-    @GetMapping("/{messageId}/preview")
-    public ResponseEntity<ChatFilePreviewResponse> previewImage(@PathVariable Long messageId) {
-        return ResponseEntity.ok(chatAttachmentService.previewFile(messageId));
-    }
-
-    /**
-     * 채팅 파일 업로드
+     * ✅ 채팅방에서 파일 업로드 메시지 전송
      */
     @PostMapping("/{roomId}/upload")
     public ResponseEntity<ChatMessageResponse> uploadFileMessage(
             @PathVariable Long roomId,
             @RequestParam("file") MultipartFile file
     ) {
-        return ResponseEntity.ok(chatAttachmentService.saveFileMessage(roomId, file));
+        ChatMessageResponse response = chatAttachmentService.saveFileMessage(roomId, file);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * ✅ 채팅 이미지 미리보기 (썸네일/URL 등)
+     */
+    @GetMapping("/{messageId}/preview")
+    public ResponseEntity<ChatFilePreviewResponse> previewImage(@PathVariable Long messageId) {
+        ChatFilePreviewResponse response = chatAttachmentService.previewFile(messageId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * ✅ 채팅 파일 다운로드
+     */
+    @GetMapping("/{messageId}/download")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long messageId) {
+        Resource resource = chatAttachmentService.loadFileAsResource(messageId);
+        String filename = resource.getFilename();
+
+        String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8)
+                .replace("+", "%20");
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFilename)
+                .body(resource);
     }
 }

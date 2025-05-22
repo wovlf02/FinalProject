@@ -1,4 +1,4 @@
-package com.hamcam.back.dto.study;
+package com.hamcam.back.dto.study.team.response;
 
 import com.hamcam.back.entity.study.TeamRoom;
 import lombok.Builder;

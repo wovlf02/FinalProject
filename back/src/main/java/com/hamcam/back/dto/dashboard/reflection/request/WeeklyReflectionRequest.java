@@ -6,12 +6,23 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
+/**
+ * [WeeklyReflectionRequest]
+ *
+ * 주간 회고 생성 요청 DTO
+ * - 사용자 ID와 회고 대상 주간의 시작일/종료일 포함
+ */
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class WeeklyReflectionRequest {
+
+    /**
+     * 사용자 ID
+     */
+    @NotNull(message = "userId는 필수입니다.")
+    private Long userId;
 
     /**
      * 주간 회고 시작일 (yyyy-MM-dd)

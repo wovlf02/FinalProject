@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.community.chat.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,21 +20,9 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ChatRoomCreateRequest {
-
-    /**
-     * 생성할 채팅방 이름
-     */
-    @NotBlank(message = "채팅방 이름은 필수 입력 값입니다.")
+    private Long creatorId;
     private String roomName;
-
-    /**
-     * 채팅방에 초대할 사용자 ID 목록 (자기 자신 제외)
-     */
-    @NotEmpty(message = "최소 1명 이상의 초대 대상이 필요합니다.")
     private List<Long> invitedUserIds;
-
-    /**
-     * 채팅방 대표 이미지 (선택)
-     */
+    @JsonIgnore
     private MultipartFile image;
 }

@@ -4,15 +4,14 @@ import com.hamcam.back.dto.dashboard.calendar.CalendarEventDto;
 import com.hamcam.back.dto.dashboard.exam.request.ExamScheduleRequest;
 import com.hamcam.back.dto.dashboard.exam.response.DDayInfoResponse;
 import com.hamcam.back.dto.dashboard.exam.response.ExamScheduleResponse;
-import com.hamcam.back.dto.dashboard.goal.response.GoalSuggestionResponse;
 import com.hamcam.back.dto.dashboard.goal.request.GoalUpdateRequest;
+import com.hamcam.back.dto.dashboard.goal.response.GoalSuggestionResponse;
 import com.hamcam.back.dto.dashboard.reflection.request.OptionReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.request.RangeReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.request.WeeklyReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.response.WeeklyReflectionResponse;
 import com.hamcam.back.dto.dashboard.stats.response.*;
-import com.hamcam.back.dto.dashboard.todo.request.TodoRequest;
-import com.hamcam.back.dto.dashboard.todo.request.TodoUpdateRequest;
+import com.hamcam.back.dto.dashboard.todo.request.*;
 import com.hamcam.back.dto.dashboard.todo.response.TodoResponse;
 import com.hamcam.back.service.dashboard.DashboardService;
 import com.hamcam.back.service.dashboard.GPTReflectionService;
@@ -33,151 +32,116 @@ public class DashboardController {
     private final DashboardService dashboardService;
     private final GPTReflectionService gptReflectionService;
 
-    // 📆 1. 월별 캘린더 이벤트
+    // 📆 월별 캘린더 이벤트
     @GetMapping("/calendar")
     public List<CalendarEventDto> getMonthlyCalendarEvents(
-            @RequestParam("userId") Long userId,
-            @RequestParam("month") @DateTimeFormat(pattern = "yyyy-MM") YearMonth month
-    ) {
+            @RequestParam Long userId,
+            @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
         return dashboardService.getMonthlyCalendarEvents(userId, month);
     }
 
-    // 📆 2. 특정 날짜 Todo
+    // 📅 특정 날짜의 Todo 조회
     @GetMapping("/todos")
     public List<TodoResponse> getTodosByDate(
-            @RequestParam("userId") Long userId,
-            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
-    ) {
+            @RequestParam Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return dashboardService.getTodosByDate(userId, date);
     }
 
-    // 📆 3. Todo 생성
+    // ✅ Todo 생성
     @PostMapping("/todos")
-    public void createTodo(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody TodoRequest request
-    ) {
-        dashboardService.createTodo(userId, request);
+    public void createTodo(@Valid @RequestBody TodoRequest request) {
+        dashboardService.createTodo(request.getUserId(), request);
     }
 
-    // 📆 4. Todo 수정
+    // ✅ Todo 수정
     @PutMapping("/todos/{todoId}")
     public void updateTodo(
-            @RequestParam("userId") Long userId,
             @PathVariable Long todoId,
-            @Valid @RequestBody TodoUpdateRequest request
-    ) {
-        dashboardService.updateTodo(userId, todoId, request);
+            @Valid @RequestBody TodoUpdateRequest request) {
+        dashboardService.updateTodo(request.getUserId(), todoId, request);
     }
 
-    // 📆 5. Todo 삭제
-    @DeleteMapping("/todos/{todoId}")
-    public void deleteTodo(
-            @RequestParam("userId") Long userId,
-            @PathVariable Long todoId
-    ) {
-        dashboardService.deleteTodo(userId, todoId);
+    // ✅ Todo 삭제
+    @DeleteMapping("/todos")
+    public void deleteTodo(@Valid @RequestBody TodoDeleteRequest request) {
+        dashboardService.deleteTodo(request.getUserId(), request.getTodoId());
     }
 
-    // 📆 6. Todo 완료 체크 (토글)
-    @PutMapping("/todos/{todoId}/complete")
-    public TodoResponse toggleTodo(
-            @RequestParam("userId") Long userId,
-            @PathVariable Long todoId
-    ) {
-        return dashboardService.toggleTodoCompletion(userId, todoId);
+    // ✅ Todo 완료 상태 토글
+    @PutMapping("/todos/complete")
+    public TodoResponse toggleTodo(@Valid @RequestBody TodoToggleRequest request) {
+        return dashboardService.toggleTodoCompletion(request.getUserId(), request.getTodoId());
     }
 
-    // 📅 7. 전체 시험 일정 조회
+    // 🗓 시험 일정 조회
     @GetMapping("/exams")
-    public List<ExamScheduleResponse> getExamSchedules(@RequestParam("userId") Long userId) {
+    public List<ExamScheduleResponse> getExamSchedules(@RequestParam Long userId) {
         return dashboardService.getAllExamSchedules(userId);
     }
 
-    // 📅 8. 시험 일정 등록
+    // 🗓 시험 일정 등록
     @PostMapping("/exams")
-    public void createExamSchedule(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody ExamScheduleRequest request
-    ) {
-        dashboardService.createExamSchedule(userId, request);
+    public void createExamSchedule(@Valid @RequestBody ExamScheduleRequest request) {
+        dashboardService.createExamSchedule(request.getUserId(), request);
     }
 
-    // 📅 9. D-Day
+    // 🗓 D-Day 조회
     @GetMapping("/exams/nearest")
-    public DDayInfoResponse getNearestExam(@RequestParam("userId") Long userId) {
+    public DDayInfoResponse getNearestExam(@RequestParam Long userId) {
         return dashboardService.getNearestExamSchedule(userId);
     }
 
-    // 📊 10. 전체 학습 통계
+    // 📊 통계
     @GetMapping("/stats/total")
-    public TotalStatsResponse getTotalStats(@RequestParam("userId") Long userId) {
+    public TotalStatsResponse getTotalStats(@RequestParam Long userId) {
         return dashboardService.getTotalStudyStats(userId);
     }
 
-    // 📊 11. 과목별 통계
     @GetMapping("/stats/subjects")
-    public List<SubjectStatsResponse> getSubjectStats(@RequestParam("userId") Long userId) {
+    public List<SubjectStatsResponse> getSubjectStats(@RequestParam Long userId) {
         return dashboardService.getSubjectStats(userId);
     }
 
-    // 📊 12. 주간 집중
     @GetMapping("/stats/weekly")
-    public WeeklyStatsResponse getWeeklyStats(@RequestParam("userId") Long userId) {
+    public WeeklyStatsResponse getWeeklyStats(@RequestParam Long userId) {
         return dashboardService.getWeeklyStats(userId);
     }
 
-    // 📊 13. 월간 집중
     @GetMapping("/stats/monthly")
-    public MonthlyStatsResponse getMonthlyStats(@RequestParam("userId") Long userId) {
+    public MonthlyStatsResponse getMonthlyStats(@RequestParam Long userId) {
         return dashboardService.getMonthlyStats(userId);
     }
 
-    // 📊 14. 최고 집중일
     @GetMapping("/stats/best-day")
-    public BestFocusDayResponse getBestFocusDay(@RequestParam("userId") Long userId) {
+    public BestFocusDayResponse getBestFocusDay(@RequestParam Long userId) {
         return dashboardService.getBestFocusDay(userId);
     }
 
-    // 🏁 15. GPT 기반 목표 제안
+    // 🏁 목표 설정
     @GetMapping("/goal/suggest")
-    public GoalSuggestionResponse suggestGoal(@RequestParam("userId") Long userId) {
+    public GoalSuggestionResponse suggestGoal(@RequestParam Long userId) {
         return dashboardService.getSuggestedGoal(userId);
     }
 
-    // 🏁 16. 수동 목표 수정
     @PutMapping("/goal")
-    public void updateGoal(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody GoalUpdateRequest request
-    ) {
-        dashboardService.updateGoalManually(userId, request);
+    public void updateGoal(@Valid @RequestBody GoalUpdateRequest request) {
+        dashboardService.updateGoalManually(request.getUserId(), request);
     }
 
-    // 🧠 17. GPT 주간 회고
+    // 🧠 회고 생성 (GPT 기반)
     @PostMapping("/reflection/weekly")
-    public WeeklyReflectionResponse generateWeeklyReflection(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody WeeklyReflectionRequest request
-    ) {
-        return gptReflectionService.generateWeeklyReflection(userId, request);
+    public WeeklyReflectionResponse generateWeeklyReflection(@Valid @RequestBody WeeklyReflectionRequest request) {
+        return gptReflectionService.generateWeeklyReflection(request.getUserId(), request);
     }
 
-    // 🧠 18. 기간 회고
     @PostMapping("/reflection/range")
-    public WeeklyReflectionResponse generateReflectionByRange(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody RangeReflectionRequest request
-    ) {
-        return gptReflectionService.generateReflectionByRange(userId, request);
+    public WeeklyReflectionResponse generateReflectionByRange(@Valid @RequestBody RangeReflectionRequest request) {
+        return gptReflectionService.generateReflectionByRange(request.getUserId(), request);
     }
 
-    // 🧠 19. 옵션 회고
     @PostMapping("/reflection/custom")
-    public WeeklyReflectionResponse generateCustomReflection(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody OptionReflectionRequest request
-    ) {
-        return gptReflectionService.generateCustomReflection(userId, request);
+    public WeeklyReflectionResponse generateCustomReflection(@Valid @RequestBody OptionReflectionRequest request) {
+        return gptReflectionService.generateCustomReflection(request.getUserId(), request);
     }
 }

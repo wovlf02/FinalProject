@@ -1,4 +1,4 @@
-package com.hamcam.back.dto.video;
+package com.hamcam.back.dto.video.request;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

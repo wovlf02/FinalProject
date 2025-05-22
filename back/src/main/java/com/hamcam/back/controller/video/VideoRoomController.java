@@ -1,7 +1,7 @@
 package com.hamcam.back.controller.video;
 
-import com.hamcam.back.dto.video.VideoRoomRequest;
-import com.hamcam.back.dto.video.VideoRoomResponse;
+import com.hamcam.back.dto.video.request.VideoRoomRequest;
+import com.hamcam.back.dto.video.response.VideoRoomResponse;
 import com.hamcam.back.service.video.VideoRoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

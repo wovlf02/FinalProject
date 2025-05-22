@@ -1,7 +1,7 @@
 package com.hamcam.back.service.study;
 
-import com.hamcam.back.dto.study.TeamRoomCreateRequest;
-import com.hamcam.back.dto.study.TeamRoomResponse;
+import com.hamcam.back.dto.study.team.request.TeamRoomCreateRequest;
+import com.hamcam.back.dto.study.team.response.TeamRoomResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.study.TeamRoom;
 import com.hamcam.back.global.exception.CustomException;

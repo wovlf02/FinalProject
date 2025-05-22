@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.community.comment.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.hamcam.back.entity.community.Comment;
 import com.hamcam.back.entity.community.Reply;
 import lombok.AllArgsConstructor;
@@ -7,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,67 +23,30 @@ import java.util.stream.Collectors;
 @Builder
 public class CommentResponse {
 
-    /**
-     * 댓글 ID
-     */
     private Long commentId;
-
-    /**
-     * 댓글 작성자 ID
-     */
     private Long writerId;
-
-    /**
-     * 댓글 작성자 닉네임
-     */
     private String writerNickname;
-
-    /**
-     * 작성자 프로필 이미지 URL
-     */
     private String profileImageUrl;
-
-    /**
-     * 댓글 본문
-     */
     private String content;
 
-    /**
-     * 작성 시각
-     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
-    /**
-     * 수정 시각
-     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 
-    /**
-     * 좋아요 수
-     */
     private int likeCount;
-
-    /**
-     * 현재 로그인 사용자의 좋아요 여부
-     */
     private boolean liked;
 
-    /**
-     * 대댓글 리스트
-     */
-    private List<ReplyResponse> replies;
+    @Builder.Default
+    private List<ReplyResponse> replies = Collections.emptyList();
 
-    /**
-     * 댓글 엔티티 → DTO 변환 메서드
-     *
-     * @param comment 댓글 엔티티
-     * @param replies 해당 댓글에 연결된 대댓글 목록
-     * @param currentUserId 현재 로그인 사용자 ID (좋아요 여부 확인용)
-     * @return 변환된 CommentResponse 객체
-     */
     public static CommentResponse from(Comment comment, List<Reply> replies, Long currentUserId) {
-        boolean liked = comment.getLikes().stream()
-                .anyMatch(like -> like.getUser().getId().equals(currentUserId));
+        boolean liked = comment.getLikes() != null &&
+                comment.getLikes().stream()
+                        .anyMatch(like -> like.getUser().getId().equals(currentUserId));
+
+        int likeCount = comment.getLikes() != null ? comment.getLikes().size() : 0;
 
         return CommentResponse.builder()
                 .commentId(comment.getId())
@@ -91,11 +56,13 @@ public class CommentResponse {
                 .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
-                .likeCount(comment.getLikes().size())
+                .likeCount(likeCount)
                 .liked(liked)
-                .replies(replies.stream()
+                .replies(replies != null
+                        ? replies.stream()
                         .map(reply -> ReplyResponse.from(reply, currentUserId))
-                        .collect(Collectors.toList()))
+                        .collect(Collectors.toList())
+                        : List.of())
                 .build();
     }
 }
