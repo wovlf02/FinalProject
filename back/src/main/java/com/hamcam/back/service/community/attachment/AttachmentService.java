@@ -1,5 +1,8 @@
 package com.hamcam.back.service.community.attachment;
 
+import com.hamcam.back.dto.community.attachment.request.AttachmentIdRequest;
+import com.hamcam.back.dto.community.attachment.request.AttachmentUploadRequest;
+import com.hamcam.back.dto.community.attachment.request.PostIdRequest;
 import com.hamcam.back.dto.community.attachment.response.AttachmentListResponse;
 import com.hamcam.back.dto.community.attachment.response.AttachmentResponse;
 import com.hamcam.back.entity.community.Attachment;
@@ -16,9 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.MalformedURLException;
 import java.nio.file.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,9 +32,12 @@ public class AttachmentService {
     private final PostRepository postRepository;
 
     /**
-     * 게시글 첨부파일 업로드
+     * ✅ 게시글 첨부파일 업로드
      */
-    public int uploadPostFiles(Long postId, MultipartFile[] files) {
+    public int uploadPostFiles(AttachmentUploadRequest request) {
+        MultipartFile[] files = request.getFiles();
+        Long postId = request.getPostId();
+
         if (files == null || files.length == 0) {
             throw new CustomException(ErrorCode.MISSING_PARAMETER);
         }
@@ -56,18 +60,18 @@ public class AttachmentService {
     }
 
     /**
-     * 첨부파일 목록 조회
+     * ✅ 첨부파일 목록 조회
      */
-    public AttachmentListResponse getPostAttachments(Long postId) {
-        List<Attachment> list = attachmentRepository.findByPostId(postId);
+    public AttachmentListResponse getPostAttachments(PostIdRequest request) {
+        List<Attachment> list = attachmentRepository.findByPostId(request.getPostId());
         return toListResponse(list);
     }
 
     /**
-     * 첨부파일 다운로드
+     * ✅ 첨부파일 다운로드
      */
-    public Resource downloadAttachment(Long attachmentId) {
-        Attachment attachment = attachmentRepository.findById(attachmentId)
+    public Resource downloadAttachment(AttachmentIdRequest request) {
+        Attachment attachment = attachmentRepository.findById(request.getAttachmentId())
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
         try {
@@ -86,13 +90,12 @@ public class AttachmentService {
     }
 
     /**
-     * 첨부파일 삭제
+     * ✅ 첨부파일 삭제
      */
-    public void deleteAttachment(Long attachmentId) {
-        Attachment attachment = attachmentRepository.findById(attachmentId)
+    public void deleteAttachment(AttachmentIdRequest request) {
+        Attachment attachment = attachmentRepository.findById(request.getAttachmentId())
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
-        // 💡 프로토타입이라 인증 제거: 현재 사용자 ID 체크 생략
         Path filePath = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()).normalize();
         try {
             Files.deleteIfExists(filePath);

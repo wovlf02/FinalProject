@@ -4,56 +4,34 @@ import com.hamcam.back.entity.video.VideoRoom;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * [VideoRoomResponse]
- *
- * 화상 채팅방 응답 DTO
- * - 팀 학습 방에 연동된 화상 채팅방의 상세 정보를 제공합니다.
+ * 화상 채팅방 정보 응답 DTO
  */
 @Getter
 @Builder
 public class VideoRoomResponse {
 
-    /**
-     * 화상 채팅방 ID
-     */
-    private Long id;
-
-    /**
-     * 연동된 팀 방 ID
-     */
+    private Long roomId;
     private Long teamId;
-
-    /**
-     * 채팅방 제목
-     */
+    private Long hostId;
     private String title;
+    private int currentUserCount;
+    private String createdAt;
 
     /**
-     * 활성 상태 여부
-     */
-    private Boolean isActive;
-
-    /**
-     * 생성 시각
-     */
-    private LocalDateTime createdAt;
-
-    /**
-     * VideoRoom 엔티티를 DTO로 변환하는 팩토리 메서드
-     *
-     * @param room VideoRoom 엔티티
-     * @return VideoRoomResponse DTO
+     * VideoRoom 엔티티를 DTO로 변환하는 정적 메서드
      */
     public static VideoRoomResponse fromEntity(VideoRoom room) {
         return VideoRoomResponse.builder()
-                .id(room.getId())
+                .roomId(room.getId())
                 .teamId(room.getTeamId())
+                .hostId(room.getHostId())
                 .title(room.getTitle())
-                .isActive(room.getIsActive())
-                .createdAt(room.getCreatedAt())
+                .createdAt(room.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
+                .currentUserCount(0) // Redis 값은 별도로 조회
                 .build();
     }
 }

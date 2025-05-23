@@ -21,6 +21,9 @@ public class VideoRoom {
     @Column(name = "team_id", nullable = false)
     private Long teamId;
 
+    @Column(name = "host_id", nullable = false)
+    private Long hostId; // ✅ 추가된 필드
+
     @Column(name = "title", nullable = false)
     private String title;
 
@@ -30,9 +33,7 @@ public class VideoRoom {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * 생성 시각 자동 설정
-     */
+    /** 생성 시각 자동 설정 */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

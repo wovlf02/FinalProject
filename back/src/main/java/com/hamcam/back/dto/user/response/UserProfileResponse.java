@@ -1,7 +1,8 @@
-package com.hamcam.back.dto.auth.response;
+package com.hamcam.back.dto.user.response;
 
 import com.hamcam.back.entity.auth.User;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.time.format.DateTimeFormatter;
@@ -13,6 +14,7 @@ import java.util.Optional;
  */
 @Getter
 @AllArgsConstructor
+@Builder // 🔥 builder 사용을 위해 추가
 public class UserProfileResponse {
 
     private Long userId;
@@ -31,15 +33,15 @@ public class UserProfileResponse {
      * @return 변환된 응답 객체
      */
     public static UserProfileResponse from(User user) {
-        return new UserProfileResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getNickname(),
-                user.getGrade(),
-                user.getStudyHabit(),
-                Optional.ofNullable(user.getProfileImageUrl()).orElse(""), // null 방지
-                user.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-        );
+        return UserProfileResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .grade(user.getGrade())
+                .studyHabit(user.getStudyHabit())
+                .profileImageUrl(Optional.ofNullable(user.getProfileImageUrl()).orElse(""))
+                .createdAt(user.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
+                .build();
     }
 }

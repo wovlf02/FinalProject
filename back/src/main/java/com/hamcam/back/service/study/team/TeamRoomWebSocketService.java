@@ -83,4 +83,37 @@ public class TeamRoomWebSocketService {
         log.info("📊 랭킹 업데이트 요청 수신 - roomId: {}", message.getRoomId());
         // 실제 랭킹 데이터는 다른 서비스에서 계산해 전달하는 방식 권장
     }
+
+    /**
+     * 문제풀이 시작 알림 처리
+     */
+    public void startQuiz(TeamRoomStompMessage message) {
+        log.info("🚀 문제풀이 시작 알림 - roomId: {}", message.getRoomId());
+        // 필요한 경우 상태를 캐싱하거나 로깅 또는 외부 연동 수행 가능
+    }
+
+    /**
+     * 문제풀이 종료 알림 처리
+     */
+    public void terminateQuiz(TeamRoomStompMessage message) {
+        log.info("🛑 문제풀이 종료 알림 - roomId: {}", message.getRoomId());
+        // 종료 시 클라이언트에 종료 알림용 데이터 캐싱 또는 처리 가능
+    }
+
+    /**
+     * 실패한 문제 커뮤니티 업로드 알림 처리
+     */
+    public void uploadUnsolvedQuestion(TeamRoomStompMessage message) {
+        log.info("📮 실패한 문제 업로드 알림 - roomId: {}, userId: {}", message.getRoomId(), message.getUserId());
+        // 포인트 차감 여부나 커뮤니티 연동 결과 등을 추적하려면 이곳에서 처리
+    }
+
+    /**
+     * 공부시간 경쟁 종료 알림 처리
+     */
+    public void completeFocus(TeamRoomStompMessage message) {
+        log.info("🏁 공부시간 경쟁방 종료 알림 - roomId: {}", message.getRoomId());
+        // 최종 랭킹 계산된 결과를 여기서 받아 클라이언트 전송 처리 가능
+    }
+
 }

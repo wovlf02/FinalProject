@@ -245,16 +245,15 @@ public class TeamRoomService {
 
         Post post = Post.builder()
                 .writer(user)
-                .title("[질문] " + request.getTitle())
-                .content(request.getContent())
+                .title("[질문] " + request.getAutoFilledTitle())
+                .content(request.getQuestionContent())
                 .category(PostCategory.QUESTION)
                 .teamRoom(room)
+                .createdAt(LocalDateTime.now()) // 게시글 등록 시간
                 .build();
 
         postRepository.save(post);
     }
-
-
 
     /**
      * 공부시간 경쟁 시작
@@ -387,6 +386,44 @@ public class TeamRoomService {
         if (!room.getCreator().getId().equals(userId)) {
             throw new CustomException(ErrorCode.NOT_ROOM_HOST);
         }
+    }
+
+    /**
+     * 문제풀이 종료 처리
+     * - 방장만 가능
+     * - 상태를 QUIZ_ENDED로 변경
+     */
+    public void terminateQuizSession(TeamRoomUserRequest request) {
+        TeamRoom room = getRoomOrThrow(request.getRoomId());
+        validateHost(request.getUserId(), room);
+
+        if (room.getStatus() != RoomStatus.QUIZ_IN_PROGRESS) {
+            throw new CustomException(ErrorCode.INVALID_ROOM_STATUS);
+        }
+
+        room.setStatus(RoomStatus.QUIZ_ENDED);
+        teamRoomRepository.save(room);
+    }
+
+    /**
+     * 실패한 문제를 커뮤니티에 질문 게시글로 업로드
+     * - 게시글 카테고리: QUESTION
+     * - 제목 자동생성 가능
+     */
+    public void uploadUnsolvedQuestionPost(TeamRoomUnsolvedPostRequest request) {
+        User user = getUser(request.getUserId());
+        TeamRoom room = getRoomOrThrow(request.getRoomId());
+
+        Post post = Post.builder()
+                .writer(user)
+                .title("[실패문제] " + request.getAutoFilledTitle())
+                .content(request.getQuestionContent())
+                .category(PostCategory.QUESTION)
+                .teamRoom(room)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        postRepository.save(post);
     }
 
 

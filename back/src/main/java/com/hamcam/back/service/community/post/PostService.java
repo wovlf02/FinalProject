@@ -4,7 +4,6 @@ import com.hamcam.back.dto.community.post.request.*;
 import com.hamcam.back.dto.community.post.response.*;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.Post;
-import com.hamcam.back.entity.community.PostCategory;
 import com.hamcam.back.entity.community.PostFavorite;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
@@ -56,7 +55,8 @@ public class PostService {
         post = postRepository.save(post);
 
         if (request.getFiles() != null && !request.getFiles().isEmpty()) {
-            attachmentService.uploadPostFiles(post.getId(), request.getFiles().toArray(new MultipartFile[0]));
+            MultipartFile[] fileArray = request.getFiles().toArray(new MultipartFile[0]);
+            attachmentService.uploadPostFiles(post.getId(), fileArray);
         }
 
         return post.getId();
@@ -80,20 +80,23 @@ public class PostService {
         }
 
         if (request.getDeleteFileIds() != null) {
-            request.getDeleteFileIds().forEach(attachmentService::deleteAttachment);
+            request.getDeleteFileIds().forEach(id -> attachmentService.deleteAttachment(id));
         }
 
         if (request.getFiles() != null && !request.getFiles().isEmpty()) {
-            attachmentService.uploadPostFiles(post.getId(), request.getFiles().toArray(new MultipartFile[0]));
+            MultipartFile[] fileArray = request.getFiles().toArray(new MultipartFile[0]);
+            attachmentService.uploadPostFiles(post.getId(), fileArray);
         }
     }
 
     /** ✅ 게시글 삭제 */
     public void deletePost(PostDeleteRequest request) {
         Post post = getPostOrThrow(request.getPostId());
+
         if (!post.getWriter().getId().equals(request.getUserId())) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
+
         postRepository.delete(post);
     }
 
@@ -117,17 +120,18 @@ public class PostService {
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), Sort.by("createdAt").descending());
         Page<Post> result = (request.getKeyword() == null || request.getKeyword().isBlank())
                 ? postRepository.findAll(pageable)
-                : postRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(request.getKeyword(), request.getKeyword(), pageable);
+                : postRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
+                request.getKeyword(), request.getKeyword(), pageable);
         return PostListResponse.from(result);
     }
 
     /** ✅ 게시글 필터링 */
     public PostListResponse filterPosts(PostFilterRequest request) {
-        Sort sortOption = "popular".equals(request.getSort())
+        Sort sort = "popular".equals(request.getSort())
                 ? Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"))
                 : Sort.by(Sort.Order.desc("createdAt"));
 
-        Pageable pageable = PageRequest.of(0, 20, sortOption);
+        Pageable pageable = PageRequest.of(0, 20, sort);
 
         Page<Post> result = (request.getCategory() == null)
                 ? postRepository.searchFilteredPostsWithoutCategory(request.getKeyword(), request.getMinLikes(), pageable)
@@ -181,16 +185,19 @@ public class PostService {
 
         PostFavorite favorite = postFavoriteRepository.findByUserAndPost(user, post)
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INPUT));
+
         postFavoriteRepository.delete(favorite);
     }
 
     /** ✅ 즐겨찾기 목록 */
     public FavoritePostListResponse getFavoritePosts(PostUserRequest request) {
         User user = getUser(request.getUserId());
+
         List<PostFavorite> favorites = postFavoriteRepository.findAllByUser(user);
         List<PostSummaryResponse> posts = favorites.stream()
                 .map(f -> PostSummaryResponse.from(f.getPost()))
                 .collect(Collectors.toList());
+
         return new FavoritePostListResponse(posts);
     }
 

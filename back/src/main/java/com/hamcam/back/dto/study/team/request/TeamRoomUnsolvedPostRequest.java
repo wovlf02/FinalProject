@@ -11,9 +11,9 @@ public class TeamRoomUnsolvedPostRequest {
     private Long userId;
     private Long roomId;
 
-    /** 게시글 제목 (예: "[질문] 문제 3번 관련 질문") */
-    private String title;
+    /** 커뮤니티 업로드용 자동 생성된 제목 */
+    private String autoFilledTitle;
 
-    /** 게시글 내용 */
-    private String content;
+    /** 문제 설명 or 질문 내용 */
+    private String questionContent;
 }
