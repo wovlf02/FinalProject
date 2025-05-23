@@ -5,8 +5,7 @@ import lombok.*;
 
 /**
  * [ChatRoomListRequest]
- *
- * 로그인한 사용자의 채팅방 목록을 조회할 때 사용되는 요청 DTO입니다.
+ * 로그인한 사용자의 채팅방 목록을 조회할 때 사용되는 요청 DTO
  */
 @Getter
 @Setter
@@ -15,9 +14,6 @@ import lombok.*;
 @Builder
 public class ChatRoomListRequest {
 
-    /**
-     * 현재 로그인한 사용자 ID
-     */
     @NotNull(message = "userId는 필수입니다.")
     private Long userId;
 }

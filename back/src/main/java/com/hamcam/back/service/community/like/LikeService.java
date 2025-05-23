@@ -1,5 +1,6 @@
 package com.hamcam.back.service.community.like;
 
+import com.hamcam.back.dto.community.like.request.*;
 import com.hamcam.back.dto.community.like.response.LikeCountResponse;
 import com.hamcam.back.dto.community.like.response.LikeStatusResponse;
 import com.hamcam.back.entity.auth.User;
@@ -27,9 +28,11 @@ public class LikeService {
     private final ReplyRepository replyRepository;
     private final UserRepository userRepository;
 
-    public boolean togglePostLike(Long postId, Long userId) {
-        User user = getUser(userId);
-        Post post = getPost(postId);
+    // ===== 📌 게시글 =====
+
+    public boolean togglePostLike(PostLikeToggleRequest request) {
+        User user = getUser(request.getUserId());
+        Post post = getPost(request.getPostId());
 
         return likeRepository.findByUserAndPost(user, post)
                 .map(existing -> {
@@ -46,20 +49,22 @@ public class LikeService {
                 });
     }
 
-    public LikeCountResponse getPostLikeCount(Long postId) {
-        return new LikeCountResponse(likeRepository.countByPostId(postId));
+    public LikeCountResponse getPostLikeCount(PostLikeCountRequest request) {
+        return new LikeCountResponse(likeRepository.countByPostId(request.getPostId()));
     }
 
-    public LikeStatusResponse hasLikedPost(Long postId, Long userId) {
-        User user = getUser(userId);
-        Post post = getPost(postId);
+    public LikeStatusResponse hasLikedPost(PostLikeStatusRequest request) {
+        User user = getUser(request.getUserId());
+        Post post = getPost(request.getPostId());
         boolean liked = likeRepository.findByUserAndPost(user, post).isPresent();
         return new LikeStatusResponse(liked);
     }
 
-    public boolean toggleCommentLike(Long commentId, Long userId) {
-        User user = getUser(userId);
-        Comment comment = getComment(commentId);
+    // ===== 💬 댓글 =====
+
+    public boolean toggleCommentLike(CommentLikeToggleRequest request) {
+        User user = getUser(request.getUserId());
+        Comment comment = getComment(request.getCommentId());
 
         return likeRepository.findByUserAndComment(user, comment)
                 .map(existing -> {
@@ -76,20 +81,22 @@ public class LikeService {
                 });
     }
 
-    public LikeCountResponse getCommentLikeCount(Long commentId) {
-        return new LikeCountResponse(likeRepository.countByCommentId(commentId));
+    public LikeCountResponse getCommentLikeCount(CommentLikeCountRequest request) {
+        return new LikeCountResponse(likeRepository.countByCommentId(request.getCommentId()));
     }
 
-    public LikeStatusResponse hasLikedComment(Long commentId, Long userId) {
-        User user = getUser(userId);
-        Comment comment = getComment(commentId);
+    public LikeStatusResponse hasLikedComment(CommentLikeStatusRequest request) {
+        User user = getUser(request.getUserId());
+        Comment comment = getComment(request.getCommentId());
         boolean liked = likeRepository.findByUserAndComment(user, comment).isPresent();
         return new LikeStatusResponse(liked);
     }
 
-    public boolean toggleReplyLike(Long replyId, Long userId) {
-        User user = getUser(userId);
-        Reply reply = getReply(replyId);
+    // ===== 🔁 대댓글 =====
+
+    public boolean toggleReplyLike(ReplyLikeToggleRequest request) {
+        User user = getUser(request.getUserId());
+        Reply reply = getReply(request.getReplyId());
 
         return likeRepository.findByUserAndReply(user, reply)
                 .map(existing -> {
@@ -106,16 +113,18 @@ public class LikeService {
                 });
     }
 
-    public LikeCountResponse getReplyLikeCount(Long replyId) {
-        return new LikeCountResponse(likeRepository.countByReplyId(replyId));
+    public LikeCountResponse getReplyLikeCount(ReplyLikeCountRequest request) {
+        return new LikeCountResponse(likeRepository.countByReplyId(request.getReplyId()));
     }
 
-    public LikeStatusResponse hasLikedReply(Long replyId, Long userId) {
-        User user = getUser(userId);
-        Reply reply = getReply(replyId);
+    public LikeStatusResponse hasLikedReply(ReplyLikeStatusRequest request) {
+        User user = getUser(request.getUserId());
+        Reply reply = getReply(request.getReplyId());
         boolean liked = likeRepository.findByUserAndReply(user, reply).isPresent();
         return new LikeStatusResponse(liked);
     }
+
+    // ===== 🔍 유틸 =====
 
     private Post getPost(Long postId) {
         return postRepository.findById(postId)

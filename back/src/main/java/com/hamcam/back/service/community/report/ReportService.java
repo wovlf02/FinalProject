@@ -1,6 +1,6 @@
 package com.hamcam.back.service.community.report;
 
-import com.hamcam.back.dto.community.report.request.ReportRequest;
+import com.hamcam.back.dto.community.report.request.*;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.*;
 import com.hamcam.back.global.exception.CustomException;
@@ -23,47 +23,51 @@ public class ReportService {
     private final ReplyRepository replyRepository;
     private final UserRepository userRepository;
 
-    public void reportPost(Long postId, Long reporterId, ReportRequest request) {
-        Post post = postRepository.findById(postId)
+    /** ✅ 게시글 신고 */
+    public void reportPost(PostReportRequest request) {
+        User reporter = getUser(request.getUserId());
+        Post post = postRepository.findById(request.getPostId())
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        User reporter = getUser(reporterId);
 
         if (reportRepository.findByReporterAndPost(reporter, post).isPresent()) {
             throw new CustomException(ErrorCode.ALREADY_REPORTED);
         }
 
-        createReport(reporter, request.getReason(), post, null, null, null);
+        createReport(reporter, request.getReport(), post, null, null, null);
     }
 
-    public void reportComment(Long commentId, Long reporterId, ReportRequest request) {
-        Comment comment = commentRepository.findById(commentId)
+    /** ✅ 댓글 신고 */
+    public void reportComment(CommentReportRequest request) {
+        User reporter = getUser(request.getUserId());
+        Comment comment = commentRepository.findById(request.getCommentId())
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-        User reporter = getUser(reporterId);
 
         if (reportRepository.findByReporterAndComment(reporter, comment).isPresent()) {
             throw new CustomException(ErrorCode.ALREADY_REPORTED);
         }
 
-        createReport(reporter, request.getReason(), null, comment, null, null);
+        createReport(reporter, request.getReport(), null, comment, null, null);
     }
 
-    public void reportReply(Long replyId, Long reporterId, ReportRequest request) {
-        Reply reply = replyRepository.findById(replyId)
+    /** ✅ 대댓글 신고 */
+    public void reportReply(ReplyReportRequest request) {
+        User reporter = getUser(request.getUserId());
+        Reply reply = replyRepository.findById(request.getReplyId())
                 .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
-        User reporter = getUser(reporterId);
 
         if (reportRepository.findByReporterAndReply(reporter, reply).isPresent()) {
             throw new CustomException(ErrorCode.ALREADY_REPORTED);
         }
 
-        createReport(reporter, request.getReason(), null, null, reply, null);
+        createReport(reporter, request.getReport(), null, null, reply, null);
     }
 
-    public void reportUser(Long targetUserId, Long reporterId, ReportRequest request) {
-        User reporter = getUser(reporterId);
-        User target = getUser(targetUserId);
+    /** ✅ 사용자 신고 */
+    public void reportUser(UserReportRequest request) {
+        User reporter = getUser(request.getUserId());
+        User target = getUser(request.getTargetUserId());
 
-        if (reporter.getId().equals(targetUserId)) {
+        if (reporter.getId().equals(target.getId())) {
             throw new CustomException(ErrorCode.REPORT_SELF_NOT_ALLOWED);
         }
 
@@ -71,9 +75,10 @@ public class ReportService {
             throw new CustomException(ErrorCode.ALREADY_REPORTED);
         }
 
-        createReport(reporter, request.getReason(), null, null, null, target);
+        createReport(reporter, request.getReport(), null, null, null, target);
     }
 
+    /** ✅ 신고 생성 공통 처리 */
     private void createReport(User reporter, String reason,
                               Post post, Comment comment, Reply reply, User targetUser) {
 
@@ -90,6 +95,7 @@ public class ReportService {
         reportRepository.save(report);
     }
 
+    /** ✅ 유저 조회 공통 메서드 */
     private User getUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

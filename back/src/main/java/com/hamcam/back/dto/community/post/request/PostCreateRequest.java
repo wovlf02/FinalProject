@@ -4,6 +4,9 @@ import com.hamcam.back.entity.community.PostCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 게시글 작성 요청 DTO
@@ -25,4 +28,6 @@ public class PostCreateRequest {
 
     @NotNull(message = "카테고리는 필수입니다.")
     private PostCategory category;
+
+    private List<MultipartFile> files;
 }

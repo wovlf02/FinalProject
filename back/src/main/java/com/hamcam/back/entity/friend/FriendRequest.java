@@ -20,8 +20,7 @@ import java.time.LocalDateTime;
         }
 )
 @Getter
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class FriendRequest {
@@ -46,6 +45,12 @@ public class FriendRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver;
+
+    /**
+     * 요청 메시지 (선택)
+     */
+    @Column(length = 255)
+    private String message;
 
     /**
      * 요청 생성 시각

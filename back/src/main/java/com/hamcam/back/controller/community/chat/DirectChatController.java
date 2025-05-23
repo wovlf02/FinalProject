@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * [DirectChatController]
  * 1:1 채팅 관련 REST API
- * - userId는 모든 요청에서 DTO를 통해 전달
+ * - 모든 요청은 DTO 기반으로 userId 포함
  */
 @RestController
 @RequestMapping("/api/chat/direct")
@@ -27,8 +27,8 @@ public class DirectChatController {
      */
     @PostMapping("/start")
     public ResponseEntity<MessageResponse> startDirectChat(@RequestBody DirectChatRequest request) {
-        ChatRoomResponse response = directChatService.startOrGetDirectChat(request);
-        return ResponseEntity.ok(MessageResponse.of("1:1 채팅방 생성 또는 조회 완료", response));
+        ChatRoomResponse chatRoom = directChatService.startOrGetDirectChat(request);
+        return ResponseEntity.ok(MessageResponse.of("1:1 채팅방 생성 또는 조회 완료", chatRoom));
     }
 
     /**
@@ -36,8 +36,8 @@ public class DirectChatController {
      */
     @PostMapping("/rooms")
     public ResponseEntity<MessageResponse> getMyDirectChatRooms(@RequestBody ChatRoomListRequest request) {
-        List<ChatRoomListResponse> rooms = directChatService.getMyDirectChatRooms(request.getUserId());
-        return ResponseEntity.ok(MessageResponse.of("1:1 채팅방 목록 조회 성공", rooms));
+        List<ChatRoomListResponse> roomList = directChatService.getMyDirectChatRooms(request.getUserId());
+        return ResponseEntity.ok(MessageResponse.of("1:1 채팅방 목록 조회 성공", roomList));
     }
 
     /**
@@ -45,10 +45,10 @@ public class DirectChatController {
      */
     @PostMapping("/with")
     public ResponseEntity<MessageResponse> getDirectChatWithUser(@RequestBody DirectChatLookupRequest request) {
-        ChatRoomResponse response = directChatService.getDirectChatWithUser(
-                request.getMyUserId(),
+        ChatRoomResponse chatRoom = directChatService.getDirectChatWithUser(
+                request.getUserId(),
                 request.getTargetUserId()
         );
-        return ResponseEntity.ok(MessageResponse.of("상대 사용자와의 채팅방 조회 성공", response));
+        return ResponseEntity.ok(MessageResponse.of("상대 사용자와의 채팅방 조회 성공", chatRoom));
     }
 }

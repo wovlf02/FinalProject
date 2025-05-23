@@ -4,6 +4,9 @@ import com.hamcam.back.entity.auth.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.util.*;
+
 @Entity
 @Table(name = "team_room")
 @Getter
@@ -17,15 +20,46 @@ public class TeamRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String title;
+    private String roomName;
 
-    private String roomType; // QUIZ / FOCUS
+    @Enumerated(EnumType.STRING)
+    private TeamRoomMode mode;
 
-    private Integer maxParticipants;
+    @Enumerated(EnumType.STRING)
+    private RoomStatus status;
 
     private String password;
 
+    private Integer targetTime;
+
+    private Integer currentQuestionIndex;
+
+    private Long currentPresenterId;
+
+    @ElementCollection
+    @CollectionTable(name = "team_room_raised_hands", joinColumns = @JoinColumn(name = "room_id"))
+    @Column(name = "user_id")
+    private Set<Long> raisedHands = new HashSet<>();
+
+    private Long winnerId;
+
+    private LocalDateTime quizStartedAt;
+
+    private LocalDateTime focusCompletedAt;
+
+    private LocalDateTime createdAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "host_id", nullable = false)
-    private User host; // ✅ 방장 (현재 로그인한 사용자)
+    @JoinColumn(name = "creator_id", nullable = false)
+    private User creator;
+
+    /** 발표자에 대한 투표 리스트 */
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Vote> voteList = new ArrayList<>();
+
+    // === 유틸 ===
+    public void addVote(Vote vote) {
+        vote.setRoom(this);
+        voteList.add(vote);
+    }
 }

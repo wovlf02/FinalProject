@@ -1,5 +1,6 @@
 package com.hamcam.back.controller.community.chat;
 
+import com.hamcam.back.dto.community.chat.request.RoomAccessRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.service.community.chat.ChatMessageService;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +24,15 @@ public class ChatMessageController {
     /**
      * ✅ 채팅방 메시지 전체 조회
      * - 채팅방 입장 시 한번에 불러오는 초기 로딩 용도
+     * - userId는 DTO에서 추출
      */
-    @GetMapping("/{roomId}/messages")
-    public ResponseEntity<List<ChatMessageResponse>> getAllMessages(@PathVariable Long roomId) {
-        List<ChatMessageResponse> messages = chatMessageService.getAllMessages(roomId);
+    @PostMapping("/messages")
+    public ResponseEntity<List<ChatMessageResponse>> getAllMessages(
+            @RequestBody RoomAccessRequest request
+    ) {
+        List<ChatMessageResponse> messages = chatMessageService.getAllMessages(
+                request.getRoomId(), request.getUserId());
         return ResponseEntity.ok(messages);
     }
+
 }

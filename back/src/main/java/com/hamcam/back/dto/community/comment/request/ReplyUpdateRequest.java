@@ -1,7 +1,7 @@
-package com.hamcam.back.dto.community.reply.request;
+package com.hamcam.back.dto.community.comment.request;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 /**
@@ -13,6 +13,9 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ReplyUpdateRequest {
+
+    @NotNull(message = "replyId는 필수입니다.")
+    private Long replyId;
 
     @NotNull(message = "userId는 필수입니다.")
     private Long userId;

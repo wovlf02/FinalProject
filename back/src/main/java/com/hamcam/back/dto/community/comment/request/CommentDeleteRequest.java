@@ -13,9 +13,9 @@ import lombok.*;
 @Builder
 public class CommentDeleteRequest {
 
-    /**
-     * 삭제 요청 사용자 ID
-     */
+    @NotNull(message = "commentId는 필수입니다.")
+    private Long commentId;
+
     @NotNull(message = "userId는 필수입니다.")
     private Long userId;
 }

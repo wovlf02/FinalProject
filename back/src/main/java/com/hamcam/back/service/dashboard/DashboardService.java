@@ -1,14 +1,17 @@
 package com.hamcam.back.service.dashboard;
 
 import com.hamcam.back.dto.dashboard.calendar.CalendarEventDto;
+import com.hamcam.back.dto.dashboard.calendar.request.CalendarRequest;
 import com.hamcam.back.dto.dashboard.exam.request.ExamScheduleRequest;
+import com.hamcam.back.dto.dashboard.exam.request.ExamUserRequest;
 import com.hamcam.back.dto.dashboard.exam.response.DDayInfoResponse;
 import com.hamcam.back.dto.dashboard.exam.response.ExamScheduleResponse;
 import com.hamcam.back.dto.dashboard.goal.request.GoalUpdateRequest;
+import com.hamcam.back.dto.dashboard.goal.request.GoalUserRequest;
 import com.hamcam.back.dto.dashboard.goal.response.GoalSuggestionResponse;
+import com.hamcam.back.dto.dashboard.stats.request.StatsUserRequest;
 import com.hamcam.back.dto.dashboard.stats.response.*;
-import com.hamcam.back.dto.dashboard.todo.request.TodoRequest;
-import com.hamcam.back.dto.dashboard.todo.request.TodoUpdateRequest;
+import com.hamcam.back.dto.dashboard.todo.request.*;
 import com.hamcam.back.dto.dashboard.todo.response.TodoResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.dashboard.*;
@@ -34,12 +37,10 @@ public class DashboardService {
     private final GoalRepository goalRepository;
     private final UserRepository userRepository;
 
-    // =============== 📆 캘린더 및 TODO 기능 ===============
-
-    public List<CalendarEventDto> getMonthlyCalendarEvents(Long userId, YearMonth month) {
-        User user = getUser(userId);
-        LocalDate start = month.atDay(1);
-        LocalDate end = month.atEndOfMonth();
+    public List<CalendarEventDto> getMonthlyCalendarEvents(CalendarRequest request) {
+        User user = getUser(request.getUserId());
+        LocalDate start = request.getMonth().atDay(1);
+        LocalDate end = request.getMonth().atEndOfMonth();
 
         List<Todo> todos = todoRepository.findAllByUserAndTodoDateBetween(user, start, end);
         List<ExamSchedule> exams = examScheduleRepository.findAllByUserOrderByExamDateAsc(user)
@@ -59,14 +60,14 @@ public class DashboardService {
                 .collect(Collectors.toList());
     }
 
-    public List<TodoResponse> getTodosByDate(Long userId, LocalDate date) {
-        User user = getUser(userId);
-        return todoRepository.findAllByUserAndTodoDateOrderByPriorityDesc(user, date)
+    public List<TodoResponse> getTodosByDate(TodoDateRequest request) {
+        User user = getUser(request.getUserId());
+        return todoRepository.findAllByUserAndTodoDateOrderByPriorityDesc(user, request.getDate())
                 .stream().map(this::toTodoResponse).collect(Collectors.toList());
     }
 
-    public TodoResponse createTodo(Long userId, TodoRequest request) {
-        User user = getUser(userId);
+    public TodoResponse createTodo(TodoRequest request) {
+        User user = getUser(request.getUserId());
 
         Todo todo = Todo.builder()
                 .user(user)
@@ -77,33 +78,30 @@ public class DashboardService {
                 .completed(false)
                 .build();
 
-        Todo saved = todoRepository.save(todo);
-        return toTodoResponse(saved);
+        return toTodoResponse(todoRepository.save(todo));
     }
 
-    public void updateTodo(Long todoId, TodoUpdateRequest request) {
-        Todo todo = getTodoOrThrow(todoId);
+    public void updateTodo(TodoUpdateRequest request) {
+        Todo todo = getTodoOrThrow(request.getTodoId());
         todo.setTitle(request.getTitle());
         todo.setDescription(request.getDescription());
         todo.setTodoDate(request.getTodoDate());
         todo.setPriority(request.getPriority());
     }
 
-    public void deleteTodo(Long todoId) {
-        Todo todo = getTodoOrThrow(todoId);
+    public void deleteTodo(TodoDeleteRequest request) {
+        Todo todo = getTodoOrThrow(request.getTodoId());
         todoRepository.delete(todo);
     }
 
-    public TodoResponse toggleTodoCompletion(Long todoId) {
-        Todo todo = getTodoOrThrow(todoId);
+    public TodoResponse toggleTodoCompletion(TodoToggleRequest request) {
+        Todo todo = getTodoOrThrow(request.getTodoId());
         todo.setCompleted(!todo.isCompleted());
         return toTodoResponse(todo);
     }
 
-    // =============== 🗓️ 시험 일정 ===============
-
-    public List<ExamScheduleResponse> getAllExamSchedules(Long userId) {
-        User user = getUser(userId);
+    public List<ExamScheduleResponse> getAllExamSchedules(ExamUserRequest request) {
+        User user = getUser(request.getUserId());
         return examScheduleRepository.findAllByUserOrderByExamDateAsc(user)
                 .stream().map(e -> ExamScheduleResponse.builder()
                         .id(e.getId())
@@ -112,8 +110,8 @@ public class DashboardService {
                         .build()).collect(Collectors.toList());
     }
 
-    public void createExamSchedule(Long userId, ExamScheduleRequest request) {
-        User user = getUser(userId);
+    public void createExamSchedule(ExamScheduleRequest request) {
+        User user = getUser(request.getUserId());
         examScheduleRepository.save(ExamSchedule.builder()
                 .user(user)
                 .title(request.getTitle())
@@ -121,8 +119,8 @@ public class DashboardService {
                 .build());
     }
 
-    public DDayInfoResponse getNearestExamSchedule(Long userId) {
-        User user = getUser(userId);
+    public DDayInfoResponse getNearestExamSchedule(ExamUserRequest request) {
+        User user = getUser(request.getUserId());
         return examScheduleRepository.findNearestExamSchedule(user, LocalDate.now())
                 .map(e -> {
                     long diff = LocalDate.now().until(e.getExamDate()).getDays();
@@ -135,10 +133,8 @@ public class DashboardService {
                 }).orElse(null);
     }
 
-    // =============== 📊 학습 통계 ===============
-
-    public TotalStatsResponse getTotalStudyStats(Long userId) {
-        User user = getUser(userId);
+    public TotalStatsResponse getTotalStudyStats(StatsUserRequest request) {
+        User user = getUser(request.getUserId());
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, LocalDate.of(2000, 1, 1), LocalDate.now());
         return TotalStatsResponse.builder()
                 .totalStudyMinutes(sessions.stream().mapToInt(StudySession::getDurationMinutes).sum())
@@ -147,8 +143,8 @@ public class DashboardService {
                 .build();
     }
 
-    public WeeklyStatsResponse getWeeklyStats(Long userId) {
-        User user = getUser(userId);
+    public WeeklyStatsResponse getWeeklyStats(StatsUserRequest request) {
+        User user = getUser(request.getUserId());
         LocalDate now = LocalDate.now();
         LocalDate start = now.minusDays(6);
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, start, now);
@@ -172,8 +168,8 @@ public class DashboardService {
                 .build();
     }
 
-    public MonthlyStatsResponse getMonthlyStats(Long userId) {
-        User user = getUser(userId);
+    public MonthlyStatsResponse getMonthlyStats(StatsUserRequest request) {
+        User user = getUser(request.getUserId());
         YearMonth currentMonth = YearMonth.now();
         LocalDate start = currentMonth.atDay(1);
         LocalDate end = currentMonth.atEndOfMonth();
@@ -196,8 +192,8 @@ public class DashboardService {
                 .build();
     }
 
-    public BestFocusDayResponse getBestFocusDay(Long userId) {
-        User user = getUser(userId);
+    public BestFocusDayResponse getBestFocusDay(StatsUserRequest request) {
+        User user = getUser(request.getUserId());
         LocalDate start = LocalDate.now().minusDays(30);
         return studySessionRepository.findTopFocusDay(user, start).stream().findFirst()
                 .map(s -> BestFocusDayResponse.builder()
@@ -207,17 +203,16 @@ public class DashboardService {
                 .orElse(null);
     }
 
-    // =============== 🧠 목표 설정 ===============
-
-    public GoalSuggestionResponse getSuggestedGoal() {
+    public GoalSuggestionResponse getSuggestedGoal(GoalUserRequest request) {
+        getUser(request.getUserId()); // 유효성 확인용
         return GoalSuggestionResponse.builder()
                 .message("최근 집중률을 고려해 하루 2.5시간을 추천합니다.")
                 .suggestedDailyGoalMinutes(150)
                 .build();
     }
 
-    public void updateGoalManually(Long userId, GoalUpdateRequest request) {
-        User user = getUser(userId);
+    public void updateGoalManually(GoalUpdateRequest request) {
+        User user = getUser(request.getUserId());
         goalRepository.save(Goal.builder()
                 .user(user)
                 .dailyGoalMinutes(request.getDailyGoalMinutes())
@@ -226,10 +221,9 @@ public class DashboardService {
                 .build());
     }
 
-    // =============== 📊 과목별 통계 ===============
+    public List<SubjectStatsResponse> getSubjectStats(StatsUserRequest request) {
+        User user = getUser(request.getUserId());
 
-    public List<SubjectStatsResponse> getSubjectStats(Long userId) {
-        User user = getUser(userId);
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
                 user, LocalDate.of(2000, 1, 1), LocalDate.now());
 
@@ -254,6 +248,14 @@ public class DashboardService {
                 .collect(Collectors.toList());
     }
 
+
+    // ===== 내부 유틸 =====
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
+    }
+
     private Todo getTodoOrThrow(Long id) {
         return todoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 할 일입니다."));
@@ -268,10 +270,5 @@ public class DashboardService {
                 .priority(todo.getPriority())
                 .completed(todo.isCompleted())
                 .build();
-    }
-
-    private User getUser(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
     }
 }

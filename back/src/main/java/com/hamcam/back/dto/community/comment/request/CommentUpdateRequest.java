@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 /**
- * 댓글/대댓글 수정 요청 DTO
+ * 댓글 수정 요청 DTO
  */
 @Getter
 @Setter
@@ -14,15 +14,12 @@ import lombok.*;
 @Builder
 public class CommentUpdateRequest {
 
-    /**
-     * 수정 요청 사용자 ID
-     */
+    @NotNull(message = "commentId는 필수입니다.")
+    private Long commentId;
+
     @NotNull(message = "userId는 필수입니다.")
     private Long userId;
 
-    /**
-     * 수정할 본문 내용
-     */
     @NotBlank(message = "수정할 내용을 입력해주세요.")
     private String content;
 }

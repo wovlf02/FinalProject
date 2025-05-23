@@ -1,15 +1,17 @@
-package com.hamcam.back.dto.community.like.request;
+package com.hamcam.back.dto.dashboard.exam.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+/**
+ * 사용자 기반 시험 요청 DTO
+ */
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LikeToggleRequest {
+public class ExamUserRequest {
 
-    @NotNull(message = "userId는 필수입니다.")
+    @NotNull
     private Long userId;
 }

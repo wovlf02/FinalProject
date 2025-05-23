@@ -60,19 +60,24 @@ public class ChatMessageService {
     }
 
     /**
-     * 채팅 메시지 조회 (오래된 순)
+     * ✅ 채팅방 전체 메시지 조회 (roomId + userId 기반)
      */
-    public List<ChatMessageResponse> getMessages(Long roomId, int page, int size) {
+    public List<ChatMessageResponse> getAllMessages(Long roomId, Long userId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sentAt"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 기본 100개까지 로딩
+        PageRequest pageable = PageRequest.of(0, 100, Sort.by(Sort.Direction.ASC, "sentAt"));
         List<ChatMessage> messages = chatMessageRepository.findByChatRoom(room, pageable);
 
         return messages.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
+
 
     // ===== 내부 유틸 =====
 

@@ -7,11 +7,10 @@ import java.util.List;
 
 /**
  * [CalendarEventDto]
- *
- * 캘린더 날짜별 이벤트 DTO
- * - 특정 날짜에 대한 Todo, 시험, 공부 시간 정보를 포함
+ * 캘린더 날짜별 이벤트 DTO (할 일, 시험, 공부시간 포함)
  */
 @Getter
+@Setter // ✅ 추가됨
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

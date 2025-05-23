@@ -14,15 +14,12 @@ import lombok.*;
 @Builder
 public class CommentCreateRequest {
 
-    /**
-     * 댓글 작성자 ID
-     */
+    @NotNull(message = "postId는 필수입니다.")
+    private Long postId;
+
     @NotNull(message = "userId는 필수입니다.")
     private Long userId;
 
-    /**
-     * 댓글 본문
-     */
     @NotBlank(message = "댓글 내용을 입력해주세요.")
     private String content;
 }

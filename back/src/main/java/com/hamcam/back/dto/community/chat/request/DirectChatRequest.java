@@ -9,7 +9,6 @@ import lombok.*;
  * 요청자(userId)와 상대방(targetUserId)를 함께 전달
  */
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

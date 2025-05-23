@@ -2,8 +2,9 @@ package com.hamcam.back.handler;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.hamcam.back.dto.community.chat.request.ChatEnterRequest;
 import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.request.ChatReadRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
@@ -18,12 +19,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * [ChatWebSocketHandler]
- *
- * JWT 제거된 WebSocket 핸들러.
- * - 클라이언트가 userId를 메시지에 직접 포함하도록 구조 변경.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -42,64 +37,97 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        log.info("🔌 WebSocket 연결됨 - 세션 ID: {}", session.getId());
+        log.info("🔌 연결 완료 - 세션 ID: {}", session.getId());
     }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) {
         try {
-            Map<String, Object> jsonMap = objectMapper.readValue(message.getPayload(), Map.class);
-            String type = (String) jsonMap.get("type");
+            Map<String, Object> json = objectMapper.readValue(message.getPayload(), Map.class);
+            String type = (String) json.get("type");
+            Long userId = parseLong(json.get("userId"));
 
-            if (type == null || !jsonMap.containsKey("userId")) {
-                throw new IllegalArgumentException("userId가 누락되었습니다.");
+            if (type == null || userId == null) {
+                throw new IllegalArgumentException("type 또는 userId 누락");
             }
 
-            Long userId = Long.valueOf(jsonMap.get("userId").toString());
-
             switch (type.toUpperCase()) {
-                case "ENTER" -> {
-                    Long roomId = Long.valueOf(jsonMap.get("roomId").toString());
-                    roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
-                    sessionRoomMap.put(session.getId(), roomId);
-                    chatReadService.updateLastReadMessage(roomId, userId);
-                    log.info("🚪 입장 - 사용자 {} / 방 {}", userId, roomId);
-                }
-
-                case "READ" -> {
-                    ChatReadRequest readRequest = objectMapper.convertValue(jsonMap, ChatReadRequest.class);
-                    int unreadCount = chatReadService.markReadAsUserId(
-                            readRequest.getRoomId(), readRequest.getMessageId(), userId
-                    );
-
-                    Map<String, Object> ack = new HashMap<>();
-                    ack.put("type", "READ_ACK");
-                    ack.put("roomId", readRequest.getRoomId());
-                    ack.put("messageId", readRequest.getMessageId());
-                    ack.put("unreadCount", unreadCount);
-
-                    String ackPayload = objectMapper.writeValueAsString(ack);
-                    for (WebSocketSession s : roomSessions.getOrDefault(readRequest.getRoomId(), Set.of())) {
-                        if (s.isOpen()) s.sendMessage(new TextMessage(ackPayload));
-                    }
-                }
-
-                default -> {
-                    ChatMessageRequest request = objectMapper.convertValue(jsonMap, ChatMessageRequest.class);
-                    ChatMessageResponse response = chatMessageService.sendMessage(request.getRoomId(), userId, request);
-
-                    String payload = objectMapper.writeValueAsString(response);
-                    for (WebSocketSession s : roomSessions.getOrDefault(request.getRoomId(), Set.of())) {
-                        if (s.isOpen()) s.sendMessage(new TextMessage(payload));
-                    }
-                }
+                case "ENTER" -> handleEnter(session, json, userId);
+                case "READ" -> handleRead(json, userId);
+                default -> handleMessage(json, userId);
             }
 
         } catch (Exception e) {
-            log.error("❌ WebSocket 메시지 처리 오류", e);
+            log.error("❌ 메시지 처리 실패", e);
             try {
-                session.sendMessage(new TextMessage("{\"type\":\"ERROR\",\"message\":\"메시지 처리 중 오류 발생\"}"));
+                session.sendMessage(new TextMessage("{\"type\":\"ERROR\",\"message\":\"처리 실패\"}"));
             } catch (Exception ignored) {}
+        }
+    }
+
+    private void handleEnter(WebSocketSession session, Map<String, Object> json, Long userId) {
+        Long roomId = parseLong(json.get("roomId"));
+
+        if (roomId == null) {
+            log.warn("❗️ENTER 요청에서 roomId가 누락되었거나 잘못된 형식입니다.");
+            return;
+        }
+
+        // 방-세션 맵핑 등록
+        roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
+        sessionRoomMap.put(session.getId(), roomId);
+
+        // DTO 생성 후 서비스 호출
+        try {
+            ChatEnterRequest enterRequest = ChatEnterRequest.builder()
+                    .roomId(roomId)
+                    .userId(userId)
+                    .build();
+
+            chatReadService.updateLastReadMessage(enterRequest);
+            log.info("🚪 채팅방 입장 완료 - userId={}, roomId={}", userId, roomId);
+        } catch (Exception e) {
+            log.error("❌ 입장 처리 중 오류 발생 - userId={}, roomId={}", userId, roomId, e);
+        }
+    }
+
+
+
+    private void handleRead(Map<String, Object> json, Long userId) throws Exception {
+        ChatReadRequest readRequest = objectMapper.convertValue(json, ChatReadRequest.class);
+        int unreadCount = chatReadService.markReadAsUserId(readRequest.getRoomId(), readRequest.getMessageId(), userId);
+
+        Map<String, Object> ack = Map.of(
+                "type", "READ_ACK",
+                "roomId", readRequest.getRoomId(),
+                "messageId", readRequest.getMessageId(),
+                "unreadCount", unreadCount
+        );
+
+        String ackPayload = objectMapper.writeValueAsString(ack);
+        broadcastToRoom(readRequest.getRoomId(), ackPayload);
+    }
+
+    private void handleMessage(Map<String, Object> json, Long userId) throws Exception {
+        ChatMessageRequest request = objectMapper.convertValue(json, ChatMessageRequest.class);
+        ChatMessageResponse response = chatMessageService.sendMessage(request.getRoomId(), userId, request);
+        String payload = objectMapper.writeValueAsString(response);
+        broadcastToRoom(request.getRoomId(), payload);
+    }
+
+    private void broadcastToRoom(Long roomId, String payload) throws Exception {
+        for (WebSocketSession s : roomSessions.getOrDefault(roomId, Set.of())) {
+            if (s.isOpen()) {
+                s.sendMessage(new TextMessage(payload));
+            }
+        }
+    }
+
+    private Long parseLong(Object value) {
+        try {
+            return value != null ? Long.valueOf(value.toString()) : null;
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
@@ -117,6 +145,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             }
         }
 
-        log.info("❎ WebSocket 연결 종료 - 세션: {}", session.getId());
+        log.info("❎ 연결 종료 - 세션 ID: {}", session.getId());
     }
 }

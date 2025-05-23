@@ -36,8 +36,14 @@ public class PostService {
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
     }
 
-    public Long createPost(PostCreateRequest request, MultipartFile[] files, Long userId) {
-        User writer = getUser(userId);
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    /** ✅ 게시글 생성 */
+    public Long createPost(PostCreateRequest request) {
+        User writer = getUser(request.getUserId());
 
         Post post = Post.builder()
                 .writer(writer)
@@ -49,18 +55,19 @@ public class PostService {
 
         post = postRepository.save(post);
 
-        if (files != null && files.length > 0) {
-            attachmentService.uploadPostFiles(post.getId(), files);
+        if (request.getFiles() != null && !request.getFiles().isEmpty()) {
+            attachmentService.uploadPostFiles(post.getId(), request.getFiles().toArray(new MultipartFile[0]));
         }
 
         return post.getId();
     }
 
+    /** ✅ 게시글 수정 */
     @Transactional
-    public void updatePost(Long postId, PostUpdateRequest request, MultipartFile[] files, Long userId) {
-        Post post = getPostOrThrow(postId);
+    public void updatePost(PostUpdateRequest request) {
+        Post post = getPostOrThrow(request.getPostId());
 
-        if (!post.getWriter().getId().equals(userId)) {
+        if (!post.getWriter().getId().equals(request.getUserId())) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -76,80 +83,84 @@ public class PostService {
             request.getDeleteFileIds().forEach(attachmentService::deleteAttachment);
         }
 
-        if (files != null && files.length > 0) {
-            attachmentService.uploadPostFiles(postId, files);
+        if (request.getFiles() != null && !request.getFiles().isEmpty()) {
+            attachmentService.uploadPostFiles(post.getId(), request.getFiles().toArray(new MultipartFile[0]));
         }
     }
 
-    public void deletePost(Long postId, Long userId) {
-        Post post = getPostOrThrow(postId);
-        if (!post.getWriter().getId().equals(userId)) {
+    /** ✅ 게시글 삭제 */
+    public void deletePost(PostDeleteRequest request) {
+        Post post = getPostOrThrow(request.getPostId());
+        if (!post.getWriter().getId().equals(request.getUserId())) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
         postRepository.delete(post);
     }
 
-    public PostResponse getPostDetail(Long postId) {
-        Post post = getPostOrThrow(postId);
+    /** ✅ 게시글 상세 조회 */
+    public PostResponse getPostDetail(PostDetailRequest request) {
+        Post post = getPostOrThrow(request.getPostId());
         post.incrementViewCount();
         postRepository.save(post);
         return PostResponse.from(post);
     }
 
-    public PostListResponse getPostList(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    /** ✅ 게시글 목록 조회 */
+    public PostListResponse getPostList(PostListRequest request) {
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), Sort.by("createdAt").descending());
         Page<Post> posts = postRepository.findAll(pageable);
         return PostListResponse.from(posts);
     }
 
-    public PostListResponse searchPosts(String keyword, Pageable pageable) {
-        Page<Post> result = (keyword == null || keyword.isBlank())
+    /** ✅ 게시글 검색 */
+    public PostListResponse searchPosts(PostSearchRequest request) {
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize(), Sort.by("createdAt").descending());
+        Page<Post> result = (request.getKeyword() == null || request.getKeyword().isBlank())
                 ? postRepository.findAll(pageable)
-                : postRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(keyword, keyword, pageable);
+                : postRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(request.getKeyword(), request.getKeyword(), pageable);
         return PostListResponse.from(result);
     }
 
-    public PostListResponse filterPosts(String sort, int minLikes, String keyword) {
-        Sort sortOption = "popular".equals(sort)
+    /** ✅ 게시글 필터링 */
+    public PostListResponse filterPosts(PostFilterRequest request) {
+        Sort sortOption = "popular".equals(request.getSort())
                 ? Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"))
                 : Sort.by(Sort.Order.desc("createdAt"));
 
         Pageable pageable = PageRequest.of(0, 20, sortOption);
-        Page<Post> result = postRepository.searchFilteredPostsWithoutCategory(keyword, minLikes, pageable);
+
+        Page<Post> result = (request.getCategory() == null)
+                ? postRepository.searchFilteredPostsWithoutCategory(request.getKeyword(), request.getMinLikes(), pageable)
+                : postRepository.searchFilteredPosts(request.getCategory(), request.getKeyword(), request.getMinLikes(), pageable);
+
         return PostListResponse.from(result);
     }
 
-    public PostListResponse filterPostsByCategory(PostCategory category, String keyword, int minLikes, String sort) {
-        Sort sortOption = "popular".equals(sort)
-                ? Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("viewCount"))
-                : Sort.by(Sort.Order.desc("createdAt"));
-        Pageable pageable = PageRequest.of(0, 20, sortOption);
-
-        Page<Post> result = postRepository.searchFilteredPosts(category, keyword, minLikes, pageable);
-        return PostListResponse.from(result);
-    }
-
+    /** ✅ 인기 게시글 */
     public PopularPostListResponse getPopularPosts() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Post> result = postRepository.findPopularPosts(pageable);
         return PopularPostListResponse.from(result.getContent());
     }
 
+    /** ✅ 랭킹 */
     public RankingResponse getPostRanking() {
         Page<Object[]> ranking = postRepository.getUserPostRanking(PageRequest.of(0, 10));
         return RankingResponse.from(ranking.getContent());
     }
 
+    /** ✅ 자동완성 */
     public PostAutoFillResponse autoFillPost(ProblemReferenceRequest request) {
         String title = "추천 제목: " + request.getProblemTitle();
         String content = "이 문제는 " + request.getCategory() + "에 속하며, 해결 전략은 다음과 같습니다...";
         return PostAutoFillResponse.builder().title(title).content(content).build();
     }
 
+    /** ✅ 즐겨찾기 추가 */
     @Transactional
-    public void favoritePost(Long postId, Long userId) {
-        User user = getUser(userId);
-        Post post = getPostOrThrow(postId);
+    public void favoritePost(PostFavoriteRequest request) {
+        User user = getUser(request.getUserId());
+        Post post = getPostOrThrow(request.getPostId());
 
         if (postFavoriteRepository.existsByUserAndPost(user, post)) {
             throw new CustomException(ErrorCode.DUPLICATE_LIKE);
@@ -162,19 +173,20 @@ public class PostService {
                 .build());
     }
 
+    /** ✅ 즐겨찾기 제거 */
     @Transactional
-    public void unfavoritePost(Long postId, Long userId) {
-        User user = getUser(userId);
-        Post post = getPostOrThrow(postId);
+    public void unfavoritePost(PostFavoriteRequest request) {
+        User user = getUser(request.getUserId());
+        Post post = getPostOrThrow(request.getPostId());
 
         PostFavorite favorite = postFavoriteRepository.findByUserAndPost(user, post)
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INPUT));
         postFavoriteRepository.delete(favorite);
     }
 
-    @Transactional(readOnly = true)
-    public FavoritePostListResponse getFavoritePosts(Long userId) {
-        User user = getUser(userId);
+    /** ✅ 즐겨찾기 목록 */
+    public FavoritePostListResponse getFavoritePosts(PostUserRequest request) {
+        User user = getUser(request.getUserId());
         List<PostFavorite> favorites = postFavoriteRepository.findAllByUser(user);
         List<PostSummaryResponse> posts = favorites.stream()
                 .map(f -> PostSummaryResponse.from(f.getPost()))
@@ -182,14 +194,10 @@ public class PostService {
         return new FavoritePostListResponse(posts);
     }
 
-    public void increaseViewCount(Long postId) {
-        Post post = getPostOrThrow(postId);
+    /** ✅ 조회수 증가 */
+    public void increaseViewCount(PostViewRequest request) {
+        Post post = getPostOrThrow(request.getPostId());
         post.incrementViewCount();
         postRepository.save(post);
-    }
-
-    private User getUser(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }

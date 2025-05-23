@@ -1,7 +1,9 @@
 package com.hamcam.back.dto.community.post.request;
 
 import com.hamcam.back.entity.community.PostCategory;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -14,11 +16,16 @@ import java.util.List;
 @Builder
 public class PostUpdateRequest {
 
+    @NotNull(message = "postId는 필수입니다.")
+    private Long postId;
+
     @NotNull(message = "userId는 필수입니다.")
     private Long userId;
 
     private String title;
     private String content;
     private PostCategory category;
+
     private List<Long> deleteFileIds;
+    private List<MultipartFile> files;
 }
