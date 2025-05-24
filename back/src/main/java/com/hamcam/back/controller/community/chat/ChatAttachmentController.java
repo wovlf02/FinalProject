@@ -1,9 +1,11 @@
 package com.hamcam.back.controller.community.chat;
 
+import com.hamcam.back.dto.community.chat.request.ChatAttachmentRequest;
 import com.hamcam.back.dto.community.chat.request.ChatFileUploadRequest;
 import com.hamcam.back.dto.community.chat.response.ChatFilePreviewResponse;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.service.community.chat.ChatAttachmentService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
@@ -25,34 +27,35 @@ public class ChatAttachmentController {
     private final ChatAttachmentService chatAttachmentService;
 
     /**
-     * ✅ 파일 업로드 메시지 전송
-     * - Multipart/form-data 기반 요청
+     * ✅ 파일 업로드 메시지 전송 (세션 기반 사용자)
+     * - Multipart 파일 포함 → @ModelAttribute 사용
      */
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ChatMessageResponse> uploadFileMessage(
-            @ModelAttribute ChatFileUploadRequest request) {
-
-        return ResponseEntity.ok(chatAttachmentService.saveFileMessage(request));
+            @ModelAttribute ChatFileUploadRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        return ResponseEntity.ok(chatAttachmentService.saveFileMessage(request, httpRequest));
     }
 
     /**
-     * ✅ 이미지 미리보기 (base64 반환)
+     * ✅ 이미지 미리보기 (Base64 인코딩된 결과 반환)
      */
-    @GetMapping("/{messageId}/preview")
+    @PostMapping("/preview")
     public ResponseEntity<ChatFilePreviewResponse> previewImage(
-            @PathVariable Long messageId) {
-
-        return ResponseEntity.ok(chatAttachmentService.previewFile(messageId));
+            @RequestBody ChatAttachmentRequest request
+    ) {
+        return ResponseEntity.ok(chatAttachmentService.previewFile(request.getMessageId()));
     }
 
     /**
      * ✅ 파일 다운로드
      */
-    @GetMapping("/{messageId}/download")
+    @PostMapping("/download")
     public ResponseEntity<Resource> downloadFile(
-            @PathVariable Long messageId) {
-
-        Resource resource = chatAttachmentService.loadFileAsResource(messageId);
+            @RequestBody ChatAttachmentRequest request
+    ) {
+        Resource resource = chatAttachmentService.loadFileAsResource(request.getMessageId());
         String filename = resource.getFilename();
 
         String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8)

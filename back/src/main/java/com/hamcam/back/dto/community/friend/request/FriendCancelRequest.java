@@ -13,9 +13,6 @@ import lombok.*;
 @Builder
 public class FriendCancelRequest {
 
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
     @NotNull(message = "requestId는 필수입니다.")
     private Long requestId;
 }

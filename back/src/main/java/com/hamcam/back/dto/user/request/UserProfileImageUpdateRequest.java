@@ -18,15 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 public class UserProfileImageUpdateRequest {
 
-    /**
-     * 사용자 ID
-     */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
-    /**
-     * 프로필 이미지 파일
-     */
     @NotNull(message = "profileImage는 필수입니다.")
     private MultipartFile profileImage;
 }

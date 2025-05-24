@@ -2,9 +2,9 @@ package com.hamcam.back.controller.user;
 
 import com.hamcam.back.dto.user.request.UserProfileImageUpdateRequest;
 import com.hamcam.back.dto.user.response.UserProfileResponse;
-import com.hamcam.back.dto.user.request.UserRequest;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.user.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,50 +19,34 @@ public class UserController {
 
     private final UserService userService;
 
-    /** ✅ 내 정보 조회 */
-    @PostMapping("/me")
-    public ResponseEntity<ApiResponse<UserProfileResponse>> getMyInfo(@RequestBody @Valid UserRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(userService.getMyInfo(request)));
+    /** ✅ 내 프로필 조회 */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getMyInfo(HttpServletRequest request) {
+        UserProfileResponse response = userService.getMyInfo(request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     /** ✅ 회원 탈퇴 */
     @PostMapping("/withdraw")
-    public ResponseEntity<ApiResponse<Void>> withdraw(@RequestBody @Valid UserRequest request) {
+    public ResponseEntity<ApiResponse<Void>> withdraw(HttpServletRequest request) {
         userService.withdraw(request);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
-    /** ✅ 다른 사용자 정보 조회 */
+    /** ✅ 다른 사용자 프로필 조회 (현재는 내 프로필과 동일하게 처리) */
     @PostMapping("/profile")
-    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserById(@RequestBody @Valid UserRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(userService.getUserProfile(request)));
-    }
-
-    /** ✅ 닉네임 변경 */
-    @PatchMapping("/nickname")
-    public ResponseEntity<ApiResponse<Void>> updateNickname(@RequestBody @Valid UserRequest request) {
-        userService.updateNickname(request);
-        return ResponseEntity.ok(ApiResponse.ok());
-    }
-
-    /** ✅ 이메일 변경 */
-    @PatchMapping("/email")
-    public ResponseEntity<ApiResponse<Void>> updateEmail(@RequestBody @Valid UserRequest request) {
-        userService.updateEmail(request);
-        return ResponseEntity.ok(ApiResponse.ok());
-    }
-
-    /** ✅ 아이디(username) 변경 */
-    @PatchMapping("/username")
-    public ResponseEntity<ApiResponse<Void>> updateUsername(@RequestBody @Valid UserRequest request) {
-        userService.updateUsername(request);
-        return ResponseEntity.ok(ApiResponse.ok());
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserById(HttpServletRequest request) {
+        UserProfileResponse response = userService.getUserProfile(request);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     /** ✅ 프로필 이미지 변경 */
     @PostMapping("/profile-image")
-    public ResponseEntity<ApiResponse<String>> updateProfileImage(@ModelAttribute UserProfileImageUpdateRequest request) {
-        String imageUrl = userService.updateProfileImage(request);
+    public ResponseEntity<ApiResponse<String>> updateProfileImage(
+            @ModelAttribute UserProfileImageUpdateRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        String imageUrl = userService.updateProfileImage(request, httpRequest);
         return ResponseEntity.ok(ApiResponse.ok(imageUrl));
     }
 }

@@ -15,7 +15,4 @@ public class CommentDeleteRequest {
 
     @NotNull(message = "commentId는 필수입니다.")
     private Long commentId;
-
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
 }

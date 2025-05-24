@@ -17,15 +17,6 @@ import java.time.LocalDate;
 @Builder
 public class CalendarDailyRequest {
 
-    /**
-     * 사용자 ID
-     */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
-    /**
-     * 조회할 날짜 (yyyy-MM-dd)
-     */
     @NotNull(message = "날짜는 필수입니다.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate date;

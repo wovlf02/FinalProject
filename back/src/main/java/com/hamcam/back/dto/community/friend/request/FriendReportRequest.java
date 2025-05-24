@@ -14,10 +14,7 @@ import lombok.*;
 @Builder
 public class FriendReportRequest {
 
-    @NotNull(message = "신고자 ID는 필수입니다.")
-    private Long userId;
-
-    @NotNull(message = "신고 대상 사용자 ID는 필수입니다.")
+    @NotNull(message = "targetUserId는 필수입니다.")
     private Long targetUserId;
 
     @NotBlank(message = "신고 사유는 필수입니다.")

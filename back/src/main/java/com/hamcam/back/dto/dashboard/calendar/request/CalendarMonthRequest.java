@@ -19,15 +19,6 @@ import java.time.YearMonth;
 @Builder
 public class CalendarMonthRequest {
 
-    /**
-     * 사용자 ID
-     */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
-    /**
-     * 조회할 월 (예: 2025-05)
-     */
     @NotNull(message = "조회할 월(month)은 필수입니다.")
     @DateTimeFormat(pattern = "yyyy-MM")
     private YearMonth month;

@@ -12,5 +12,4 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReplyLikeToggleRequest {
     private Long replyId;
-    private Long userId;
 }

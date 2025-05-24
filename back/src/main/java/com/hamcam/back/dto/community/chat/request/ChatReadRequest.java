@@ -15,21 +15,9 @@ import lombok.*;
 @ToString
 public class ChatReadRequest {
 
-    /**
-     * 읽음 처리 대상 채팅방 ID
-     */
     @NotNull(message = "roomId는 필수입니다.")
     private Long roomId;
 
-    /**
-     * 읽은 마지막 메시지 ID
-     */
     @NotNull(message = "messageId는 필수입니다.")
     private Long messageId;
-
-    /**
-     * 메시지를 읽은 사용자 ID
-     */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
 }

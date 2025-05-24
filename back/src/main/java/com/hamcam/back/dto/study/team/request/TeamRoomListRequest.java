@@ -4,8 +4,6 @@ import lombok.*;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class TeamRoomListRequest {
-    private Long userId;
 }

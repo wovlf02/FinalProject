@@ -18,22 +18,10 @@ import java.time.LocalDate;
 @Builder
 public class WeeklyReflectionRequest {
 
-    /**
-     * 사용자 ID
-     */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
-    /**
-     * 주간 회고 시작일 (yyyy-MM-dd)
-     */
     @NotNull(message = "시작일을 입력해주세요.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate startDate;
 
-    /**
-     * 주간 회고 종료일 (yyyy-MM-dd)
-     */
     @NotNull(message = "종료일을 입력해주세요.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate endDate;

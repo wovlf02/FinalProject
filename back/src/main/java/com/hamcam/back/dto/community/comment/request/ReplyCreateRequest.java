@@ -17,9 +17,6 @@ public class ReplyCreateRequest {
     @NotNull(message = "commentId는 필수입니다.")
     private Long commentId;
 
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
     @NotBlank(message = "내용은 필수 입력 값입니다.")
     private String content;
 }

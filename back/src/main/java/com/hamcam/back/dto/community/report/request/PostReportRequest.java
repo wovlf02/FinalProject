@@ -12,9 +12,6 @@ import lombok.*;
 @Builder
 public class PostReportRequest {
 
-    @NotNull(message = "신고자 ID는 필수입니다.")
-    private Long userId;
-
     @NotNull(message = "게시글 ID는 필수입니다.")
     private Long postId;
 

@@ -7,9 +7,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class TeamRoomStudyTimeRequest {
-    private Long userId;
     private Long roomId;
-
-    /** 측정된 학습 시간 (단위: 분) */
     private Integer studyMinutes;
 }

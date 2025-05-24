@@ -18,10 +18,6 @@ import java.util.List;
 @NoArgsConstructor
 public class PostSaveRequest {
 
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
-    // 수정 시에는 필요
     private Long postId;
 
     @NotBlank(message = "제목은 필수입니다.")
@@ -32,7 +28,7 @@ public class PostSaveRequest {
 
     private PostCategory category;
 
-    private List<MultipartFile> files; // 업로드 파일
-
-    private List<Long> deleteFileIds; // 삭제할 첨부파일 ID
+    private List<MultipartFile> files;        // 업로드 파일
+    private List<Long> deleteFileIds;         // 삭제할 첨부파일 ID
 }
+

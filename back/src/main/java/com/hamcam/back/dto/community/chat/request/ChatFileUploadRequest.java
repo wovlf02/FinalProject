@@ -12,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Setter
 public class ChatFileUploadRequest {
 
-    private Long userId;         // 업로드한 사용자 ID
-    private Long roomId;         // 업로드 대상 채팅방 ID
-    private MultipartFile file;  // 첨부 파일
+    private Long roomId;
+    private MultipartFile file;
 }

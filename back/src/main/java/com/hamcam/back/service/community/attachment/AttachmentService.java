@@ -5,12 +5,16 @@ import com.hamcam.back.dto.community.attachment.request.AttachmentUploadRequest;
 import com.hamcam.back.dto.community.attachment.request.PostIdRequest;
 import com.hamcam.back.dto.community.attachment.response.AttachmentListResponse;
 import com.hamcam.back.dto.community.attachment.response.AttachmentResponse;
+import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.Attachment;
 import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.attachment.AttachmentRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -26,17 +30,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AttachmentService {
 
-    private static final String ATTACHMENT_DIR = "uploads/community/";
+    private static final Path ATTACHMENT_DIR = Paths.get("uploads/community");
 
     private final AttachmentRepository attachmentRepository;
     private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
     /**
-     * ✅ 게시글 첨부파일 업로드
+     * ✅ 게시글 첨부파일 업로드 (세션 기반 userId)
      */
-    public int uploadPostFiles(AttachmentUploadRequest request) {
+    public int uploadPostFiles(AttachmentUploadRequest request, HttpServletRequest httpRequest) {
         MultipartFile[] files = request.getFiles();
         Long postId = request.getPostId();
+        Long userId = SessionUtil.getUserId(httpRequest);
 
         if (files == null || files.length == 0) {
             throw new CustomException(ErrorCode.MISSING_PARAMETER);
@@ -45,13 +51,17 @@ public class AttachmentService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
+        if (!post.getWriter().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
         List<Attachment> attachments = saveFiles(files).stream()
-                .map(fileMeta -> Attachment.builder()
+                .map(meta -> Attachment.builder()
                         .post(post)
-                        .originalFileName(fileMeta.original())
-                        .storedFileName(fileMeta.stored())
-                        .contentType(fileMeta.type())
-                        .previewAvailable(isPreviewable(fileMeta.type()))
+                        .originalFileName(meta.original())
+                        .storedFileName(meta.stored())
+                        .contentType(meta.type())
+                        .previewAvailable(isPreviewable(meta.type()))
                         .build())
                 .collect(Collectors.toList());
 
@@ -75,7 +85,7 @@ public class AttachmentService {
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
         try {
-            Path path = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()).normalize();
+            Path path = ATTACHMENT_DIR.resolve(attachment.getStoredFileName()).normalize();
             Resource resource = new UrlResource(path.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {
@@ -83,20 +93,25 @@ public class AttachmentService {
             }
 
             return resource;
-
         } catch (MalformedURLException e) {
             throw new CustomException(ErrorCode.FILE_DOWNLOAD_FAILED);
         }
     }
 
     /**
-     * ✅ 첨부파일 삭제
+     * ✅ 첨부파일 삭제 (세션 기반 사용자 확인)
      */
-    public void deleteAttachment(AttachmentIdRequest request) {
+    public void deleteAttachment(AttachmentIdRequest request, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+
         Attachment attachment = attachmentRepository.findById(request.getAttachmentId())
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
-        Path filePath = Paths.get(ATTACHMENT_DIR).resolve(attachment.getStoredFileName()).normalize();
+        if (!attachment.getPost().getWriter().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        Path filePath = ATTACHMENT_DIR.resolve(attachment.getStoredFileName()).normalize();
         try {
             Files.deleteIfExists(filePath);
         } catch (Exception e) {
@@ -126,9 +141,8 @@ public class AttachmentService {
 
     private List<FileMeta> saveFiles(MultipartFile[] files) {
         try {
-            Path dirPath = Paths.get(ATTACHMENT_DIR);
-            if (!Files.exists(dirPath)) {
-                Files.createDirectories(dirPath);
+            if (!Files.exists(ATTACHMENT_DIR)) {
+                Files.createDirectories(ATTACHMENT_DIR);
             }
 
             return Arrays.stream(files)
@@ -143,7 +157,7 @@ public class AttachmentService {
                         String stored = UUID.randomUUID() + "_" + original;
 
                         try {
-                            Path target = dirPath.resolve(stored);
+                            Path target = ATTACHMENT_DIR.resolve(stored);
                             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
                         } catch (Exception e) {
                             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);

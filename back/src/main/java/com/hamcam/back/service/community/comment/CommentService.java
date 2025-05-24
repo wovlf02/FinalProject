@@ -13,6 +13,8 @@ import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,9 +32,9 @@ public class CommentService {
     private final UserRepository userRepository;
 
     /** ✅ 댓글 등록 */
-    public Long createComment(CommentCreateRequest request) {
+    public Long createComment(CommentCreateRequest request, HttpServletRequest httpRequest) {
         Post post = getPost(request.getPostId());
-        User user = getUser(request.getUserId());
+        User user = getSessionUser(httpRequest);
 
         Comment comment = Comment.builder()
                 .post(post)
@@ -46,9 +48,9 @@ public class CommentService {
     }
 
     /** ✅ 대댓글 등록 */
-    public Long createReply(ReplyCreateRequest request) {
+    public Long createReply(ReplyCreateRequest request, HttpServletRequest httpRequest) {
         Comment parent = getComment(request.getCommentId());
-        User user = getUser(request.getUserId());
+        User user = getSessionUser(httpRequest);
 
         Reply reply = Reply.builder()
                 .comment(parent)
@@ -63,38 +65,39 @@ public class CommentService {
     }
 
     /** ✅ 댓글 수정 */
-    public void updateComment(CommentUpdateRequest request) {
+    public void updateComment(CommentUpdateRequest request, HttpServletRequest httpRequest) {
         Comment comment = getComment(request.getCommentId());
-        validateUser(comment.getWriter(), request.getUserId());
+        validateUser(comment.getWriter(), httpRequest);
         comment.updateContent(request.getContent());
     }
 
     /** ✅ 대댓글 수정 */
-    public void updateReply(ReplyUpdateRequest request) {
+    public void updateReply(ReplyUpdateRequest request, HttpServletRequest httpRequest) {
         Reply reply = getReply(request.getReplyId());
-        validateUser(reply.getWriter(), request.getUserId());
+        validateUser(reply.getWriter(), httpRequest);
         reply.updateContent(request.getContent());
     }
 
     /** ✅ 댓글 삭제 */
-    public void deleteComment(CommentDeleteRequest request) {
+    public void deleteComment(CommentDeleteRequest request, HttpServletRequest httpRequest) {
         Comment comment = getComment(request.getCommentId());
-        validateUser(comment.getWriter(), request.getUserId());
+        validateUser(comment.getWriter(), httpRequest);
         comment.softDelete();
         comment.getPost().decrementCommentCount();
     }
 
     /** ✅ 대댓글 삭제 */
-    public void deleteReply(ReplyDeleteRequest request) {
+    public void deleteReply(ReplyDeleteRequest request, HttpServletRequest httpRequest) {
         Reply reply = getReply(request.getReplyId());
-        validateUser(reply.getWriter(), request.getUserId());
+        validateUser(reply.getWriter(), httpRequest);
         reply.softDelete();
         reply.getPost().decrementCommentCount();
     }
 
     /** ✅ 게시글 기준 전체 댓글 + 대댓글 조회 */
-    public CommentListResponse getCommentsByPost(CommentListRequest request) {
+    public CommentListResponse getCommentsByPost(CommentListRequest request, HttpServletRequest httpRequest) {
         Post post = getPost(request.getPostId());
+        Long sessionUserId = SessionUtil.getUserId(httpRequest);
 
         List<Comment> comments = commentRepository.findByPostAndIsDeletedFalseOrderByCreatedAtAsc(post);
         Map<Long, List<Reply>> replyMap = replyRepository.findByPostAndIsDeletedFalse(post).stream()
@@ -103,7 +106,7 @@ public class CommentService {
         List<CommentResponse> responseList = comments.stream()
                 .map(comment -> CommentResponse.from(comment,
                         replyMap.getOrDefault(comment.getId(), List.of()),
-                        request.getUserId()))
+                        sessionUserId))
                 .collect(Collectors.toList());
 
         return new CommentListResponse(responseList);
@@ -126,13 +129,15 @@ public class CommentService {
                 .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
     }
 
-    private User getUser(Long userId) {
+    private User getSessionUser(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
-    private void validateUser(User writer, Long userId) {
-        if (!writer.getId().equals(userId)) {
+    private void validateUser(User writer, HttpServletRequest request) {
+        Long sessionUserId = SessionUtil.getUserId(request);
+        if (!writer.getId().equals(sessionUserId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
     }

@@ -5,13 +5,21 @@ import com.hamcam.back.dto.auth.request.RegisterRequest;
 import com.hamcam.back.dto.auth.response.LoginResponse;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.auth.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * [AuthController]
+ * 로그인/회원가입/탈퇴 처리 컨트롤러
+ * - 로그인 시 전체 사용자 정보 반환 (LocalStorage용)
+ * - 비밀번호는 평문 저장 (보안 제외: 프로토타입 목적)
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
@@ -20,35 +28,31 @@ public class AuthController {
 
     private final AuthService authService;
 
-    /**
-     * ✅ 회원가입 요청
-     * - 프로필 이미지 포함 가능
-     * - 비밀번호 암호화 없이 평문 저장
-     */
+    /** ✅ 회원가입 요청 - Multipart (profileImage 포함 가능) */
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<String> register(
+    public ResponseEntity<ApiResponse<String>> register(
             @RequestPart("request") RegisterRequest request,
-            @RequestPart(value = "profileImage", required = false) MultipartFile file) {
-        authService.register(request, file);
-        return ApiResponse.ok("✅ 회원가입이 완료되었습니다.");
+            @RequestPart(value = "profileImage", required = false) MultipartFile file,
+            HttpServletRequest httpRequest
+    ) {
+        authService.register(request, file, httpRequest);
+        return ResponseEntity.ok(ApiResponse.ok("✅ 회원가입이 완료되었습니다."));
     }
 
-    /**
-     * ✅ 로그인 요청
-     * - 성공 시 LoginResponse 반환 (LocalStorage 저장용 전체 정보 포함)
-     */
+    /** ✅ 로그인 요청 - 사용자 전체 정보 반환 + 세션 저장 */
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
-        return ApiResponse.ok(authService.login(request));
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @RequestBody @Valid LoginRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        LoginResponse response = authService.login(request, httpRequest);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    /**
-     * ✅ 회원 탈퇴 요청
-     * - 비밀번호 확인 없이 userId 기반 즉시 삭제
-     */
-    @DeleteMapping("/withdraw/{userId}")
-    public ApiResponse<Void> withdraw(@PathVariable Long userId) {
-        authService.withdraw(userId);
-        return ApiResponse.ok();
+    /** ✅ 회원 탈퇴 - 세션 기반 사용자 식별 */
+    @DeleteMapping("/withdraw")
+    public ResponseEntity<ApiResponse<Void>> withdraw(HttpServletRequest request) {
+        authService.withdraw(request);
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }

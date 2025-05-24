@@ -36,10 +36,6 @@ public class WebSocketChatService {
 
     /**
      * WebSocket을 통해 수신된 채팅 메시지를 저장하고 응답으로 반환
-     *
-     * @param request 메시지 내용 요청 DTO
-     * @param userId  송신자 사용자 ID
-     * @return 응답 DTO
      */
     public ChatMessageResponse saveMessage(ChatMessageRequest request, Long userId) {
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
@@ -47,6 +43,10 @@ public class WebSocketChatService {
 
         User sender = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (request.getType() == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
 
         ChatMessage message = ChatMessage.builder()
                 .chatRoom(room)
@@ -59,11 +59,8 @@ public class WebSocketChatService {
 
         chatMessageRepository.save(message);
 
-        // 마지막 메시지 갱신
-        String preview = switch (message.getType()) {
-            case FILE, IMAGE -> "[파일]";
-            case TEXT -> message.getContent();
-        };
+        // ✅ 마지막 메시지 정보 갱신
+        String preview = generatePreview(message);
         room.setLastMessage(preview);
         room.setLastMessageAt(message.getSentAt());
         chatRoomRepository.save(room);
@@ -76,11 +73,22 @@ public class WebSocketChatService {
                 .senderId(sender.getId())
                 .nickname(sender.getNickname())
                 .profileUrl(sender.getProfileImageUrl() != null ? sender.getProfileImageUrl() : "")
-                .content(message.getContent())
-                .type(message.getType().name())
+                .content(preview)
+                .type(message.getType())
                 .storedFileName(message.getStoredFileName())
                 .sentAt(message.getSentAt())
                 .unreadCount(unreadCount)
                 .build();
+    }
+
+    /**
+     * 메시지 유형에 따른 미리보기 텍스트 생성
+     */
+    private String generatePreview(ChatMessage message) {
+        return switch (message.getType()) {
+            case FILE, IMAGE -> "[파일]";
+            case TEXT -> message.getContent();
+            default -> "";
+        };
     }
 }

@@ -11,7 +11,7 @@ import lombok.Getter;
 @Builder
 public class LoginResponse {
 
-    private Long id;
+    private Long userId;
     private String username;
     private String email;
     private String name;
@@ -23,7 +23,7 @@ public class LoginResponse {
 
     public static LoginResponse from(User user) {
         return LoginResponse.builder()
-                .id(user.getId())
+                .userId(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .name(user.getName())

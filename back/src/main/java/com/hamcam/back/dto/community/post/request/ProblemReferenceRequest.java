@@ -15,9 +15,6 @@ public class ProblemReferenceRequest {
     @NotNull
     private Long problemId;
 
-    @NotNull
-    private Long userId;
-
     private String problemTitle;
     private String category; // 예: 구현, DFS, 정렬
 }

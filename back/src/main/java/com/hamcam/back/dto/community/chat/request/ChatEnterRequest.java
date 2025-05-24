@@ -13,13 +13,5 @@ import lombok.*;
 @Builder
 public class ChatEnterRequest {
 
-    /**
-     * 사용자 ID
-     */
-    private Long userId;
-
-    /**
-     * 입장할 채팅방의 ID
-     */
     private Long roomId;
 }

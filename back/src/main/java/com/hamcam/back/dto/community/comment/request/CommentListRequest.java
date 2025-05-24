@@ -15,6 +15,4 @@ public class CommentListRequest {
 
     @NotNull(message = "postId는 필수입니다.")
     private Long postId;
-
-    private Long userId; // 로그인하지 않은 경우 null 가능
 }

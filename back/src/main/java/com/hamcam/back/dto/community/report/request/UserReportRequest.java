@@ -12,9 +12,6 @@ import lombok.*;
 @Builder
 public class UserReportRequest {
 
-    @NotNull(message = "신고자 ID는 필수입니다.")
-    private Long userId;
-
     @NotNull(message = "대상 사용자 ID는 필수입니다.")
     private Long targetUserId;
 

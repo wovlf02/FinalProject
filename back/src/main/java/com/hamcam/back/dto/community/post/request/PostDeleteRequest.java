@@ -14,7 +14,4 @@ public class PostDeleteRequest {
 
     @NotNull(message = "postId는 필수입니다.")
     private Long postId;
-
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
 }

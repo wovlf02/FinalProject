@@ -17,9 +17,6 @@ public class CommentCreateRequest {
     @NotNull(message = "postId는 필수입니다.")
     private Long postId;
 
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
     @NotBlank(message = "댓글 내용을 입력해주세요.")
     private String content;
 }

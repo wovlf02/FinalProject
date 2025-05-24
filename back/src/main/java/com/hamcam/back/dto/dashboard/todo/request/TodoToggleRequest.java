@@ -13,8 +13,5 @@ import lombok.*;
 public class TodoToggleRequest {
 
     @NotNull
-    private Long userId;
-
-    @NotNull
     private Long todoId;
 }

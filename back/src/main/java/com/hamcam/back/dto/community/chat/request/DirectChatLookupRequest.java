@@ -14,12 +14,6 @@ import lombok.*;
 public class DirectChatLookupRequest {
 
     /**
-     * 현재 로그인한 사용자 ID
-     */
-    @NotNull(message = "요청자 ID는 필수입니다.")
-    private Long userId;
-
-    /**
      * 상대 사용자 ID
      */
     @NotNull(message = "대상 사용자 ID는 필수입니다.")

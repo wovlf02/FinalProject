@@ -1,6 +1,7 @@
 package com.hamcam.back.dto.community.attachment.request;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class AttachmentUploadRequest {
 
     @NotNull(message = "postId는 필수입니다.")

@@ -10,6 +10,8 @@ import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
 import com.hamcam.back.repository.community.report.ReportRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,8 +26,8 @@ public class ReportService {
     private final UserRepository userRepository;
 
     /** ✅ 게시글 신고 */
-    public void reportPost(PostReportRequest request) {
-        User reporter = getUser(request.getUserId());
+    public void reportPost(PostReportRequest request, HttpServletRequest httpRequest) {
+        User reporter = getSessionUser(httpRequest);
         Post post = postRepository.findById(request.getPostId())
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
@@ -37,8 +39,8 @@ public class ReportService {
     }
 
     /** ✅ 댓글 신고 */
-    public void reportComment(CommentReportRequest request) {
-        User reporter = getUser(request.getUserId());
+    public void reportComment(CommentReportRequest request, HttpServletRequest httpRequest) {
+        User reporter = getSessionUser(httpRequest);
         Comment comment = commentRepository.findById(request.getCommentId())
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
@@ -50,8 +52,8 @@ public class ReportService {
     }
 
     /** ✅ 대댓글 신고 */
-    public void reportReply(ReplyReportRequest request) {
-        User reporter = getUser(request.getUserId());
+    public void reportReply(ReplyReportRequest request, HttpServletRequest httpRequest) {
+        User reporter = getSessionUser(httpRequest);
         Reply reply = replyRepository.findById(request.getReplyId())
                 .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
 
@@ -63,8 +65,8 @@ public class ReportService {
     }
 
     /** ✅ 사용자 신고 */
-    public void reportUser(UserReportRequest request) {
-        User reporter = getUser(request.getUserId());
+    public void reportUser(UserReportRequest request, HttpServletRequest httpRequest) {
+        User reporter = getSessionUser(httpRequest);
         User target = getUser(request.getTargetUserId());
 
         if (reporter.getId().equals(target.getId())) {
@@ -93,6 +95,12 @@ public class ReportService {
                 .build();
 
         reportRepository.save(report);
+    }
+
+    /** ✅ 세션 유저 조회 */
+    private User getSessionUser(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
+        return getUser(userId);
     }
 
     /** ✅ 유저 조회 공통 메서드 */

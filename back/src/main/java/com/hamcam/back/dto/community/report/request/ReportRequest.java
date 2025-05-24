@@ -12,9 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ReportRequest {
 
-    /**
-     * 신고 사유
-     */
     @NotBlank(message = "신고 사유는 필수입니다.")
     private String reason;
 

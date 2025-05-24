@@ -1,14 +1,12 @@
 package com.hamcam.back.repository.dashboard;
 
-import com.hamcam.back.entity.dashboard.StudySession;
+import com.hamcam.back.entity.study.StudySession;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.dashboard.StudySession.StudyType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 public interface StudySessionRepository extends JpaRepository<StudySession, Long> {
 

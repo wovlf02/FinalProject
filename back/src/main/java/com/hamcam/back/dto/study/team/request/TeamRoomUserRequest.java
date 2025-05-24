@@ -7,6 +7,5 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class TeamRoomUserRequest {
-    private Long userId;
     private Long roomId;
 }

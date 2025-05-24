@@ -1,12 +1,13 @@
 package com.hamcam.back.service.user;
 
 import com.hamcam.back.dto.user.response.UserProfileResponse;
-import com.hamcam.back.dto.user.request.UserRequest;
 import com.hamcam.back.dto.user.request.UserProfileImageUpdateRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,13 +27,14 @@ public class UserService {
      * ✅ 내 정보 조회
      */
     @Transactional(readOnly = true)
-    public UserProfileResponse getMyInfo(UserRequest request) {
-        User user = getUserOrThrow(request.getUserId());
+    public UserProfileResponse getMyInfo(HttpServletRequest request) {
+        User user = getSessionUser(request);
 
         return UserProfileResponse.builder()
                 .userId(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .name(user.getName()) // ✅ 추가된 name 필드
                 .nickname(user.getNickname())
                 .grade(user.getGrade())
                 .studyHabit(user.getStudyHabit())
@@ -43,68 +45,31 @@ public class UserService {
                 .build();
     }
 
+
     /**
      * ✅ 회원 탈퇴
      */
     @Transactional
-    public void withdraw(UserRequest request) {
-        User user = getUserOrThrow(request.getUserId());
+    public void withdraw(HttpServletRequest request) {
+        User user = getSessionUser(request);
         userRepository.delete(user);
     }
 
     /**
-     * ✅ 다른 사용자 프로필 조회
+     * ✅ 다른 사용자 프로필 조회 (직접 조회하려면 별도 구현 필요)
+     * => 현재는 자기 자신의 정보와 동일 처리
      */
     @Transactional(readOnly = true)
-    public UserProfileResponse getUserProfile(UserRequest request) {
-        return getMyInfo(request); // 사용자 ID로 동일하게 처리
-    }
-
-    /**
-     * ✅ 닉네임 변경
-     */
-    @Transactional
-    public void updateNickname(UserRequest request) {
-        if (userRepository.existsByNickname(request.getNickname())) {
-            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
-        }
-
-        User user = getUserOrThrow(request.getUserId());
-        user.setNickname(request.getNickname());
-    }
-
-    /**
-     * ✅ 이메일 변경
-     */
-    @Transactional
-    public void updateEmail(UserRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        User user = getUserOrThrow(request.getUserId());
-        user.setEmail(request.getEmail());
-    }
-
-    /**
-     * ✅ 아이디(username) 변경
-     */
-    @Transactional
-    public void updateUsername(UserRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
-        }
-
-        User user = getUserOrThrow(request.getUserId());
-        user.setUsername(request.getUsername());
+    public UserProfileResponse getUserProfile(HttpServletRequest request) {
+        return getMyInfo(request);
     }
 
     /**
      * ✅ 프로필 이미지 변경
      */
     @Transactional
-    public String updateProfileImage(UserProfileImageUpdateRequest request) {
-        User user = getUserOrThrow(request.getUserId());
+    public String updateProfileImage(UserProfileImageUpdateRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
 
         try {
             String storedFileName = UUID.randomUUID() + "_" + request.getProfileImage().getOriginalFilename();
@@ -124,9 +89,10 @@ public class UserService {
     }
 
     /**
-     * ✅ 사용자 조회 공통 메서드
+     * ✅ 세션에서 사용자 조회
      */
-    private User getUserOrThrow(Long userId) {
+    private User getSessionUser(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }

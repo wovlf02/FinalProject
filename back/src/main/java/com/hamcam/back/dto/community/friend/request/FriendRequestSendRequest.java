@@ -14,9 +14,6 @@ import lombok.*;
 @Builder
 public class FriendRequestSendRequest {
 
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
     @NotNull(message = "targetUserId는 필수입니다.")
     private Long targetUserId;
 

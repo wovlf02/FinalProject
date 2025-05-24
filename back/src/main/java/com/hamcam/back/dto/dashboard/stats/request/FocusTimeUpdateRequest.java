@@ -18,22 +18,10 @@ import java.time.LocalDate;
 @Builder
 public class FocusTimeUpdateRequest {
 
-    /**
-     * 사용자 ID
-     */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
-    /**
-     * 수정할 날짜
-     */
     @NotNull(message = "날짜는 필수입니다.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate date;
 
-    /**
-     * 수정할 공부 시간 (분 단위)
-     */
     @Min(value = 0, message = "공부 시간은 0분 이상이어야 합니다.")
     private int studyMinutes;
 }

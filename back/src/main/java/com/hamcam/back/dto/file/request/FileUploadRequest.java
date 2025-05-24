@@ -13,6 +13,5 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 public class FileUploadRequest {
 
-    private Long userId;
     private MultipartFile file;
 }

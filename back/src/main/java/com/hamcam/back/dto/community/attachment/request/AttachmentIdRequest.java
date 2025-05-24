@@ -1,6 +1,7 @@
 package com.hamcam.back.dto.community.attachment.request;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
  */
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class AttachmentIdRequest {
 
     @NotNull(message = "attachmentId는 필수입니다.")

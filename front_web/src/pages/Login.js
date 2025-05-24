@@ -18,11 +18,11 @@ const Login = () => {
             });
 
             if (res.status === 200) {
-                // ✅ 2. 로그인 성공 후 사용자 정보 요청
                 const userRes = await api.get('/users/me');
-                const nickname = userRes.data?.nickname || '사용자';
+                console.log(userRes.data); // 구조 확인용
 
-                // ✅ 3. 닉네임 기반 환영 메시지 출력
+                // ✅ ApiResponse로 감싸져 있으므로 .data.data
+                const nickname = userRes.data?.data?.nickname || '사용자';
                 alert(`${nickname}님, 환영합니다!`);
                 navigate('/dashboard');
             } else {

@@ -5,6 +5,8 @@ import com.hamcam.back.dto.community.like.request.*;
 import com.hamcam.back.dto.community.like.response.LikeCountResponse;
 import com.hamcam.back.dto.community.like.response.LikeStatusResponse;
 import com.hamcam.back.service.community.like.LikeService;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +24,11 @@ public class LikeController {
     // ===== 📌 게시글 =====
 
     @PostMapping("/posts/toggle")
-    public ResponseEntity<MessageResponse> togglePostLike(@RequestBody PostLikeToggleRequest request) {
-        boolean liked = likeService.togglePostLike(request);
+    public ResponseEntity<MessageResponse> togglePostLike(
+            @RequestBody PostLikeToggleRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        boolean liked = likeService.togglePostLike(request, httpRequest);
         String message = liked ? "게시글에 좋아요를 눌렀습니다." : "게시글 좋아요를 취소했습니다.";
         return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
@@ -34,15 +39,21 @@ public class LikeController {
     }
 
     @PostMapping("/posts/check")
-    public ResponseEntity<LikeStatusResponse> checkPostLike(@RequestBody PostLikeStatusRequest request) {
-        return ResponseEntity.ok(likeService.hasLikedPost(request));
+    public ResponseEntity<LikeStatusResponse> checkPostLike(
+            @RequestBody PostLikeStatusRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        return ResponseEntity.ok(likeService.hasLikedPost(request, httpRequest));
     }
 
     // ===== 💬 댓글 =====
 
     @PostMapping("/comments/toggle")
-    public ResponseEntity<MessageResponse> toggleCommentLike(@RequestBody CommentLikeToggleRequest request) {
-        boolean liked = likeService.toggleCommentLike(request);
+    public ResponseEntity<MessageResponse> toggleCommentLike(
+            @RequestBody CommentLikeToggleRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        boolean liked = likeService.toggleCommentLike(request, httpRequest);
         String message = liked ? "댓글에 좋아요를 눌렀습니다." : "댓글 좋아요를 취소했습니다.";
         return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
@@ -53,15 +64,21 @@ public class LikeController {
     }
 
     @PostMapping("/comments/check")
-    public ResponseEntity<LikeStatusResponse> checkCommentLike(@RequestBody CommentLikeStatusRequest request) {
-        return ResponseEntity.ok(likeService.hasLikedComment(request));
+    public ResponseEntity<LikeStatusResponse> checkCommentLike(
+            @RequestBody CommentLikeStatusRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        return ResponseEntity.ok(likeService.hasLikedComment(request, httpRequest));
     }
 
     // ===== 🔁 대댓글 =====
 
     @PostMapping("/replies/toggle")
-    public ResponseEntity<MessageResponse> toggleReplyLike(@RequestBody ReplyLikeToggleRequest request) {
-        boolean liked = likeService.toggleReplyLike(request);
+    public ResponseEntity<MessageResponse> toggleReplyLike(
+            @RequestBody ReplyLikeToggleRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        boolean liked = likeService.toggleReplyLike(request, httpRequest);
         String message = liked ? "대댓글에 좋아요를 눌렀습니다." : "대댓글 좋아요를 취소했습니다.";
         return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
@@ -72,7 +89,10 @@ public class LikeController {
     }
 
     @PostMapping("/replies/check")
-    public ResponseEntity<LikeStatusResponse> checkReplyLike(@RequestBody ReplyLikeStatusRequest request) {
-        return ResponseEntity.ok(likeService.hasLikedReply(request));
+    public ResponseEntity<LikeStatusResponse> checkReplyLike(
+            @RequestBody ReplyLikeStatusRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        return ResponseEntity.ok(likeService.hasLikedReply(request, httpRequest));
     }
 }

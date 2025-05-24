@@ -14,6 +14,4 @@ import lombok.Setter;
 public class RoomAccessRequest {
 
     private Long roomId;
-
-    private Long userId;
 }

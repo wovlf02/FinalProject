@@ -15,9 +15,6 @@ import lombok.*;
 @Builder
 public class FriendSearchRequest {
 
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
     @NotBlank(message = "nickname은 필수입니다.")
     private String nickname;
 }

@@ -12,6 +12,8 @@ import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -37,12 +39,12 @@ public class ChatAttachmentService {
     private final UserRepository userRepository;
 
     /**
-     * ✅ 채팅 파일 업로드 및 메시지 저장 (DTO 기반)
+     * ✅ 채팅 파일 업로드 및 메시지 저장 (세션 기반)
      */
-    public ChatMessageResponse saveFileMessage(ChatFileUploadRequest request) {
+    public ChatMessageResponse saveFileMessage(ChatFileUploadRequest request, HttpServletRequest httpRequest) {
         MultipartFile file = request.getFile();
         Long roomId = request.getRoomId();
-        Long senderId = request.getUserId();
+        Long senderId = SessionUtil.getUserId(httpRequest);
 
         if (file == null || file.isEmpty()) {
             throw new CustomException(ErrorCode.MISSING_PARAMETER);
@@ -61,9 +63,7 @@ public class ChatAttachmentService {
 
         String storedFilename = UUID.randomUUID() + "_" + originalFilename;
         File uploadDir = new File(UPLOAD_DIR);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
-        }
+        if (!uploadDir.exists()) uploadDir.mkdirs();
 
         File dest = new File(uploadDir, storedFilename);
         try {
@@ -132,7 +132,7 @@ public class ChatAttachmentService {
         }
     }
 
-    // ===== 내부 변환 유틸 =====
+    // ===== 내부 유틸 =====
 
     private ChatMessageResponse toResponse(ChatMessage message) {
         User sender = message.getSender();

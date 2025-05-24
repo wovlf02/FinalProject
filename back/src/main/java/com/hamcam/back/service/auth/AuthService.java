@@ -8,6 +8,9 @@ import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.util.FileService;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,12 +30,9 @@ public class AuthService {
     private final FileService fileService;
 
     /**
-     * 회원가입 처리
-     * - 사용자명, 이메일 중복 확인
-     * - 비밀번호 암호화 없이 저장
-     * - 프로필 이미지 저장 시 경로 저장
+     * ✅ 회원가입 처리 (세션 기반)
      */
-    public void register(RegisterRequest request, MultipartFile profileImage) {
+    public void register(RegisterRequest request, MultipartFile profileImage, HttpServletRequest httpRequest) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
         }
@@ -42,12 +42,12 @@ public class AuthService {
 
         String profileImageUrl = null;
         if (profileImage != null && !profileImage.isEmpty()) {
-            profileImageUrl = fileService.saveProfileImage(profileImage);
+            profileImageUrl = fileService.saveProfileImage(profileImage, httpRequest); // ✅ 세션 기반 저장
         }
 
         User user = User.builder()
                 .username(request.getUsername())
-                .password(request.getPassword())  // ✅ 암호화 없음
+                .password(request.getPassword())
                 .email(request.getEmail())
                 .name(request.getName())
                 .nickname(request.getNickname())
@@ -62,11 +62,9 @@ public class AuthService {
     }
 
     /**
-     * 로그인 처리
-     * - 아이디/비밀번호 검증
-     * - 성공 시 DB의 전체 유저 정보 반환 → 프론트 LocalStorage 저장
+     * ✅ 로그인 처리 (세션에 userId 저장)
      */
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_USER_NOT_FOUND));
 
@@ -74,16 +72,18 @@ public class AuthService {
             throw new CustomException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
         }
 
-        return LoginResponse.from(user); // ✅ 변환
+        // ✅ 세션에 사용자 ID 저장
+        HttpSession session = httpRequest.getSession(true);
+        session.setAttribute("userId", user.getId());
+
+        return LoginResponse.from(user);
     }
 
-
     /**
-     * 회원 탈퇴 처리
-     * - userId에 해당하는 사용자 DB에서 즉시 삭제
-     * - 비밀번호 확인 생략
+     * ✅ 회원 탈퇴 (세션 기반)
      */
-    public void withdraw(Long userId) {
+    public void withdraw(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 

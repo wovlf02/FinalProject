@@ -11,6 +11,8 @@ import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatParticipantRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,8 +32,9 @@ public class DirectChatService {
     /**
      * ✅ 상대방과의 1:1 채팅방이 존재하면 반환, 없으면 새로 생성
      */
-    public ChatRoomResponse startOrGetDirectChat(DirectChatRequest request) {
-        User user = getUserById(request.getUserId());
+    public ChatRoomResponse startOrGetDirectChat(DirectChatRequest request, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+        User user = getUserById(userId);
         User target = getUserById(request.getTargetUserId());
 
         if (user.getId().equals(target.getId())) {
@@ -46,7 +49,8 @@ public class DirectChatService {
     /**
      * ✅ 내가 참여 중인 모든 1:1 채팅방 목록 조회
      */
-    public List<ChatRoomListResponse> getMyDirectChatRooms(Long userId) {
+    public List<ChatRoomListResponse> getMyDirectChatRooms(HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
         User user = getUserById(userId);
 
         return chatParticipantRepository.findByUser(user).stream()
@@ -65,7 +69,8 @@ public class DirectChatService {
     /**
      * ✅ 특정 사용자와의 1:1 채팅방 조회 (없으면 예외)
      */
-    public ChatRoomResponse getDirectChatWithUser(Long userId, Long targetUserId) {
+    public ChatRoomResponse getDirectChatWithUser(Long targetUserId, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
         User user = getUserById(userId);
         User target = getUserById(targetUserId);
 
@@ -74,9 +79,8 @@ public class DirectChatService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
     }
 
-    /**
-     * ✅ 기존 1:1 채팅방 존재 여부 확인
-     */
+    // ===== 내부 유틸 =====
+
     private Optional<ChatRoom> findExistingDirectRoom(User userA, User userB) {
         List<ChatRoom> directRooms = chatParticipantRepository.findByUser(userA).stream()
                 .map(ChatParticipant::getChatRoom)
@@ -92,9 +96,6 @@ public class DirectChatService {
                 .findFirst();
     }
 
-    /**
-     * ✅ 새로운 1:1 채팅방 생성
-     */
     private ChatRoomResponse createNewDirectChat(User user, User target) {
         String roomName = String.format("%s ↔ %s", user.getNickname(), target.getNickname());
 
@@ -114,9 +115,6 @@ public class DirectChatService {
         return toResponse(room);
     }
 
-    /**
-     * ✅ 채팅방 → 응답 DTO 변환
-     */
     private ChatRoomResponse toResponse(ChatRoom room) {
         List<ChatParticipantDto> participants = chatParticipantRepository.findByChatRoom(room).stream()
                 .map(p -> new ChatParticipantDto(
@@ -136,9 +134,6 @@ public class DirectChatService {
                 .build();
     }
 
-    /**
-     * ✅ 사용자 ID로 유저 조회
-     */
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

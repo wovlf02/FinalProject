@@ -12,5 +12,4 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PostLikeStatusRequest {
     private Long postId;
-    private Long userId;
 }

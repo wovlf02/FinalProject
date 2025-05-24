@@ -12,9 +12,6 @@ import lombok.*;
 @Builder
 public class UnblockTargetRequest {
 
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
     @NotNull(message = "차단 해제 대상 ID는 필수입니다.")
     private Long targetId;
 }

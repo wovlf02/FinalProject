@@ -15,7 +15,4 @@ public class ReplyDeleteRequest {
 
     @NotNull(message = "replyId는 필수입니다.")
     private Long replyId;
-
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
 }

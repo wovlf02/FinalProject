@@ -9,6 +9,8 @@ import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.friend.*;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,9 +27,8 @@ public class FriendService {
     private final FriendReportRepository friendReportRepository;
     private final UserRepository userRepository;
 
-    /** ✅ 친구 요청 전송 */
-    public void sendFriendRequest(FriendRequestSendRequest request) {
-        User sender = getUser(request.getUserId());
+    public void sendFriendRequest(FriendRequestSendRequest request, HttpServletRequest httpRequest) {
+        User sender = getSessionUser(httpRequest);
         User receiver = getUser(request.getTargetUserId());
 
         validateNotSelf(sender, receiver);
@@ -41,9 +42,8 @@ public class FriendService {
                 .build());
     }
 
-    /** ✅ 친구 요청 수락 */
-    public void acceptFriendRequest(FriendAcceptRequest request) {
-        User receiver = getUser(request.getUserId());
+    public void acceptFriendRequest(FriendAcceptRequest request, HttpServletRequest httpRequest) {
+        User receiver = getSessionUser(httpRequest);
         FriendRequest fr = getFriendRequestById(request.getRequestId());
 
         if (!fr.getReceiver().equals(receiver)) {
@@ -55,9 +55,8 @@ public class FriendService {
         friendRequestRepository.delete(fr);
     }
 
-    /** ✅ 친구 요청 거절 */
-    public void rejectFriendRequest(FriendRejectRequest request) {
-        User receiver = getUser(request.getUserId());
+    public void rejectFriendRequest(FriendRejectRequest request, HttpServletRequest httpRequest) {
+        User receiver = getSessionUser(httpRequest);
         FriendRequest fr = getFriendRequestById(request.getRequestId());
 
         if (!fr.getReceiver().equals(receiver)) {
@@ -67,9 +66,8 @@ public class FriendService {
         friendRequestRepository.delete(fr);
     }
 
-    /** ✅ 친구 요청 취소 */
-    public void cancelSentFriendRequest(FriendCancelRequest request) {
-        User sender = getUser(request.getUserId());
+    public void cancelSentFriendRequest(FriendCancelRequest request, HttpServletRequest httpRequest) {
+        User sender = getSessionUser(httpRequest);
         FriendRequest fr = getFriendRequestById(request.getRequestId());
 
         if (!fr.getSender().equals(sender)) {
@@ -79,10 +77,8 @@ public class FriendService {
         friendRequestRepository.delete(fr);
     }
 
-
-    /** ✅ 친구 목록 조회 */
-    public FriendListResponse getFriendList(FriendBaseRequest request) {
-        User user = getUser(request.getUserId());
+    public FriendListResponse getFriendList(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         List<Friend> friends = friendRepository.findAllFriendsOfUser(user);
 
         return new FriendListResponse(friends.stream()
@@ -92,17 +88,15 @@ public class FriendService {
                 .toList());
     }
 
-    /** ✅ 받은 요청 목록 */
-    public FriendRequestListResponse getReceivedFriendRequests(FriendBaseRequest request) {
-        User user = getUser(request.getUserId());
+    public FriendRequestListResponse getReceivedFriendRequests(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         return new FriendRequestListResponse(friendRequestRepository.findByReceiver(user).stream()
                 .map(FriendRequestListResponse.FriendRequestDto::from)
                 .toList());
     }
 
-    /** ✅ 보낸 요청 목록 */
-    public SentFriendRequestListResponse getSentFriendRequests(FriendBaseRequest request) {
-        User sender = getUser(request.getUserId());
+    public SentFriendRequestListResponse getSentFriendRequests(HttpServletRequest httpRequest) {
+        User sender = getSessionUser(httpRequest);
         return new SentFriendRequestListResponse(friendRequestRepository.findBySender(sender).stream()
                 .map(req -> SentFriendRequestListResponse.SentFriendRequestDto.builder()
                         .requestId(req.getId())
@@ -115,18 +109,16 @@ public class FriendService {
                 .toList());
     }
 
-    /** ✅ 친구 삭제 */
-    public void deleteFriend(FriendDeleteRequest request) {
-        User user = getUser(request.getUserId());
+    public void deleteFriend(FriendDeleteRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         User target = getUser(request.getFriendId());
 
         friendRepository.findByUserAndFriend(user, target).ifPresent(friendRepository::delete);
         friendRepository.findByUserAndFriend(target, user).ifPresent(friendRepository::delete);
     }
 
-    /** ✅ 차단 */
-    public void blockUser(FriendBlockRequest request) {
-        User me = getUser(request.getUserId());
+    public void blockUser(FriendBlockRequest request, HttpServletRequest httpRequest) {
+        User me = getSessionUser(httpRequest);
         User target = getUser(request.getTargetUserId());
 
         validateNotSelf(me, target);
@@ -136,30 +128,26 @@ public class FriendService {
         }
 
         deleteFriend(FriendDeleteRequest.builder()
-                .userId(me.getId())
                 .friendId(target.getId())
-                .build());
+                .build(), httpRequest);
     }
 
-    /** ✅ 차단 해제 */
-    public void unblockUser(FriendBlockRequest request) {
-        User me = getUser(request.getUserId());
+    public void unblockUser(FriendBlockRequest request, HttpServletRequest httpRequest) {
+        User me = getSessionUser(httpRequest);
         User target = getUser(request.getTargetUserId());
 
         friendBlockRepository.findByBlockerAndBlocked(me, target).ifPresent(friendBlockRepository::delete);
     }
 
-    /** ✅ 차단 목록 */
-    public BlockedFriendListResponse getBlockedUsers(FriendBaseRequest request) {
-        User me = getUser(request.getUserId());
+    public BlockedFriendListResponse getBlockedUsers(HttpServletRequest httpRequest) {
+        User me = getSessionUser(httpRequest);
         return new BlockedFriendListResponse(friendBlockRepository.findByBlocker(me).stream()
                 .map(block -> BlockedFriendListResponse.BlockedUserDto.from(block.getBlocked()))
                 .toList());
     }
 
-    /** ✅ 닉네임 검색 */
-    public FriendSearchResponse searchUsersByNickname(FriendSearchRequest request) {
-        User me = getUser(request.getUserId());
+    public FriendSearchResponse searchUsersByNickname(FriendSearchRequest request, HttpServletRequest httpRequest) {
+        User me = getSessionUser(httpRequest);
         List<User> users = userRepository.findByNicknameContaining(request.getNickname());
 
         return new FriendSearchResponse(users.stream()
@@ -174,17 +162,13 @@ public class FriendService {
                 )).toList());
     }
 
-    /** ✅ 신고 */
-    public void reportUser(FriendReportRequest request) {
-        Long reporterId = request.getUserId();
-        Long reportedId = request.getTargetUserId();
+    public void reportUser(FriendReportRequest request, HttpServletRequest httpRequest) {
+        User reporter = getSessionUser(httpRequest);
+        User reported = getUser(request.getTargetUserId());
 
-        if (reporterId.equals(reportedId)) {
+        if (reporter.getId().equals(reported.getId())) {
             throw new CustomException("자기 자신은 신고할 수 없습니다.");
         }
-
-        User reporter = getUser(reporterId);
-        User reported = getUser(reportedId);
 
         if (friendReportRepository.findByReporterAndReported(reporter, reported).isPresent()) {
             throw new CustomException(ErrorCode.ALREADY_REPORTED);
@@ -199,15 +183,21 @@ public class FriendService {
                 .build());
     }
 
+    // ===== 내부 유틸 =====
 
-    // ===== 유틸 =====
+    private User getSessionUser(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
+        return getUser(userId);
+    }
 
     private User getUser(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        return userRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
     private FriendRequest getFriendRequestById(Long id) {
-        return friendRequestRepository.findById(id).orElseThrow(() -> new CustomException("요청이 존재하지 않습니다."));
+        return friendRequestRepository.findById(id)
+                .orElseThrow(() -> new CustomException("요청이 존재하지 않습니다."));
     }
 
     private boolean isFriend(User me, User target) {

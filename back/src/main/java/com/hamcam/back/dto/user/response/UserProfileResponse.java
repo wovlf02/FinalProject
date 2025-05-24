@@ -14,12 +14,13 @@ import java.util.Optional;
  */
 @Getter
 @AllArgsConstructor
-@Builder // 🔥 builder 사용을 위해 추가
+@Builder
 public class UserProfileResponse {
 
     private Long userId;
     private String username;
     private String email;
+    private String name; // ✅ 이름 필드 추가
     private String nickname;
     private int grade;
     private String studyHabit;
@@ -37,6 +38,7 @@ public class UserProfileResponse {
                 .userId(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .name(user.getName()) // ✅ 추가된 이름 필드 매핑
                 .nickname(user.getNickname())
                 .grade(user.getGrade())
                 .studyHabit(user.getStudyHabit())

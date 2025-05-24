@@ -13,8 +13,5 @@ import lombok.*;
 public class TodoDeleteRequest {
 
     @NotNull
-    private Long userId;
-
-    @NotNull
     private Long todoId;
 }

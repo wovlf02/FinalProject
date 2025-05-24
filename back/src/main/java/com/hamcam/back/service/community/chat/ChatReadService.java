@@ -1,10 +1,8 @@
 package com.hamcam.back.service.community.chat;
 
-import com.hamcam.back.dto.community.chat.request.ChatEnterRequest;
 import com.hamcam.back.dto.community.chat.request.ChatReadRequest;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
-import com.hamcam.back.entity.chat.ChatParticipant;
 import com.hamcam.back.entity.chat.ChatRead;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
@@ -12,14 +10,12 @@ import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatParticipantRepository;
 import com.hamcam.back.repository.chat.ChatReadRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * [ChatReadService]
- * 채팅 메시지의 읽음 처리 및 읽지 않은 사용자 수 계산 서비스
- */
 @Service
 @RequiredArgsConstructor
 public class ChatReadService {
@@ -30,39 +26,16 @@ public class ChatReadService {
     private final UserRepository userRepository;
 
     /**
-     * ✅ 특정 메시지에 대해 읽지 않은 사용자 수 계산
-     */
-    @Transactional(readOnly = true)
-    public int getUnreadCount(ChatReadRequest request) {
-        ChatMessage message = getMessage(request.getMessageId());
-        return calculateUnreadCount(message);
-    }
-
-    /**
-     * ✅ 채팅방 입장 시 마지막 메시지 ID를 기준으로 읽음 처리
+     * ✅ 읽음 처리 및 읽지 않은 사용자 수 계산 (세션 기반)
      */
     @Transactional
-    public void updateLastReadMessage(ChatEnterRequest request) {
-        ChatParticipant participant = chatParticipantRepository.findByChatRoomIdAndUserId(
-                        request.getRoomId(), request.getUserId())
-                .orElseThrow(() -> new CustomException(ErrorCode.ACCESS_DENIED));
-
-        ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomOrderBySentAtDesc(participant.getChatRoom());
-        if (lastMessage != null) {
-            participant.setLastReadMessageId(lastMessage.getId());
-            chatParticipantRepository.save(participant);
-        }
-    }
-
-    /**
-     * ✅ 읽음 처리 및 읽지 않은 사용자 수 계산 (DTO 기반)
-     */
-    @Transactional
-    public int markAsRead(ChatReadRequest request) {
+    public int markAsRead(ChatReadRequest request, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
         ChatMessage message = getMessage(request.getMessageId());
 
-        if (!message.getSender().getId().equals(request.getUserId())) {
-            User user = getUser(request.getUserId());
+        // 본인이 보낸 메시지는 읽음 처리 제외
+        if (!message.getSender().getId().equals(userId)) {
+            User user = getUser(userId);
 
             boolean alreadyRead = chatReadRepository.existsByMessageAndUser(message, user);
             if (!alreadyRead) {
@@ -75,16 +48,12 @@ public class ChatReadService {
     }
 
     /**
-     * ✅ WebSocket 등에서 간단한 파라미터 기반 읽음 처리
+     * ✅ 메시지 ID로 읽지 않은 사용자 수 반환
      */
-    @Transactional
-    public int markReadAsUserId(Long roomId, Long messageId, Long userId) {
-        ChatReadRequest request = ChatReadRequest.builder()
-                .roomId(roomId)
-                .messageId(messageId)
-                .userId(userId)
-                .build();
-        return markAsRead(request);
+    @Transactional(readOnly = true)
+    public int getUnreadCountForMessage(Long messageId) {
+        ChatMessage message = getMessage(messageId);
+        return calculateUnreadCount(message);
     }
 
     // ===== 내부 유틸 =====
@@ -104,5 +73,33 @@ public class ChatReadService {
     private User getUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    /**
+     * ✅ WebSocket에서 읽음 처리 (userId 직접 전달 필요 시만 사용)
+     */
+    @Transactional
+    public int markReadAsUserId(Long roomId, Long messageId, Long userId) {
+        ChatReadRequest request = ChatReadRequest.builder()
+                .roomId(roomId)
+                .messageId(messageId)
+                .build();
+        return markAsRead(request, userId);
+    }
+
+    // 오버로드 for WebSocket 내부 호출
+    private int markAsRead(ChatReadRequest request, Long userId) {
+        ChatMessage message = getMessage(request.getMessageId());
+
+        if (!message.getSender().getId().equals(userId)) {
+            User user = getUser(userId);
+            boolean alreadyRead = chatReadRepository.existsByMessageAndUser(message, user);
+            if (!alreadyRead) {
+                ChatRead read = ChatRead.create(message, user);
+                chatReadRepository.save(read);
+            }
+        }
+
+        return calculateUnreadCount(message);
     }
 }

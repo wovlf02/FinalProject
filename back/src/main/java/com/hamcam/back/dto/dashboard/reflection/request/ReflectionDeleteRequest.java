@@ -14,15 +14,6 @@ import lombok.*;
 @Builder
 public class ReflectionDeleteRequest {
 
-    /**
-     * 사용자 ID
-     */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
-    /**
-     * 회고 ID
-     */
     @NotNull(message = "삭제할 회고 ID는 필수입니다.")
     private Long reflectionId;
 }

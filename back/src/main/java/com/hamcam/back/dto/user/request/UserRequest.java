@@ -18,17 +18,10 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UserRequest {
 
-    /** 사용자 식별자 */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
-    /** 사용자 닉네임 (변경 시 사용) */
     private String nickname;
 
-    /** 사용자 이메일 (변경 시 사용) */
     @Email(message = "유효한 이메일 형식이 아닙니다.")
     private String email;
 
-    /** 사용자 아이디(username) (변경 시 사용) */
     private String username;
 }

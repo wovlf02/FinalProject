@@ -15,8 +15,5 @@ import java.time.LocalDate;
 public class TodoDateRequest {
 
     @NotNull
-    private Long userId;
-
-    @NotNull
     private LocalDate date;
 }

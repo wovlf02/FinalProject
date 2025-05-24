@@ -16,9 +16,6 @@ import java.time.LocalDate;
 @Builder
 public class TodoUpdateRequest {
 
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
-
     @NotNull(message = "todoId는 필수입니다.")
     private Long todoId;
 

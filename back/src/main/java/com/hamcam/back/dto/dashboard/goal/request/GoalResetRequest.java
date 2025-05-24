@@ -10,13 +10,7 @@ import lombok.*;
  */
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class GoalResetRequest {
 
-    /**
-     * 사용자 ID
-     */
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
 }

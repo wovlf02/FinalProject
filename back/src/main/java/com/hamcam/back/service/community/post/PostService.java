@@ -1,5 +1,7 @@
 package com.hamcam.back.service.community.post;
 
+import com.hamcam.back.dto.community.attachment.request.AttachmentIdRequest;
+import com.hamcam.back.dto.community.attachment.request.AttachmentUploadRequest;
 import com.hamcam.back.dto.community.post.request.*;
 import com.hamcam.back.dto.community.post.response.*;
 import com.hamcam.back.entity.auth.User;
@@ -11,6 +13,8 @@ import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.post.PostFavoriteRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
 import com.hamcam.back.service.community.attachment.AttachmentService;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -35,14 +39,15 @@ public class PostService {
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
     }
 
-    private User getUser(Long userId) {
+    private User getSessionUser(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
     /** ✅ 게시글 생성 */
-    public Long createPost(PostCreateRequest request) {
-        User writer = getUser(request.getUserId());
+    public Long createPost(PostCreateRequest request, HttpServletRequest httpRequest) {
+        User writer = getSessionUser(httpRequest);
 
         Post post = Post.builder()
                 .writer(writer)
@@ -56,7 +61,8 @@ public class PostService {
 
         if (request.getFiles() != null && !request.getFiles().isEmpty()) {
             MultipartFile[] fileArray = request.getFiles().toArray(new MultipartFile[0]);
-            attachmentService.uploadPostFiles(post.getId(), fileArray);
+            AttachmentUploadRequest uploadRequest = new AttachmentUploadRequest(post.getId(), fileArray);
+            attachmentService.uploadPostFiles(uploadRequest, httpRequest);
         }
 
         return post.getId();
@@ -64,10 +70,11 @@ public class PostService {
 
     /** ✅ 게시글 수정 */
     @Transactional
-    public void updatePost(PostUpdateRequest request) {
+    public void updatePost(PostUpdateRequest request, HttpServletRequest httpRequest) {
+        User sessionUser = getSessionUser(httpRequest);
         Post post = getPostOrThrow(request.getPostId());
 
-        if (!post.getWriter().getId().equals(request.getUserId())) {
+        if (!post.getWriter().getId().equals(sessionUser.getId())) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -80,20 +87,24 @@ public class PostService {
         }
 
         if (request.getDeleteFileIds() != null) {
-            request.getDeleteFileIds().forEach(id -> attachmentService.deleteAttachment(id));
+            request.getDeleteFileIds().forEach(id ->
+                    attachmentService.deleteAttachment(new AttachmentIdRequest(id), httpRequest)
+            );
         }
 
         if (request.getFiles() != null && !request.getFiles().isEmpty()) {
             MultipartFile[] fileArray = request.getFiles().toArray(new MultipartFile[0]);
-            attachmentService.uploadPostFiles(post.getId(), fileArray);
+            AttachmentUploadRequest uploadRequest = new AttachmentUploadRequest(post.getId(), fileArray);
+            attachmentService.uploadPostFiles(uploadRequest, httpRequest);
         }
     }
 
     /** ✅ 게시글 삭제 */
-    public void deletePost(PostDeleteRequest request) {
+    public void deletePost(PostDeleteRequest request, HttpServletRequest httpRequest) {
+        User sessionUser = getSessionUser(httpRequest);
         Post post = getPostOrThrow(request.getPostId());
 
-        if (!post.getWriter().getId().equals(request.getUserId())) {
+        if (!post.getWriter().getId().equals(sessionUser.getId())) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
@@ -142,8 +153,7 @@ public class PostService {
 
     /** ✅ 인기 게시글 */
     public PopularPostListResponse getPopularPosts() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Post> result = postRepository.findPopularPosts(pageable);
+        Page<Post> result = postRepository.findPopularPosts(PageRequest.of(0, 10));
         return PopularPostListResponse.from(result.getContent());
     }
 
@@ -162,8 +172,8 @@ public class PostService {
 
     /** ✅ 즐겨찾기 추가 */
     @Transactional
-    public void favoritePost(PostFavoriteRequest request) {
-        User user = getUser(request.getUserId());
+    public void favoritePost(PostFavoriteRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Post post = getPostOrThrow(request.getPostId());
 
         if (postFavoriteRepository.existsByUserAndPost(user, post)) {
@@ -179,8 +189,8 @@ public class PostService {
 
     /** ✅ 즐겨찾기 제거 */
     @Transactional
-    public void unfavoritePost(PostFavoriteRequest request) {
-        User user = getUser(request.getUserId());
+    public void unfavoritePost(PostFavoriteRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Post post = getPostOrThrow(request.getPostId());
 
         PostFavorite favorite = postFavoriteRepository.findByUserAndPost(user, post)
@@ -190,8 +200,8 @@ public class PostService {
     }
 
     /** ✅ 즐겨찾기 목록 */
-    public FavoritePostListResponse getFavoritePosts(PostUserRequest request) {
-        User user = getUser(request.getUserId());
+    public FavoritePostListResponse getFavoritePosts(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
 
         List<PostFavorite> favorites = postFavoriteRepository.findAllByUser(user);
         List<PostSummaryResponse> posts = favorites.stream()
@@ -207,4 +217,22 @@ public class PostService {
         post.incrementViewCount();
         postRepository.save(post);
     }
+
+    public StudyInfoListResponse getOngoingStudies() {
+        List<StudyInfoDto> studies = List.of(
+                StudyInfoDto.builder().name("알고리즘 스터디").color("#e9d8fd")
+                        .tag("모집중").tagColor("#a78bfa").info("매주 월/금 20시 | 8명 활동").build(),
+                StudyInfoDto.builder().name("프론트엔드 스터디").color("#dbeafe")
+                        .tag("모집중").tagColor("#3b82f6").info("매주 토요일 16시 | 10명 활동").build(),
+                StudyInfoDto.builder().name("CS 기초 스터디").color("#d1fae5")
+                        .tag("모집중").tagColor("#10b981").info("매주 수 14:00 | 10명 활동").build()
+        );
+        return StudyInfoListResponse.builder().studies(studies).build();
+    }
+
+    public TagListResponse getPopularTags() {
+        List<String> tags = List.of("알고리즘", "스터디", "React", "Vue", "프로젝트", "취업", "클라우드", "데이터", "python", "javascript", "공유", "팁", "영어");
+        return TagListResponse.builder().tags(tags).build();
+    }
+
 }

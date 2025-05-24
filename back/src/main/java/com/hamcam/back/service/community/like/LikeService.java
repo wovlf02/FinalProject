@@ -15,6 +15,8 @@ import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.like.LikeRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,8 +32,8 @@ public class LikeService {
 
     // ===== 📌 게시글 =====
 
-    public boolean togglePostLike(PostLikeToggleRequest request) {
-        User user = getUser(request.getUserId());
+    public boolean togglePostLike(PostLikeToggleRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Post post = getPost(request.getPostId());
 
         return likeRepository.findByUserAndPost(user, post)
@@ -53,8 +55,8 @@ public class LikeService {
         return new LikeCountResponse(likeRepository.countByPostId(request.getPostId()));
     }
 
-    public LikeStatusResponse hasLikedPost(PostLikeStatusRequest request) {
-        User user = getUser(request.getUserId());
+    public LikeStatusResponse hasLikedPost(PostLikeStatusRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Post post = getPost(request.getPostId());
         boolean liked = likeRepository.findByUserAndPost(user, post).isPresent();
         return new LikeStatusResponse(liked);
@@ -62,8 +64,8 @@ public class LikeService {
 
     // ===== 💬 댓글 =====
 
-    public boolean toggleCommentLike(CommentLikeToggleRequest request) {
-        User user = getUser(request.getUserId());
+    public boolean toggleCommentLike(CommentLikeToggleRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Comment comment = getComment(request.getCommentId());
 
         return likeRepository.findByUserAndComment(user, comment)
@@ -85,8 +87,8 @@ public class LikeService {
         return new LikeCountResponse(likeRepository.countByCommentId(request.getCommentId()));
     }
 
-    public LikeStatusResponse hasLikedComment(CommentLikeStatusRequest request) {
-        User user = getUser(request.getUserId());
+    public LikeStatusResponse hasLikedComment(CommentLikeStatusRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Comment comment = getComment(request.getCommentId());
         boolean liked = likeRepository.findByUserAndComment(user, comment).isPresent();
         return new LikeStatusResponse(liked);
@@ -94,8 +96,8 @@ public class LikeService {
 
     // ===== 🔁 대댓글 =====
 
-    public boolean toggleReplyLike(ReplyLikeToggleRequest request) {
-        User user = getUser(request.getUserId());
+    public boolean toggleReplyLike(ReplyLikeToggleRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Reply reply = getReply(request.getReplyId());
 
         return likeRepository.findByUserAndReply(user, reply)
@@ -117,8 +119,8 @@ public class LikeService {
         return new LikeCountResponse(likeRepository.countByReplyId(request.getReplyId()));
     }
 
-    public LikeStatusResponse hasLikedReply(ReplyLikeStatusRequest request) {
-        User user = getUser(request.getUserId());
+    public LikeStatusResponse hasLikedReply(ReplyLikeStatusRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Reply reply = getReply(request.getReplyId());
         boolean liked = likeRepository.findByUserAndReply(user, reply).isPresent();
         return new LikeStatusResponse(liked);
@@ -141,7 +143,8 @@ public class LikeService {
                 .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
     }
 
-    private User getUser(Long userId) {
+    private User getSessionUser(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }

@@ -16,7 +16,4 @@ public class ChatRoomDetailRequest {
 
     @NotNull(message = "roomId는 필수입니다.")
     private Long roomId;
-
-    @NotNull(message = "userId는 필수입니다.")
-    private Long userId;
 }

@@ -20,18 +20,12 @@ import java.util.List;
 @Builder
 public class ChatRoomCreateRequest {
 
-    @NotNull(message = "생성자 ID는 필수입니다.")
-    private Long creatorId;
-
     @NotBlank(message = "채팅방 이름은 필수입니다.")
     private String roomName;
 
     @NotEmpty(message = "초대할 사용자 ID 리스트는 비어 있을 수 없습니다.")
     private List<Long> invitedUserIds;
 
-    /**
-     * 대표 이미지 (선택)
-     */
     @JsonIgnore
     private MultipartFile image;
 }

@@ -1,0 +1,104 @@
+.write-page-container {
+  max-width: 1100px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  padding: 36px 40px 32px 40px;
+  min-height: 500px;
+  box-sizing: border-box;
+}
+
+.write-form-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: #23272f;
+}
+
+.write-form {
+  width: 100%;
+}
+
+.write-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 24px;
+}
+
+.write-form-label {
+  font-size: 1rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.write-form-input,
+.write-form-select,
+.write-form-textarea {
+  width: 100%;
+  font-size: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  padding: 12px 14px;
+  background: #f9fafb;
+  color: #23272f;
+  transition: border 0.15s;
+  outline: none;
+  resize: none;
+}
+
+.write-form-input:focus,
+.write-form-select:focus,
+.write-form-textarea:focus {
+  border: 1.5px solid #2563eb;
+  background: #fff;
+}
+
+.write-form-textarea {
+  min-height: 180px;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.write-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.write-form-cancel {
+  background: #eee;
+  color: #444;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 28px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.write-form-cancel:hover {
+  background: #e5e7eb;
+}
+
+.write-form-submit {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.write-form-submit:hover {
+  background: #1d4ed8;
+}
+
+@media (max-width: 700px) {
+  .write-page-container {
+    padding: 18px 4vw 18px 4vw;
+  }
+}

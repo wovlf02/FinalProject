@@ -16,9 +16,6 @@ public class PostAutoFillRequest {
     @NotNull
     private Long problemId;
 
-    @NotNull
-    private Long userId;
-
     private String problemTitle;
     private PostCategory category;
 }
