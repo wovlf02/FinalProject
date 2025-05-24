@@ -21,39 +21,46 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
 
     const fetchInitialData = async () => {
         try {
-            const [userRes, roomRes, messageRes] = await Promise.all([
-                api.get('/users/me'),
-                api.get(`/chat/rooms/${roomId}`),
-                api.get(`/chat/rooms/${roomId}/messages`)
-            ]);
-
+            const userRes = await api.get('/users/me', { withCredentials: true });
             const currentUser = userRes.data;
             setUser(currentUser);
 
+            const detailRes = await api.post('/chat/rooms/detail', { room_id: roomId }, { withCredentials: true });
+            const data = detailRes.data?.data;
+            const room = data.room_info;
+            const msgs = data.messages;
+
             setRoomInfo({
-                ...roomRes.data.data,
-                profileImageUrl: roomRes.data.data.representative_image_url
-                    ? `http://localhost:8080${roomRes.data.data.representative_image_url}`
+                ...room,
+                profileImageUrl: room.representative_image_url
+                    ? `http://localhost:8080${room.representative_image_url}`
                     : base_profile,
-                roomName: roomRes.data.data.room_name,
-                roomType: roomRes.data.data.room_type
+                roomName: room.room_name,
+                roomType: room.room_type,
+                participantCount: room.participant_count
             });
 
-            const normalizedMessages = (messageRes.data || []).map(msg => ({
+            const normalizedMessages = (msgs || []).map(msg => ({
                 ...msg,
                 isMe: String(msg.senderId) === String(currentUser.id),
-                profileUrl: msg.profileUrl ? `http://localhost:8080${msg.profileUrl}` : base_profile,
+                profileUrl: msg.profileUrl
+                    ? `http://localhost:8080${msg.profileUrl}`
+                    : base_profile,
             }));
             setMessages(normalizedMessages);
 
             connectStomp(currentUser, normalizedMessages);
         } catch (err) {
-            console.error('❌ 초기 데이터 로딩 실패:', err);
+            console.error('❌ 초기 데이터 로딩 실패:', err.response?.data || err);
         }
     };
 
     const connectStomp = (userData, loadedMessages) => {
-        const socket = new SockJS('http://localhost:8080/ws/chat');
+        const socket = new SockJS('http://localhost:8080/ws/chat', null, {
+            transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
+            withCredentials: true, // ✅ 세션 공유 필수
+        });
+
         const client = Stomp.over(socket);
         stompClient.current = client;
 
@@ -73,7 +80,9 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
                     const normalizedMsg = {
                         ...newMsg,
                         isMe: String(newMsg.senderId) === String(userData.id),
-                        profileUrl: newMsg.profileUrl ? `http://localhost:8080${newMsg.profileUrl}` : base_profile,
+                        profileUrl: newMsg.profileUrl
+                            ? `http://localhost:8080${newMsg.profileUrl}`
+                            : base_profile,
                     };
                     setMessages(prev => [...prev, normalizedMsg]);
 
@@ -89,7 +98,6 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
                 setTimeout(scrollToBottom, 50);
             });
 
-            // ✅ 방 입장 시 마지막 메시지 읽음 처리
             if (loadedMessages.length > 0) {
                 const last = loadedMessages[loadedMessages.length - 1];
                 if (!last.isMe) {
@@ -99,7 +107,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
                         messageId: last.messageId,
                     }));
                 }
-                onReadAllMessages(roomId); // 뱃지 제거
+                onReadAllMessages(roomId);
             }
         }, (error) => {
             console.error('❌ STOMP 연결 실패:', error);
@@ -110,7 +118,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
         if (!message.trim() || !user || !stompClient.current?.connected) return;
 
         const payload = {
-            roomId,
+            room_id: roomId,
             type: "TEXT",
             content: message,
             storedFileName: null,
@@ -122,13 +130,39 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
     };
 
     useEffect(() => {
-        if (!roomId) return;
+        if (!roomId) {
+            console.log('❗ roomId가 비어 있습니다. 채팅방이 선택되지 않았습니다.');
+            return;
+        }
+
+        console.log('📥 ChatRoom 진입 - 선택된 roomId:', roomId);
+
+        setMessages([]);
+        setRoomInfo(null);
+        setUser(null);
+
+        if (
+            stompClient.current &&
+            stompClient.current.connected &&
+            stompClient.current.ws?.url?.includes('/ws/chat')
+        ) {
+            stompClient.current.disconnect(() => {
+                console.log('🛑 기존 /ws/chat 연결 해제');
+            });
+        }
+
         fetchInitialData();
 
         return () => {
-            stompClient.current?.disconnect(() => {
-                console.log('🛑 STOMP 연결 해제됨');
-            });
+            if (
+                stompClient.current &&
+                stompClient.current.connected &&
+                stompClient.current.ws?.url?.includes('/ws/chat')
+            ) {
+                stompClient.current.disconnect(() => {
+                    console.log('🧹 ChatRoom unmount - /ws/chat 연결 해제');
+                });
+            }
         };
     }, [roomId]);
 
@@ -176,11 +210,11 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
                                             msg.content
                                         )}
                                     </div>
-                                    <div className={`message-time ${msg.isMe ? 'bottom-left' : 'left'}`}>{formattedTime}</div>
-
-                                    {/* ✅ 읽지 않은 사람 수 표시 */}
-                                    {msg.unreadCount > 0 && (
-                                        <div className={`chat-unread-count ${msg.isMe ? 'right' : 'left'}`}>
+                                    <div className={`message-time ${msg.isMe ? 'bottom-left' : 'left'}`}>
+                                        {formattedTime}
+                                    </div>
+                                    {msg.unreadCount !== undefined && (
+                                        <div className={`unread-count-number ${msg.isMe ? 'right' : 'left'}`}>
                                             {msg.unreadCount}
                                         </div>
                                     )}

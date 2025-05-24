@@ -271,3 +271,26 @@
     justify-content: flex-start;
     align-items: flex-end;
 }
+
+.unread-count-number {
+    font-size: 11px;
+    color: #888;
+    margin-top: 2px;
+    margin-left: 4px;
+    text-align: right;
+}
+
+.unread-count-number.right {
+    text-align: right;
+    margin-right: 10px;
+    color: #888;
+    font-size: 11px;
+}
+
+.unread-count-number.left {
+    text-align: left;
+    margin-left: 10px;
+    color: #888;
+    font-size: 11px;
+}
+

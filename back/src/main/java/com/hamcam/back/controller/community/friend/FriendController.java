@@ -52,7 +52,7 @@ public class FriendController {
         return ResponseEntity.ok(MessageResponse.of("친구 요청을 취소했습니다."));
     }
 
-    @PostMapping("/requests")
+    @GetMapping("/requests")
     public ResponseEntity<FriendRequestListResponse> getReceivedRequests(HttpServletRequest httpRequest) {
         return ResponseEntity.ok(friendService.getReceivedFriendRequests(httpRequest));
     }
@@ -62,9 +62,9 @@ public class FriendController {
         return ResponseEntity.ok(friendService.getSentFriendRequests(httpRequest));
     }
 
-    @PostMapping("/list")
+    @GetMapping("/list")
     public ResponseEntity<FriendListResponse> getFriendList(HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(friendService.getFriendList(httpRequest));
+        return ResponseEntity.ok(friendService.getOnlineOfflineFriendList(httpRequest));
     }
 
     @PostMapping("/delete")

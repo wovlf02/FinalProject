@@ -16,6 +16,4 @@ public class FriendRequestSendRequest {
 
     @NotNull(message = "targetUserId는 필수입니다.")
     private Long targetUserId;
-
-    private String message;
 }

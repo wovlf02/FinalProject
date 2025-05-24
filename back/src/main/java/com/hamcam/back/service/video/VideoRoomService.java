@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,7 +32,10 @@ public class VideoRoomService {
 
     private static final String USER_COUNT_KEY = "videoRoom:userCount:";
 
-    /** ✅ 화상 채팅방 생성 (세션 기반) */
+    /**
+     * ✅ 화상 채팅방 생성 (세션 기반)
+     */
+    @Transactional
     public VideoRoomResponse createRoom(VideoRoomCreateRequest request, HttpServletRequest httpRequest) {
         Long userId = getSessionUserId(httpRequest);
 
@@ -46,37 +50,49 @@ public class VideoRoomService {
         return VideoRoomResponse.fromEntity(saved);
     }
 
-    /** ✅ 팀 ID 기준 방 목록 조회 */
+    /**
+     * ✅ 팀 ID 기준 방 목록 조회
+     */
     public List<VideoRoomResponse> getRoomsByTeam(VideoRoomListRequest request) {
         return videoRoomRepository.findByTeamId(request.getTeamId()).stream()
                 .map(VideoRoomResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    /** ✅ 단일 방 조회 */
+    /**
+     * ✅ 단일 방 조회
+     */
     public VideoRoomResponse getRoomById(VideoRoomDetailRequest request) {
         VideoRoom room = videoRoomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new CustomException(ErrorCode.VIDEO_ROOM_NOT_FOUND));
         return VideoRoomResponse.fromEntity(room);
     }
 
-    /** ✅ 입장 시 접속자 수 증가 */
+    /**
+     * ✅ 입장 시 접속자 수 증가
+     */
     public void increaseUserCount(VideoRoomUserRequest request) {
         redisTemplate.opsForValue().increment(USER_COUNT_KEY + request.getRoomId());
     }
 
-    /** ✅ 퇴장 시 접속자 수 감소 */
+    /**
+     * ✅ 퇴장 시 접속자 수 감소
+     */
     public void decreaseUserCount(VideoRoomUserRequest request) {
         redisTemplate.opsForValue().decrement(USER_COUNT_KEY + request.getRoomId());
     }
 
-    /** ✅ 현재 접속자 수 조회 */
+    /**
+     * ✅ 현재 접속자 수 조회
+     */
     public Long getUserCount(VideoRoomUserRequest request) {
         Object count = redisTemplate.opsForValue().get(USER_COUNT_KEY + request.getRoomId());
         return count == null ? 0L : Long.parseLong(count.toString());
     }
 
-    /** ✅ 세션에서 사용자 ID 조회 */
+    /**
+     * ✅ 세션에서 사용자 ID 조회
+     */
     private Long getSessionUserId(HttpServletRequest request) {
         return SessionUtil.getUserId(request);
     }

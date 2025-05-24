@@ -3,6 +3,7 @@ package com.hamcam.back.controller.community.chat;
 import com.hamcam.back.dto.common.MessageResponse;
 import com.hamcam.back.dto.community.chat.request.*;
 import com.hamcam.back.dto.community.chat.response.*;
+import com.hamcam.back.service.community.chat.ChatMessageService;
 import com.hamcam.back.service.community.chat.ChatRoomService;
 import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat/rooms")
@@ -20,6 +23,7 @@ import java.util.List;
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
+    private final ChatMessageService chatMessageService;
 
     /**
      * ✅ 채팅방 생성
@@ -39,7 +43,7 @@ public class ChatRoomController {
     /**
      * ✅ 내 채팅방 목록 조회
      */
-    @PostMapping("/my")
+    @GetMapping("/my")
     public ResponseEntity<MessageResponse> getMyChatRooms(HttpServletRequest httpRequest) {
         List<ChatRoomListResponse> rooms = chatRoomService.getMyChatRooms(httpRequest);
         return ResponseEntity.ok(MessageResponse.of("채팅방 목록 조회 성공", rooms));
@@ -49,10 +53,20 @@ public class ChatRoomController {
      * ✅ 채팅방 상세 조회
      */
     @PostMapping("/detail")
-    public ResponseEntity<MessageResponse> getChatRoom(@RequestBody ChatRoomDetailRequest request) {
-        ChatRoomResponse room = chatRoomService.getChatRoomById(request);
-        return ResponseEntity.ok(MessageResponse.of("채팅방 상세 조회 성공", room));
+    public ResponseEntity<MessageResponse> getChatRoom(
+            @RequestBody ChatRoomDetailRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        ChatRoomResponse roomInfo = chatRoomService.getChatRoomById(request);
+        List<ChatMessageResponse> messages = chatMessageService.getAllMessages(request.getRoomId(), httpRequest);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("room_info", roomInfo);
+        result.put("messages", messages);
+
+        return ResponseEntity.ok(MessageResponse.of("채팅방 상세 조회 성공", result));
     }
+
 
     /**
      * ✅ 채팅방 삭제

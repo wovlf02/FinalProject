@@ -275,3 +275,34 @@
     font-weight: 600;
     color: #000;
 }
+
+.friend-status {
+    font-size: 12px;
+    margin-top: 2px;
+    color: gray;
+}
+
+.friend-status.online {
+    color: green;
+}
+
+.friend-status.offline {
+    color: #aaa;
+}
+
+.chat-room-participants {
+    font-size: 0.85rem;
+    color: #666;
+    margin-left: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.participants-icon {
+    width: 18px !important;
+    height: 18px !important;
+    object-fit: contain;
+    margin-right: 3px !important;
+}
+

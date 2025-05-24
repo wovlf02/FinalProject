@@ -6,7 +6,6 @@ import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.service.community.chat.ChatReadService;
 import com.hamcam.back.service.community.chat.WebSocketChatService;
-import com.hamcam.back.util.SessionUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,15 +38,20 @@ public class StompChatController {
     public void handleChatMessage(@Payload @Valid ChatMessageRequest messageRequest,
                                   SimpMessageHeaderAccessor accessor) {
         Long userId = extractUserIdFromSession(accessor);
-        log.info("📥 [채팅 수신] roomId={}, userId={}", messageRequest.getRoomId(), userId);
+        log.info("📥 [채팅 수신] roomId={}, userId={}, content={}", messageRequest.getRoomId(), userId, messageRequest.getContent());
 
+        // 메시지 저장 및 응답 생성
         ChatMessageResponse response = webSocketChatService.saveMessage(messageRequest, userId);
+
+        // 본인은 바로 읽음 처리
         chatReadService.markReadAsUserId(response.getRoomId(), response.getMessageId(), userId);
+
+        // 브로드캐스트 전송
         messagingTemplate.convertAndSend(CHAT_DEST_PREFIX + response.getRoomId(), response);
     }
 
     /**
-     * ✅ 메시지 읽음 처리
+     * ✅ 메시지 읽음 처리 요청 (프론트가 메시지 받았을 때 호출)
      */
     @MessageMapping("/chat/read")
     public void handleReadMessage(@Payload @Valid ChatReadRequest request,
@@ -56,7 +60,7 @@ public class StompChatController {
         Long roomId = request.getRoomId();
         Long messageId = request.getMessageId();
 
-        log.info("📖 [읽음 처리] roomId={}, messageId={}, userId={}", roomId, messageId, userId);
+        log.info("📖 [읽음 처리 요청] roomId={}, messageId={}, userId={}", roomId, messageId, userId);
 
         int unreadCount = chatReadService.markReadAsUserId(roomId, messageId, userId);
 
@@ -75,13 +79,20 @@ public class StompChatController {
      * ✅ 세션에서 userId 추출
      */
     private Long extractUserIdFromSession(SimpMessageHeaderAccessor accessor) {
-        Object session = accessor.getSessionAttributes().get("HTTP.SESSION.ID");
-        if (session instanceof jakarta.servlet.http.HttpSession httpSession) {
-            Object userIdAttr = httpSession.getAttribute("userId");
-            if (userIdAttr instanceof Long userId) {
-                return userId;
+        Object userIdAttr = accessor.getSessionAttributes().get("userId");
+
+        if (userIdAttr instanceof Long userId) {
+            return userId;
+        } else if (userIdAttr instanceof Integer intId) {
+            return Long.valueOf(intId);
+        } else if (userIdAttr instanceof String strId) {
+            try {
+                return Long.parseLong(strId);
+            } catch (NumberFormatException e) {
+                log.warn("userId 세션 파싱 실패: {}", strId);
             }
         }
+
         throw new IllegalArgumentException("세션에서 userId를 가져올 수 없습니다.");
     }
 }

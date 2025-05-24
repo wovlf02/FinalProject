@@ -2,41 +2,50 @@ package com.hamcam.back.config.socket;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
 /**
- * STOMP 기반 WebSocket 설정 클래스 (세션 기반 인증 적용)
+ * STOMP 기반 WebSocket 설정 클래스
+ * - /ws        : 전역 소켓 (온라인 상태, 알림 등)
+ * - /ws/team   : 팀방 전용 소켓 (실시간 문제풀이, 캠 공유 등)
+ * - /ws/chat   : 채팅 전용 소켓
+ * - /pub       : 메시지 발행 경로
+ * - /sub       : 메시지 수신(구독) 경로
  */
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketStompConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final StringRedisTemplate redisTemplate;
+    private final StompHandshakeInterceptor stompHandshakeInterceptor;
 
-    /**
-     * 클라이언트가 연결할 WebSocket 엔드포인트 등록
-     * - SockJS 지원
-     * - 세션 정보 전달을 위한 HttpSessionHandshakeInterceptor 추가
-     */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // ✅ 전역 WebSocket (온라인 상태, 알림 등)
+        registry.addEndpoint("/ws")
+                .setAllowedOriginPatterns("*")
+                .addInterceptors(stompHandshakeInterceptor)
+                .withSockJS()
+                .setSessionCookieNeeded(true); // ✅ 세션 공유 위해 반드시 필요
+
+        // ✅ 팀방 전용 WebSocket
+        registry.addEndpoint("/ws/team")
+                .setAllowedOriginPatterns("*")
+                .addInterceptors(stompHandshakeInterceptor)
+                .withSockJS()
+                .setSessionCookieNeeded(true);
+
+        // ✅ 채팅 전용 WebSocket
         registry.addEndpoint("/ws/chat")
                 .setAllowedOriginPatterns("*")
-                .addInterceptors(new HttpSessionHandshakeInterceptor()) // ✅ 세션 정보를 WebSocket 세션으로 전달
-                .withSockJS();
+                .addInterceptors(stompHandshakeInterceptor)
+                .withSockJS()
+                .setSessionCookieNeeded(true); // ✅ 핵심
     }
 
-    /**
-     * 메시지 브로커 설정
-     * - /pub: 메시지 전송용
-     * - /sub: 구독용
-     */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/sub");
