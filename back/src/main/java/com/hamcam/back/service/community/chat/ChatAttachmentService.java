@@ -1,5 +1,6 @@
 package com.hamcam.back.service.community.chat;
 
+import com.hamcam.back.dto.community.chat.request.ChatFileUploadRequest;
 import com.hamcam.back.dto.community.chat.response.ChatFilePreviewResponse;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.entity.auth.User;
@@ -11,6 +12,8 @@ import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.ChatMessageRepository;
 import com.hamcam.back.repository.chat.ChatRoomRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -30,22 +33,26 @@ import java.util.UUID;
 public class ChatAttachmentService {
 
     private static final String UPLOAD_DIR = "C:/FinalProject/uploads/chat";
-    private static final String BASE_FILE_URL = "/uploads/chat";
 
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
 
     /**
-     * 채팅 파일 업로드 및 메시지 저장
+     * ✅ 채팅 파일 업로드 및 메시지 저장 (세션 기반)
      */
-    public ChatMessageResponse saveFileMessage(Long roomId, MultipartFile file, Long senderId) {
+    public ChatMessageResponse saveFileMessage(ChatFileUploadRequest request, HttpServletRequest httpRequest) {
+        MultipartFile file = request.getFile();
+        Long roomId = request.getRoomId();
+        Long senderId = SessionUtil.getUserId(httpRequest);
+
         if (file == null || file.isEmpty()) {
             throw new CustomException(ErrorCode.MISSING_PARAMETER);
         }
 
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -54,12 +61,13 @@ public class ChatAttachmentService {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
-        String storedFilename = generateStoredFilename(originalFilename);
-        ensureUploadDirectoryExists();
+        String storedFilename = UUID.randomUUID() + "_" + originalFilename;
+        File uploadDir = new File(UPLOAD_DIR);
+        if (!uploadDir.exists()) uploadDir.mkdirs();
 
-        File destination = new File(UPLOAD_DIR, storedFilename);
+        File dest = new File(uploadDir, storedFilename);
         try {
-            file.transferTo(destination);
+            file.transferTo(dest);
         } catch (IOException e) {
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
@@ -78,14 +86,14 @@ public class ChatAttachmentService {
     }
 
     /**
-     * 채팅 파일 다운로드용 리소스 반환
+     * ✅ 채팅 메시지의 파일 다운로드 리소스 반환
      */
     public Resource loadFileAsResource(Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
         try {
-            Path filePath = resolveFilePath(message.getStoredFileName());
+            Path filePath = Paths.get(UPLOAD_DIR).resolve(message.getStoredFileName()).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {
@@ -99,21 +107,21 @@ public class ChatAttachmentService {
     }
 
     /**
-     * 이미지 파일 Base64 미리보기
+     * ✅ 이미지 파일 미리보기 (Base64)
      */
     public ChatFilePreviewResponse previewFile(Long messageId) {
         ChatMessage message = chatMessageRepository.findById(messageId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
         String filename = message.getStoredFileName();
-        String extension = getFileExtension(filename).toLowerCase();
+        Path filePath = Paths.get(UPLOAD_DIR).resolve(filename).normalize();
 
+        String extension = getFileExtension(filename).toLowerCase();
         if (!isPreviewable(extension)) {
             throw new CustomException(ErrorCode.FILE_PREVIEW_NOT_SUPPORTED);
         }
 
         try {
-            Path filePath = resolveFilePath(filename);
             byte[] bytes = Files.readAllBytes(filePath);
             String base64 = Base64.getEncoder().encodeToString(bytes);
             String mimeType = Files.probeContentType(filePath);
@@ -124,47 +132,31 @@ public class ChatAttachmentService {
         }
     }
 
-    // ===== 유틸 =====
+    // ===== 내부 유틸 =====
 
     private ChatMessageResponse toResponse(ChatMessage message) {
         User sender = message.getSender();
-
         return ChatMessageResponse.builder()
                 .messageId(message.getId())
                 .roomId(message.getChatRoom().getId())
                 .senderId(sender.getId())
-                .content(message.getContent())
-                .type(message.getType().name())
-                .storedFileName(message.getStoredFileName())
-                .sentAt(message.getSentAt())
                 .nickname(sender.getNickname())
                 .profileUrl(sender.getProfileImageUrl() != null ? sender.getProfileImageUrl() : "")
+                .type(message.getType())
+                .content(message.getContent())
+                .storedFileName(message.getStoredFileName())
+                .sentAt(message.getSentAt())
                 .build();
     }
 
-    private Path resolveFilePath(String storedFilename) {
-        return Paths.get(UPLOAD_DIR).resolve(storedFilename).normalize();
-    }
-
-    private String generateStoredFilename(String original) {
-        return UUID.randomUUID() + "_" + original;
-    }
-
-    private void ensureUploadDirectoryExists() {
-        File dir = new File(UPLOAD_DIR);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-    }
-
     private String getFileExtension(String filename) {
-        int dot = filename.lastIndexOf('.');
-        return (dot != -1) ? filename.substring(dot + 1) : "";
+        int dotIndex = filename.lastIndexOf('.');
+        return dotIndex != -1 ? filename.substring(dotIndex + 1) : "";
     }
 
     private boolean isPreviewable(String ext) {
         return switch (ext) {
-            case "jpg", "jpeg", "png", "gif", "bmp", "webp" -> true;
+            case "jpg", "jpeg", "png", "gif", "webp", "bmp" -> true;
             default -> false;
         };
     }

@@ -6,9 +6,11 @@ import com.hamcam.back.dto.dashboard.reflection.request.WeeklyReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.response.ReflectionType;
 import com.hamcam.back.dto.dashboard.reflection.response.WeeklyReflectionResponse;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.dashboard.StudySession;
+import com.hamcam.back.entity.study.StudySession;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.dashboard.StudySessionRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,40 +24,34 @@ public class GPTReflectionService {
     private final StudySessionRepository studySessionRepository;
     private final UserRepository userRepository;
 
-    public WeeklyReflectionResponse generateWeeklyReflection(Long userId, WeeklyReflectionRequest request) {
-        User user = getUser(userId);
+    public WeeklyReflectionResponse generateWeeklyReflection(WeeklyReflectionRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
                 user, request.getStartDate(), request.getEndDate());
 
         String prompt = buildPrompt(sessions, request.getStartDate(), request.getEndDate(), ReflectionType.GENERAL);
         String reflection = mockGpt(prompt);
-        return WeeklyReflectionResponse.builder()
-                .reflectionText(reflection)
-                .build();
+        return WeeklyReflectionResponse.builder().reflectionText(reflection).build();
     }
 
-    public WeeklyReflectionResponse generateReflectionByRange(Long userId, RangeReflectionRequest request) {
-        User user = getUser(userId);
+    public WeeklyReflectionResponse generateReflectionByRange(RangeReflectionRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
                 user, request.getStartDate(), request.getEndDate());
 
         String prompt = buildPrompt(sessions, request.getStartDate(), request.getEndDate(), ReflectionType.GENERAL);
         String reflection = mockGpt(prompt);
-        return WeeklyReflectionResponse.builder()
-                .reflectionText(reflection)
-                .build();
+        return WeeklyReflectionResponse.builder().reflectionText(reflection).build();
     }
 
-    public WeeklyReflectionResponse generateCustomReflection(Long userId, OptionReflectionRequest request) {
-        User user = getUser(userId);
+    public WeeklyReflectionResponse generateCustomReflection(OptionReflectionRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
                 user, request.getStartDate(), request.getEndDate());
 
         String prompt = buildPrompt(sessions, request.getStartDate(), request.getEndDate(), request.getType());
         String reflection = mockGpt(prompt);
-        return WeeklyReflectionResponse.builder()
-                .reflectionText(reflection)
-                .build();
+        return WeeklyReflectionResponse.builder().reflectionText(reflection).build();
     }
 
     private String buildPrompt(List<StudySession> sessions, LocalDate start, LocalDate end, ReflectionType type) {
@@ -93,7 +89,8 @@ public class GPTReflectionService {
                 "다음 주에도 루틴을 유지하면서 약점 복습에 시간을 투자해 보세요!";
     }
 
-    private User getUser(Long userId) {
+    private User getSessionUser(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 정보를 찾을 수 없습니다."));
     }

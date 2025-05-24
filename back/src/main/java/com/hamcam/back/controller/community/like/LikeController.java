@@ -1,16 +1,18 @@
 package com.hamcam.back.controller.community.like;
 
 import com.hamcam.back.dto.common.MessageResponse;
+import com.hamcam.back.dto.community.like.request.*;
 import com.hamcam.back.dto.community.like.response.LikeCountResponse;
 import com.hamcam.back.dto.community.like.response.LikeStatusResponse;
 import com.hamcam.back.service.community.like.LikeService;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 좋아요(Like) 관련 REST 컨트롤러
- * 게시글, 댓글, 대댓글 각각의 좋아요 처리 및 상태 조회 API를 제공합니다.
+ * 좋아요 관련 REST 컨트롤러 (게시글, 댓글, 대댓글) - DTO 기반 처리
  */
 @RestController
 @RequestMapping("/api/community/likes")
@@ -19,87 +21,78 @@ public class LikeController {
 
     private final LikeService likeService;
 
-    // ===================== 게시글 =====================
+    // ===== 📌 게시글 =====
 
-    /** 게시글 좋아요 토글 */
-    @PostMapping("/posts/{postId}/toggle")
+    @PostMapping("/posts/toggle")
     public ResponseEntity<MessageResponse> togglePostLike(
-            @PathVariable Long postId,
-            @RequestParam("userId") Long userId
+            @RequestBody PostLikeToggleRequest request,
+            HttpServletRequest httpRequest
     ) {
-        boolean liked = likeService.togglePostLike(postId, userId);
+        boolean liked = likeService.togglePostLike(request, httpRequest);
         String message = liked ? "게시글에 좋아요를 눌렀습니다." : "게시글 좋아요를 취소했습니다.";
         return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
 
-    /** 게시글 좋아요 수 조회 */
-    @GetMapping("/posts/{postId}/count")
-    public ResponseEntity<LikeCountResponse> getPostLikeCount(@PathVariable Long postId) {
-        return ResponseEntity.ok(likeService.getPostLikeCount(postId));
+    @PostMapping("/posts/count")
+    public ResponseEntity<LikeCountResponse> getPostLikeCount(@RequestBody PostLikeCountRequest request) {
+        return ResponseEntity.ok(likeService.getPostLikeCount(request));
     }
 
-    /** 게시글 좋아요 여부 조회 */
-    @GetMapping("/posts/{postId}/check")
+    @PostMapping("/posts/check")
     public ResponseEntity<LikeStatusResponse> checkPostLike(
-            @PathVariable Long postId,
-            @RequestParam("userId") Long userId
+            @RequestBody PostLikeStatusRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return ResponseEntity.ok(likeService.hasLikedPost(postId, userId));
+        return ResponseEntity.ok(likeService.hasLikedPost(request, httpRequest));
     }
 
-    // ===================== 댓글 =====================
+    // ===== 💬 댓글 =====
 
-    /** 댓글 좋아요 토글 */
-    @PostMapping("/comments/{commentId}/toggle")
+    @PostMapping("/comments/toggle")
     public ResponseEntity<MessageResponse> toggleCommentLike(
-            @PathVariable Long commentId,
-            @RequestParam("userId") Long userId
+            @RequestBody CommentLikeToggleRequest request,
+            HttpServletRequest httpRequest
     ) {
-        boolean liked = likeService.toggleCommentLike(commentId, userId);
+        boolean liked = likeService.toggleCommentLike(request, httpRequest);
         String message = liked ? "댓글에 좋아요를 눌렀습니다." : "댓글 좋아요를 취소했습니다.";
         return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
 
-    /** 댓글 좋아요 수 조회 */
-    @GetMapping("/comments/{commentId}/count")
-    public ResponseEntity<LikeCountResponse> getCommentLikeCount(@PathVariable Long commentId) {
-        return ResponseEntity.ok(likeService.getCommentLikeCount(commentId));
+    @PostMapping("/comments/count")
+    public ResponseEntity<LikeCountResponse> getCommentLikeCount(@RequestBody CommentLikeCountRequest request) {
+        return ResponseEntity.ok(likeService.getCommentLikeCount(request));
     }
 
-    /** 댓글 좋아요 여부 조회 */
-    @GetMapping("/comments/{commentId}/check")
+    @PostMapping("/comments/check")
     public ResponseEntity<LikeStatusResponse> checkCommentLike(
-            @PathVariable Long commentId,
-            @RequestParam("userId") Long userId
+            @RequestBody CommentLikeStatusRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return ResponseEntity.ok(likeService.hasLikedComment(commentId, userId));
+        return ResponseEntity.ok(likeService.hasLikedComment(request, httpRequest));
     }
 
-    // ===================== 대댓글 =====================
+    // ===== 🔁 대댓글 =====
 
-    /** 대댓글 좋아요 토글 */
-    @PostMapping("/replies/{replyId}/toggle")
+    @PostMapping("/replies/toggle")
     public ResponseEntity<MessageResponse> toggleReplyLike(
-            @PathVariable Long replyId,
-            @RequestParam("userId") Long userId
+            @RequestBody ReplyLikeToggleRequest request,
+            HttpServletRequest httpRequest
     ) {
-        boolean liked = likeService.toggleReplyLike(replyId, userId);
+        boolean liked = likeService.toggleReplyLike(request, httpRequest);
         String message = liked ? "대댓글에 좋아요를 눌렀습니다." : "대댓글 좋아요를 취소했습니다.";
         return ResponseEntity.ok(MessageResponse.of(message, liked));
     }
 
-    /** 대댓글 좋아요 수 조회 */
-    @GetMapping("/replies/{replyId}/count")
-    public ResponseEntity<LikeCountResponse> getReplyLikeCount(@PathVariable Long replyId) {
-        return ResponseEntity.ok(likeService.getReplyLikeCount(replyId));
+    @PostMapping("/replies/count")
+    public ResponseEntity<LikeCountResponse> getReplyLikeCount(@RequestBody ReplyLikeCountRequest request) {
+        return ResponseEntity.ok(likeService.getReplyLikeCount(request));
     }
 
-    /** 대댓글 좋아요 여부 조회 */
-    @GetMapping("/replies/{replyId}/check")
+    @PostMapping("/replies/check")
     public ResponseEntity<LikeStatusResponse> checkReplyLike(
-            @PathVariable Long replyId,
-            @RequestParam("userId") Long userId
+            @RequestBody ReplyLikeStatusRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return ResponseEntity.ok(likeService.hasLikedReply(replyId, userId));
+        return ResponseEntity.ok(likeService.hasLikedReply(request, httpRequest));
     }
 }

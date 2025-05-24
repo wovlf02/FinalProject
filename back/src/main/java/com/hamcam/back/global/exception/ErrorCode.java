@@ -3,18 +3,6 @@ package com.hamcam.back.global.exception;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-/**
- * [ErrorCode]
- *
- * 전역 예외 처리에서 사용할 에러 코드 Enum 클래스.
- * 각 예외 상황별로 고유한 HTTP 상태, 코드, 메시지를 정의함.
- *
- * 프론트엔드에서는 error.code 값을 기반으로 사용자 정의 처리를 수행하거나
- * 국제화된 에러 메시지를 표시할 수 있음.
- *
- * 사용 예시:
- * throw new CustomException(ErrorCode.USER_NOT_FOUND);
- */
 @Getter
 public enum ErrorCode {
 
@@ -26,6 +14,7 @@ public enum ErrorCode {
 
     // 🔒 권한 오류 (403)
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "E4031", "접근 권한이 없습니다."),
+    NOT_ROOM_HOST(HttpStatus.FORBIDDEN, "E4032", "방장만 수행할 수 있는 작업입니다."),
 
     // ⚠️ 잘못된 요청 (400)
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "E4001", "잘못된 요청입니다."),
@@ -36,7 +25,12 @@ public enum ErrorCode {
     REPORT_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "E4006", "자기 자신은 신고할 수 없습니다."),
     EMAIL_MISMATCH(HttpStatus.BAD_REQUEST, "E4007", "입력한 이메일이 일치하지 않습니다."),
     FILE_PREVIEW_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "E4008", "미리보기가 지원되지 않는 파일 형식입니다."),
-
+    INVALID_TIME_VALUE(HttpStatus.BAD_REQUEST, "E4009", "목표 시간이 유효하지 않습니다."),
+    ALREADY_STARTED(HttpStatus.BAD_REQUEST, "E4010", "이미 세션이 시작된 방입니다."),
+    ALREADY_RAISED_HAND(HttpStatus.BAD_REQUEST, "E4011", "이미 손들기 요청을 보낸 사용자입니다."),
+    INVALID_VOTE_SCORE(HttpStatus.BAD_REQUEST, "E4012", "유효하지 않은 점수입니다."),
+    INVALID_ROOM_STATUS(HttpStatus.BAD_REQUEST, "E4013", "현재 방의 상태에서 해당 작업을 수행할 수 없습니다."),
+    TARGET_TIME_NOT_REACHED(HttpStatus.BAD_REQUEST, "E4014", "아직 목표 공부 시간에 도달하지 않았습니다."),
 
     DUPLICATE_LIKE(HttpStatus.BAD_REQUEST, "E4094", "이미 좋아요를 눌렀습니다."),
     DUPLICATE_REPORT(HttpStatus.BAD_REQUEST, "E4095", "이미 신고한 댓글입니다."),
@@ -52,10 +46,11 @@ public enum ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "E4043", "해당 게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E4044", "해당 댓글을 찾을 수 없습니다."),
     REPLY_NOT_FOUND(HttpStatus.NOT_FOUND, "E4045", "해당 대댓글이 존재하지 않습니다."),
-    EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "E4046", "해당 이메일을 찾을 수 없습니다,"),
+    EMAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "E4046", "해당 이메일을 찾을 수 없습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4047", "첨부파일을 찾을 수 없습니다."),
     VIDEO_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "E4048", "해당 학습방을 찾을 수 없습니다."),
     MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4049", "해당 메시지를 찾을 수 없습니다."),
+    TODO_NOT_FOUND(HttpStatus.NOT_FOUND, "E4050", "해당 할 일을 찾을 수 없습니다."),
 
     // 🛠 서버 내부 오류 (500)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E5001", "서버 내부 오류가 발생했습니다."),
@@ -64,7 +59,7 @@ public enum ErrorCode {
     FILE_PREVIEW_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E5004", "파일 미리보기 생성 중 오류가 발생했습니다."),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E5005", "이메일 전송에 실패했습니다."),
 
-
+    // 📚 학습방
     TEAM_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "E6001", "해당 학습방을 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;

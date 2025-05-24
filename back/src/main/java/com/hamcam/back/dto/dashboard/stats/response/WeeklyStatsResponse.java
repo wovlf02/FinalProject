@@ -17,6 +17,11 @@ public class WeeklyStatsResponse {
      */
     private List<DailyStat> dailyStats;
 
+    /**
+     * 과목별 주간 성장률 리스트
+     */
+    private List<GrowthResponse> growthList;
+
     @Getter
     @Setter
     @NoArgsConstructor

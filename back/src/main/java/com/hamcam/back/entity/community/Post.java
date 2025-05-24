@@ -1,6 +1,7 @@
 package com.hamcam.back.entity.community;
 
 import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.entity.study.TeamRoom;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,80 +27,48 @@ import java.util.List;
 @Builder
 public class Post {
 
-    /**
-     * 게시글 ID (AUTO_INCREMENT)
-     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * 제목
-     */
     @Column(nullable = false, length = 200)
     private String title;
 
-    /**
-     * 카테고리
-     */
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false, length = 20)
     private PostCategory category;
 
-    /**
-     * 본문 내용 (MySQL에선 TEXT 타입으로 매핑됨)
-     */
     @Lob
     @Column(nullable = false)
     private String content;
 
-    /**
-     * 작성자
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "writer_id", nullable = false)
     private User writer;
 
-    /**
-     * 작성일
-     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_room_id") // ✅ 질문 게시글의 팀방 연결 (nullable 허용)
+    private TeamRoom teamRoom;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * 수정일
-     */
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    /**
-     * 좋아요 수
-     */
     @Column(name = "like_count", nullable = false)
     private int likeCount;
 
-    /**
-     * 조회수
-     */
     @Column(name = "view_count", nullable = false)
     private int viewCount;
 
-    /**
-     * 댓글 수
-     */
     @Column(name = "comment_count", nullable = false)
     private int commentCount;
 
-    /**
-     * 삭제 여부 (소프트 삭제)
-     */
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
-    /**
-     * 삭제 시각
-     */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -129,7 +98,7 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Block> blocks = new ArrayList<>();
 
-    // ===== 엔티티 생명주기 =====
+    // ===== 생명주기 =====
 
     @PrePersist
     protected void onCreate() {

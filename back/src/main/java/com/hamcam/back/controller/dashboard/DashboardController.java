@@ -1,28 +1,30 @@
 package com.hamcam.back.controller.dashboard;
 
+import com.hamcam.back.dto.common.MessageResponse;
 import com.hamcam.back.dto.dashboard.calendar.CalendarEventDto;
+import com.hamcam.back.dto.dashboard.calendar.request.CalendarRequest;
 import com.hamcam.back.dto.dashboard.exam.request.ExamScheduleRequest;
 import com.hamcam.back.dto.dashboard.exam.response.DDayInfoResponse;
 import com.hamcam.back.dto.dashboard.exam.response.ExamScheduleResponse;
-import com.hamcam.back.dto.dashboard.goal.response.GoalSuggestionResponse;
 import com.hamcam.back.dto.dashboard.goal.request.GoalUpdateRequest;
+import com.hamcam.back.dto.dashboard.goal.response.GoalSuggestionResponse;
+import com.hamcam.back.dto.dashboard.notice.response.NoticeResponse;
 import com.hamcam.back.dto.dashboard.reflection.request.OptionReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.request.RangeReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.request.WeeklyReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.response.WeeklyReflectionResponse;
 import com.hamcam.back.dto.dashboard.stats.response.*;
-import com.hamcam.back.dto.dashboard.todo.request.TodoRequest;
-import com.hamcam.back.dto.dashboard.todo.request.TodoUpdateRequest;
+import com.hamcam.back.dto.dashboard.time.request.StudyTimeUpdateRequest;
+import com.hamcam.back.dto.dashboard.todo.request.*;
 import com.hamcam.back.dto.dashboard.todo.response.TodoResponse;
 import com.hamcam.back.service.dashboard.DashboardService;
 import com.hamcam.back.service.dashboard.GPTReflectionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.List;
 
 @RestController
@@ -33,151 +35,166 @@ public class DashboardController {
     private final DashboardService dashboardService;
     private final GPTReflectionService gptReflectionService;
 
-    // 📆 1. 월별 캘린더 이벤트
-    @GetMapping("/calendar")
-    public List<CalendarEventDto> getMonthlyCalendarEvents(
-            @RequestParam("userId") Long userId,
-            @RequestParam("month") @DateTimeFormat(pattern = "yyyy-MM") YearMonth month
+    // 📆 월별 캘린더 이벤트
+    @PostMapping("/calendar")
+    public ResponseEntity<List<CalendarEventDto>> getMonthlyCalendarEvents(
+            @RequestBody CalendarRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return dashboardService.getMonthlyCalendarEvents(userId, month);
+        return ResponseEntity.ok(dashboardService.getMonthlyCalendarEvents(request, httpRequest));
     }
 
-    // 📆 2. 특정 날짜 Todo
-    @GetMapping("/todos")
-    public List<TodoResponse> getTodosByDate(
-            @RequestParam("userId") Long userId,
-            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    // 📅 특정 날짜 Todo
+    @PostMapping("/todos/date")
+    public ResponseEntity<List<TodoResponse>> getTodosByDate(
+            @RequestBody TodoDateRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return dashboardService.getTodosByDate(userId, date);
+        return ResponseEntity.ok(dashboardService.getTodosByDate(request, httpRequest));
     }
 
-    // 📆 3. Todo 생성
+    // ✅ Todo 생성
     @PostMapping("/todos")
-    public void createTodo(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody TodoRequest request
+    public ResponseEntity<MessageResponse> createTodo(
+            @RequestBody TodoRequest request,
+            HttpServletRequest httpRequest
     ) {
-        dashboardService.createTodo(userId, request);
+        dashboardService.createTodo(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("✅ Todo가 생성되었습니다."));
     }
 
-    // 📆 4. Todo 수정
-    @PutMapping("/todos/{todoId}")
-    public void updateTodo(
-            @RequestParam("userId") Long userId,
-            @PathVariable Long todoId,
-            @Valid @RequestBody TodoUpdateRequest request
+    // ✅ Todo 수정
+    @PutMapping("/todos")
+    public ResponseEntity<MessageResponse> updateTodo(@RequestBody TodoUpdateRequest request) {
+        dashboardService.updateTodo(request);
+        return ResponseEntity.ok(MessageResponse.of("✏️ Todo가 수정되었습니다."));
+    }
+
+    // ✅ Todo 삭제
+    @PostMapping("/todos/delete")
+    public ResponseEntity<MessageResponse> deleteTodo(
+            @RequestBody TodoDeleteRequest request
     ) {
-        dashboardService.updateTodo(userId, todoId, request);
+        dashboardService.deleteTodo(request);
+        return ResponseEntity.ok(MessageResponse.of("🗑️ Todo가 삭제되었습니다."));
     }
 
-    // 📆 5. Todo 삭제
-    @DeleteMapping("/todos/{todoId}")
-    public void deleteTodo(
-            @RequestParam("userId") Long userId,
-            @PathVariable Long todoId
+    // ✅ Todo 완료 토글
+    @PutMapping("/todos/complete")
+    public ResponseEntity<TodoResponse> toggleTodo(
+            @RequestBody TodoToggleRequest request
     ) {
-        dashboardService.deleteTodo(userId, todoId);
+        return ResponseEntity.ok(dashboardService.toggleTodoCompletion(request));
     }
 
-    // 📆 6. Todo 완료 체크 (토글)
-    @PutMapping("/todos/{todoId}/complete")
-    public TodoResponse toggleTodo(
-            @RequestParam("userId") Long userId,
-            @PathVariable Long todoId
-    ) {
-        return dashboardService.toggleTodoCompletion(userId, todoId);
-    }
-
-    // 📅 7. 전체 시험 일정 조회
-    @GetMapping("/exams")
-    public List<ExamScheduleResponse> getExamSchedules(@RequestParam("userId") Long userId) {
-        return dashboardService.getAllExamSchedules(userId);
-    }
-
-    // 📅 8. 시험 일정 등록
+    // 🗓 시험 일정 전체 조회
     @PostMapping("/exams")
-    public void createExamSchedule(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody ExamScheduleRequest request
+    public ResponseEntity<List<ExamScheduleResponse>> getExamSchedules(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getAllExamSchedules(httpRequest));
+    }
+
+    // 🗓 시험 일정 등록
+    @PostMapping("/exams/register")
+    public ResponseEntity<MessageResponse> createExamSchedule(
+            @RequestBody ExamScheduleRequest request,
+            HttpServletRequest httpRequest
     ) {
-        dashboardService.createExamSchedule(userId, request);
+        dashboardService.createExamSchedule(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("✅ 시험 일정이 등록되었습니다."));
     }
 
-    // 📅 9. D-Day
-    @GetMapping("/exams/nearest")
-    public DDayInfoResponse getNearestExam(@RequestParam("userId") Long userId) {
-        return dashboardService.getNearestExamSchedule(userId);
+    // 🗓 D-Day 조회
+    @PostMapping("/exams/nearest")
+    public ResponseEntity<DDayInfoResponse> getNearestExam(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getNearestExamSchedule(httpRequest));
     }
 
-    // 📊 10. 전체 학습 통계
-    @GetMapping("/stats/total")
-    public TotalStatsResponse getTotalStats(@RequestParam("userId") Long userId) {
-        return dashboardService.getTotalStudyStats(userId);
+    // 📊 전체 통계
+    @PostMapping("/stats/total")
+    public ResponseEntity<TotalStatsResponse> getTotalStats(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getTotalStudyStats(httpRequest));
     }
 
-    // 📊 11. 과목별 통계
-    @GetMapping("/stats/subjects")
-    public List<SubjectStatsResponse> getSubjectStats(@RequestParam("userId") Long userId) {
-        return dashboardService.getSubjectStats(userId);
+    // 📊 과목별 통계
+    @PostMapping("/stats/subjects")
+    public ResponseEntity<List<SubjectStatsResponse>> getSubjectStats(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getSubjectStats(httpRequest));
     }
 
-    // 📊 12. 주간 집중
-    @GetMapping("/stats/weekly")
-    public WeeklyStatsResponse getWeeklyStats(@RequestParam("userId") Long userId) {
-        return dashboardService.getWeeklyStats(userId);
+    // 📊 주간 통계
+    @PostMapping("/stats/weekly")
+    public ResponseEntity<WeeklyStatsResponse> getWeeklyStats(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getWeeklyStats(httpRequest));
     }
 
-    // 📊 13. 월간 집중
-    @GetMapping("/stats/monthly")
-    public MonthlyStatsResponse getMonthlyStats(@RequestParam("userId") Long userId) {
-        return dashboardService.getMonthlyStats(userId);
+    // 📊 월간 통계
+    @PostMapping("/stats/monthly")
+    public ResponseEntity<MonthlyStatsResponse> getMonthlyStats(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getMonthlyStats(httpRequest));
     }
 
-    // 📊 14. 최고 집중일
-    @GetMapping("/stats/best-day")
-    public BestFocusDayResponse getBestFocusDay(@RequestParam("userId") Long userId) {
-        return dashboardService.getBestFocusDay(userId);
+    // 📊 최고 집중일
+    @PostMapping("/stats/best-day")
+    public ResponseEntity<BestFocusDayResponse> getBestFocusDay(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getBestFocusDay(httpRequest));
     }
 
-    // 🏁 15. GPT 기반 목표 제안
-    @GetMapping("/goal/suggest")
-    public GoalSuggestionResponse suggestGoal(@RequestParam("userId") Long userId) {
-        return dashboardService.getSuggestedGoal(userId);
+    // 🏁 목표 제안
+    @PostMapping("/goal/suggest")
+    public ResponseEntity<GoalSuggestionResponse> suggestGoal(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getSuggestedGoal(httpRequest));
     }
 
-    // 🏁 16. 수동 목표 수정
+    // 🏁 목표 수동 설정
     @PutMapping("/goal")
-    public void updateGoal(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody GoalUpdateRequest request
+    public ResponseEntity<MessageResponse> updateGoal(
+            @RequestBody GoalUpdateRequest request,
+            HttpServletRequest httpRequest
     ) {
-        dashboardService.updateGoalManually(userId, request);
+        dashboardService.updateGoalManually(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("🎯 목표가 업데이트되었습니다."));
     }
 
-    // 🧠 17. GPT 주간 회고
+    // 🧠 주간 회고
     @PostMapping("/reflection/weekly")
-    public WeeklyReflectionResponse generateWeeklyReflection(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody WeeklyReflectionRequest request
+    public ResponseEntity<WeeklyReflectionResponse> generateWeeklyReflection(
+            @RequestBody WeeklyReflectionRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return gptReflectionService.generateWeeklyReflection(userId, request);
+        return ResponseEntity.ok(gptReflectionService.generateWeeklyReflection(request, httpRequest));
     }
 
-    // 🧠 18. 기간 회고
+    // 🧠 기간 회고
     @PostMapping("/reflection/range")
-    public WeeklyReflectionResponse generateReflectionByRange(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody RangeReflectionRequest request
+    public ResponseEntity<WeeklyReflectionResponse> generateReflectionByRange(
+            @RequestBody RangeReflectionRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return gptReflectionService.generateReflectionByRange(userId, request);
+        return ResponseEntity.ok(gptReflectionService.generateReflectionByRange(request, httpRequest));
     }
 
-    // 🧠 19. 옵션 회고
+    // 🧠 선택 기반 회고
     @PostMapping("/reflection/custom")
-    public WeeklyReflectionResponse generateCustomReflection(
-            @RequestParam("userId") Long userId,
-            @Valid @RequestBody OptionReflectionRequest request
+    public ResponseEntity<WeeklyReflectionResponse> generateCustomReflection(
+            @RequestBody OptionReflectionRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return gptReflectionService.generateCustomReflection(userId, request);
+        return ResponseEntity.ok(gptReflectionService.generateCustomReflection(request, httpRequest));
     }
+
+    @PostMapping("/study-time")
+    public ResponseEntity<MessageResponse> updateStudyTime(
+            @RequestBody StudyTimeUpdateRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        dashboardService.updateStudyTime(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("공부시간 설정이 저장되었습니다."));
+    }
+
+    // 📢 공지사항 조회
+    @GetMapping("/notices")
+    public ResponseEntity<List<NoticeResponse>> getNotices() {
+        return ResponseEntity.ok(dashboardService.getNotices());
+    }
+
 }

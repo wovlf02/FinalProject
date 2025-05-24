@@ -1,5 +1,7 @@
 package com.hamcam.back.service.community.block;
 
+import com.hamcam.back.dto.community.block.request.BlockTargetRequest;
+import com.hamcam.back.dto.community.block.request.UnblockTargetRequest;
 import com.hamcam.back.dto.community.block.response.*;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.*;
@@ -10,12 +12,13 @@ import com.hamcam.back.repository.community.block.BlockRepository;
 import com.hamcam.back.repository.community.comment.CommentRepository;
 import com.hamcam.back.repository.community.comment.ReplyRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,23 +31,21 @@ public class BlockService {
     private final ReplyRepository replyRepository;
     private final UserRepository userRepository;
 
-    // 프로토타입: userId를 파라미터로 받음
-    // ================== 게시글 ==================
-
-    public void blockPost(Long postId, Long userId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        block(userId, post);
+    // ===== 게시글 차단 =====
+    public void blockPost(BlockTargetRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        Post post = getPost(request.getTargetId());
+        block(user, post);
     }
 
-    public void unblockPost(Long postId, Long userId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        unblock(userId, post);
+    public void unblockPost(UnblockTargetRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        Post post = getPost(request.getTargetId());
+        unblock(user, post);
     }
 
-    public BlockedPostListResponse getBlockedPosts(Long userId) {
-        User user = getUser(userId);
+    public BlockedPostListResponse getBlockedPosts(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         List<Block> blocks = blockRepository.findByUserAndPostIsNotNullAndIsDeletedFalse(user);
         return new BlockedPostListResponse(
                 blocks.stream()
@@ -53,22 +54,21 @@ public class BlockService {
         );
     }
 
-    // ================== 댓글 ==================
-
-    public void blockComment(Long commentId, Long userId) {
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-        block(userId, comment);
+    // ===== 댓글 차단 =====
+    public void blockComment(BlockTargetRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        Comment comment = getComment(request.getTargetId());
+        block(user, comment);
     }
 
-    public void unblockComment(Long commentId, Long userId) {
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-        unblock(userId, comment);
+    public void unblockComment(UnblockTargetRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        Comment comment = getComment(request.getTargetId());
+        unblock(user, comment);
     }
 
-    public BlockedCommentListResponse getBlockedComments(Long userId) {
-        User user = getUser(userId);
+    public BlockedCommentListResponse getBlockedComments(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         List<Block> blocks = blockRepository.findByUserAndCommentIsNotNullAndIsDeletedFalse(user);
         return new BlockedCommentListResponse(
                 blocks.stream()
@@ -77,22 +77,21 @@ public class BlockService {
         );
     }
 
-    // ================== 대댓글 ==================
-
-    public void blockReply(Long replyId, Long userId) {
-        Reply reply = replyRepository.findById(replyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
-        block(userId, reply);
+    // ===== 대댓글 차단 =====
+    public void blockReply(BlockTargetRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        Reply reply = getReply(request.getTargetId());
+        block(user, reply);
     }
 
-    public void unblockReply(Long replyId, Long userId) {
-        Reply reply = replyRepository.findById(replyId)
-                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
-        unblock(userId, reply);
+    public void unblockReply(UnblockTargetRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        Reply reply = getReply(request.getTargetId());
+        unblock(user, reply);
     }
 
-    public BlockedReplyListResponse getBlockedReplies(Long userId) {
-        User user = getUser(userId);
+    public BlockedReplyListResponse getBlockedReplies(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         List<Block> blocks = blockRepository.findByUserAndReplyIsNotNullAndIsDeletedFalse(user);
         return new BlockedReplyListResponse(
                 blocks.stream()
@@ -101,23 +100,59 @@ public class BlockService {
         );
     }
 
-    // ================== 공통 블록 로직 ==================
+    // ===== 사용자 차단 =====
+    public void blockUser(BlockTargetRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        User target = getUser(request.getTargetId());
+        blockUserInternal(user, target);
+    }
 
-    private void block(Long userId, Object target) {
-        User user = getUser(userId);
+    public void unblockUser(UnblockTargetRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        User target = getUser(request.getTargetId());
+        unblockUserInternal(user, target);
+    }
 
+    public BlockedUserListResponse getBlockedUsers(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        List<Block> blocks = blockRepository.findByUserAndBlockedUserIsNotNullAndIsDeletedFalse(user);
+        return new BlockedUserListResponse(
+                blocks.stream()
+                        .map(b -> BlockedUserListResponse.BlockedUserDto.from(b.getBlockedUser()))
+                        .collect(Collectors.toList())
+        );
+    }
+
+    // ===== 내부 공통 처리 =====
+    private void block(User user, Object target) {
         Block block = findBlock(user, target).orElseGet(() -> createBlock(user, target));
-
         if (block.isDeleted()) {
             block.restore();
             blockRepository.save(block);
         }
     }
 
-    private void unblock(Long userId, Object target) {
-        User user = getUser(userId);
-
+    private void unblock(User user, Object target) {
         findBlock(user, target).ifPresent(block -> {
+            if (!block.isDeleted()) {
+                block.softDelete();
+                blockRepository.save(block);
+            }
+        });
+    }
+
+    private void blockUserInternal(User user, User target) {
+        Block block = blockRepository.findByUserAndBlockedUser(user, target)
+                .orElseGet(() -> Block.builder().user(user).blockedUser(target).build());
+
+        if (block.isDeleted()) {
+            block.restore();
+        }
+        blockRepository.save(block);
+    }
+
+    private void unblockUserInternal(User user, User target) {
+        blockRepository.findByUserAndBlockedUser(user, target).ifPresent(block -> {
             if (!block.isDeleted()) {
                 block.softDelete();
                 blockRepository.save(block);
@@ -147,8 +182,28 @@ public class BlockService {
         throw new CustomException(ErrorCode.INVALID_INPUT);
     }
 
+    private User getSessionUser(HttpServletRequest request) {
+        Long userId = SessionUtil.getUserId(request);
+        return getUser(userId);
+    }
+
     private User getUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private Post getPost(Long id) {
+        return postRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+    }
+
+    private Comment getComment(Long id) {
+        return commentRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+    }
+
+    private Reply getReply(Long id) {
+        return replyRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.REPLY_NOT_FOUND));
     }
 }

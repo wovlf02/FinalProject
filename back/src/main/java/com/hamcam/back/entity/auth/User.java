@@ -23,7 +23,7 @@ public class User {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-    @Column(nullable = false, length = 50) // ✅ 추가된 name 필드
+    @Column(nullable = false, length = 50)
     private String name;
 
     @Column(nullable = false)
@@ -39,10 +39,10 @@ public class User {
     private String profileImageUrl;
 
     @Column(nullable = false)
-    private Integer grade; // ✅ 학년
+    private Integer grade;
 
     @Column(nullable = false, length = 50)
-    private String studyHabit; // ✅ 공부 습관
+    private String studyHabit;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -51,17 +51,22 @@ public class User {
     private LocalDateTime updatedAt;
 
     @Column(length = 15)
-    private String phone; // 추가된 전화번호 필드
+    private String phone;
 
     @ElementCollection
     @CollectionTable(name = "user_subjects", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "subject", nullable = false)
     private List<String> subjects = new ArrayList<>();
 
+    /** ✅ 누적 포인트 필드 (기본값 0) */
+    @Column(name = "point", nullable = false)
+    private int point;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+        this.point = 0;
     }
 
     @PreUpdate
@@ -69,9 +74,6 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * 비밀번호 변경
-     */
     public void updatePassword(String newPassword) {
         this.password = newPassword;
     }

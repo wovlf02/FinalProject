@@ -1,21 +1,14 @@
 package com.hamcam.back.controller.community.post;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hamcam.back.dto.common.MessageResponse;
 import com.hamcam.back.dto.community.post.request.*;
 import com.hamcam.back.dto.community.post.response.*;
-import com.hamcam.back.entity.community.PostCategory;
-import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.service.community.post.PostService;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/community/posts")
@@ -23,138 +16,91 @@ import org.springframework.web.multipart.MultipartFile;
 public class PostController {
 
     private final PostService postService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /** 게시글 생성 */
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MessageResponse> createPost(
-            @RequestParam("userId") Long userId,
-            @RequestPart("post") String postJson,
-            @RequestPart(value = "files", required = false) MultipartFile[] files
-    ) {
-        try {
-            PostCreateRequest request = objectMapper.readValue(postJson, PostCreateRequest.class);
-            Long postId = postService.createPost(userId, request, files);
-            return ResponseEntity.ok(MessageResponse.of("게시글이 등록되었습니다.", postId));
-        } catch (JsonProcessingException e) {
-            throw new CustomException("게시글 데이터 파싱 오류: " + e.getOriginalMessage());
-        }
+    @PostMapping("/create")
+    public ResponseEntity<MessageResponse> createPost(@RequestBody PostCreateRequest request, HttpServletRequest httpRequest) {
+        Long postId = postService.createPost(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("게시글이 등록되었습니다.", postId));
     }
 
-    /** 게시글 수정 */
-    @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MessageResponse> updatePost(
-            @PathVariable Long postId,
-            @RequestParam("userId") Long userId,
-            @RequestPart("post") String postJson,
-            @RequestPart(value = "files", required = false) MultipartFile[] files
-    ) {
-        try {
-            PostUpdateRequest request = objectMapper.readValue(postJson, PostUpdateRequest.class);
-            postService.updatePost(postId, userId, request, files);
-            return ResponseEntity.ok(MessageResponse.of("게시글이 수정되었습니다."));
-        } catch (JsonProcessingException e) {
-            throw new CustomException("게시글 데이터 파싱 오류: " + e.getOriginalMessage());
-        }
+    @PostMapping("/update")
+    public ResponseEntity<MessageResponse> updatePost(@RequestBody PostUpdateRequest request, HttpServletRequest httpRequest) {
+        postService.updatePost(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("게시글이 수정되었습니다."));
     }
 
-    /** 게시글 삭제 */
-    @DeleteMapping("/{postId}")
-    public ResponseEntity<MessageResponse> deletePost(
-            @PathVariable Long postId,
-            @RequestParam("userId") Long userId
-    ) {
-        postService.deletePost(postId, userId);
+    @PostMapping("/delete")
+    public ResponseEntity<MessageResponse> deletePost(@RequestBody PostDeleteRequest request, HttpServletRequest httpRequest) {
+        postService.deletePost(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("게시글이 삭제되었습니다."));
     }
 
-    /** 게시글 목록 조회 */
-    @GetMapping
-    public ResponseEntity<PostListResponse> getPostList(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(postService.getPostList(page, size));
+    @PostMapping("/list")
+    public ResponseEntity<PostListResponse> getPostList(@RequestBody PostListRequest request) {
+        return ResponseEntity.ok(postService.getPostList(request));
     }
 
-    /** 게시글 상세 조회 */
-    @GetMapping("/{postId}")
-    public ResponseEntity<PostResponse> getPostDetail(@PathVariable Long postId) {
-        return ResponseEntity.ok(postService.getPostDetail(postId));
+    @PostMapping("/detail")
+    public ResponseEntity<PostResponse> getPostDetail(@RequestBody PostDetailRequest request) {
+        return ResponseEntity.ok(postService.getPostDetail(request));
     }
 
-    /** 게시글 검색 */
-    @GetMapping("/search")
-    public ResponseEntity<PostListResponse> searchPosts(
-            @RequestParam String keyword,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        return ResponseEntity.ok(postService.searchPosts(keyword, pageable));
+    @PostMapping("/search")
+    public ResponseEntity<PostListResponse> searchPosts(@RequestBody PostSearchRequest request) {
+        return ResponseEntity.ok(postService.searchPosts(request));
     }
 
-    /** 게시글 필터 조회 */
-    @GetMapping("/filter")
-    public ResponseEntity<PostListResponse> filterPosts(
-            @RequestParam(defaultValue = "recent") String sort,
-            @RequestParam(defaultValue = "0") int minLikes,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) PostCategory category
-    ) {
-        if (category != null) {
-            return ResponseEntity.ok(postService.filterPostsByCategory(category, keyword, minLikes, sort));
-        } else {
-            return ResponseEntity.ok(postService.filterPosts(sort, minLikes, keyword));
-        }
+    @PostMapping("/filter")
+    public ResponseEntity<PostListResponse> filterPosts(@RequestBody PostFilterRequest request) {
+        return ResponseEntity.ok(postService.filterPosts(request));
     }
 
-    /** 인기 게시글 조회 */
-    @GetMapping("/popular")
-    public ResponseEntity<PopularPostListResponse> getPopularPosts() {
+    @GetMapping("/popular") // ✅ GET으로 수정
+    public ResponseEntity<PopularPostListResponse> getPopularPosts(HttpServletRequest httpRequest) {
         return ResponseEntity.ok(postService.getPopularPosts());
     }
 
-    /** 작성자 랭킹 조회 */
-    @GetMapping("/ranking")
-    public ResponseEntity<RankingResponse> getPostRanking() {
+    @GetMapping("/ranking") // ✅ GET으로 수정
+    public ResponseEntity<RankingResponse> getPostRanking(HttpServletRequest httpRequest) {
         return ResponseEntity.ok(postService.getPostRanking());
     }
 
-    /** 게시글 자동완성 */
     @PostMapping("/auto-fill")
     public ResponseEntity<PostAutoFillResponse> autoFillPost(@RequestBody ProblemReferenceRequest request) {
         return ResponseEntity.ok(postService.autoFillPost(request));
     }
 
-    /** 게시글 즐겨찾기 추가 */
-    @PostMapping("/{postId}/favorite")
-    public ResponseEntity<MessageResponse> favoritePost(
-            @PathVariable Long postId,
-            @RequestParam("userId") Long userId
-    ) {
-        postService.favoritePost(postId, userId);
+    @PostMapping("/favorite/add")
+    public ResponseEntity<MessageResponse> favoritePost(@RequestBody PostFavoriteRequest request, HttpServletRequest httpRequest) {
+        postService.favoritePost(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("즐겨찾기에 추가되었습니다.", true));
     }
 
-    /** 게시글 즐겨찾기 제거 */
-    @DeleteMapping("/{postId}/favorite")
-    public ResponseEntity<MessageResponse> unfavoritePost(
-            @PathVariable Long postId,
-            @RequestParam("userId") Long userId
-    ) {
-        postService.unfavoritePost(postId, userId);
+    @PostMapping("/favorite/remove")
+    public ResponseEntity<MessageResponse> unfavoritePost(@RequestBody PostFavoriteRequest request, HttpServletRequest httpRequest) {
+        postService.unfavoritePost(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("즐겨찾기에서 제거되었습니다.", false));
     }
 
-    /** 즐겨찾기 목록 조회 */
-    @GetMapping("/favorites")
-    public ResponseEntity<FavoritePostListResponse> getFavoritePosts(@RequestParam("userId") Long userId) {
-        return ResponseEntity.ok(postService.getFavoritePosts(userId));
+    @GetMapping("/favorites") // ✅ GET으로 수정
+    public ResponseEntity<FavoritePostListResponse> getFavoritePosts(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(postService.getFavoritePosts(httpRequest));
     }
 
-    /** 게시글 조회수 증가 */
-    @PostMapping("/{postId}/view")
-    public ResponseEntity<MessageResponse> increaseViewCount(@PathVariable Long postId) {
-        postService.increaseViewCount(postId);
+    @PatchMapping("/view") // ✅ POST → PATCH로 변경
+    public ResponseEntity<MessageResponse> increaseViewCount(@RequestBody PostViewRequest request) {
+        postService.increaseViewCount(request);
         return ResponseEntity.ok(MessageResponse.of("조회수가 증가되었습니다."));
     }
+
+    @GetMapping("/sidebar/studies")
+    public ResponseEntity<StudyInfoListResponse> getSidebarStudyList() {
+        return ResponseEntity.ok(postService.getOngoingStudies());
+    }
+
+    @GetMapping("/sidebar/tags")
+    public ResponseEntity<TagListResponse> getPopularTags() {
+        return ResponseEntity.ok(postService.getPopularTags());
+    }
+
 }

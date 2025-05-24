@@ -1,21 +1,20 @@
 package com.hamcam.back.controller.community.attachment;
 
 import com.hamcam.back.dto.common.MessageResponse;
+import com.hamcam.back.dto.community.attachment.request.AttachmentUploadRequest;
+import com.hamcam.back.dto.community.attachment.request.AttachmentIdRequest;
+import com.hamcam.back.dto.community.attachment.request.PostIdRequest;
 import com.hamcam.back.dto.community.attachment.response.AttachmentListResponse;
 import com.hamcam.back.service.community.attachment.AttachmentService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-/**
- * [AttachmentController]
- * 커뮤니티 게시글의 첨부파일 업로드, 조회, 다운로드, 삭제 기능을 담당하는 컨트롤러
- */
 @RestController
 @RequestMapping("/api/community")
 @RequiredArgsConstructor
@@ -23,35 +22,30 @@ public class AttachmentController {
 
     private final AttachmentService attachmentService;
 
-    /**
-     * 게시글 첨부파일 업로드
-     */
-    @PostMapping("/posts/{postId}/attachments")
+    /** ✅ 게시글 첨부파일 업로드 (세션 기반) */
+    @PostMapping("/attachments/upload")
     public ResponseEntity<MessageResponse> uploadPostAttachments(
-            @PathVariable Long postId,
-            @RequestParam("files") MultipartFile[] files
+            @ModelAttribute AttachmentUploadRequest request,
+            HttpServletRequest httpRequest
     ) {
-        int uploadedCount = attachmentService.uploadPostFiles(postId, files);
-        return ResponseEntity.ok(MessageResponse.of("첨부파일이 업로드되었습니다. (" + uploadedCount + "개)"));
+        int uploadedCount = attachmentService.uploadPostFiles(request, httpRequest);
+        return ResponseEntity.ok(
+                MessageResponse.of("✅ 첨부파일이 업로드되었습니다. (" + uploadedCount + "개)")
+        );
     }
 
-    /**
-     * 게시글 첨부파일 목록 조회
-     */
-    @GetMapping("/posts/{postId}/attachments")
-    public ResponseEntity<AttachmentListResponse> getPostAttachments(@PathVariable Long postId) {
-        return ResponseEntity.ok(attachmentService.getPostAttachments(postId));
+    /** ✅ 게시글 첨부파일 목록 조회 */
+    @PostMapping("/attachments/list")
+    public ResponseEntity<AttachmentListResponse> getPostAttachments(@RequestBody PostIdRequest request) {
+        return ResponseEntity.ok(attachmentService.getPostAttachments(request));
     }
 
-    /**
-     * 첨부파일 다운로드
-     */
-    @GetMapping("/attachments/{attachmentId}/download")
-    public ResponseEntity<Resource> downloadAttachment(@PathVariable Long attachmentId) {
-        Resource resource = attachmentService.downloadAttachment(attachmentId);
-
+    /** ✅ 첨부파일 다운로드 */
+    @PostMapping("/attachments/download")
+    public ResponseEntity<Resource> downloadAttachment(@RequestBody AttachmentIdRequest request) {
+        Resource resource = attachmentService.downloadAttachment(request);
         String filename = resource.getFilename();
-        String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+        String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -59,12 +53,13 @@ public class AttachmentController {
                 .body(resource);
     }
 
-    /**
-     * 첨부파일 삭제
-     */
-    @DeleteMapping("/attachments/{attachmentId}")
-    public ResponseEntity<MessageResponse> deleteAttachment(@PathVariable Long attachmentId) {
-        attachmentService.deleteAttachment(attachmentId);
-        return ResponseEntity.ok(MessageResponse.of("첨부파일이 삭제되었습니다."));
+    /** ✅ 첨부파일 삭제 (세션 기반) */
+    @PostMapping("/attachments/delete")
+    public ResponseEntity<MessageResponse> deleteAttachment(
+            @RequestBody AttachmentIdRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        attachmentService.deleteAttachment(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("🗑️ 첨부파일이 삭제되었습니다."));
     }
 }

@@ -31,16 +31,24 @@ const Register = () => {
         const phoneOnly = phone.replace(/[^0-9]/g, '');
         const subjectList = subjects.split(',').map(s => s.trim());
 
+        // ✅ JSON 형태로 담을 request 객체
+        const requestData = {
+            username,
+            password,
+            email,
+            name,
+            nickname,
+            phone: phoneOnly,
+            grade: Number(grade),
+            study_habit: studyHabit,
+            subjects: subjectList
+        };
+
         const formData = new FormData();
-        formData.append('username', username);
-        formData.append('password', password);
-        formData.append('email', email);
-        formData.append('name', name);
-        formData.append('nickname', nickname);
-        formData.append('phone', phoneOnly);
-        formData.append('grade', grade);
-        formData.append('studyHabit', studyHabit);
-        subjectList.forEach(sub => formData.append('subjects', sub)); // ✅ 다중 값
+        formData.append(
+            'request',
+            new Blob([JSON.stringify(requestData)], { type: 'application/json' })
+        );
 
         if (profileImage) {
             formData.append('profileImage', profileImage);
@@ -59,10 +67,11 @@ const Register = () => {
                 navigate('/login');
             }
         } catch (error) {
-            console.log(error)
+            console.log(error);
             alert('회원가입 실패: ' + (error.response?.data?.message || '오류가 발생했습니다.'));
         }
     };
+
 
 
     return (

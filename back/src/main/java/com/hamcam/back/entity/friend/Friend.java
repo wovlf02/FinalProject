@@ -92,4 +92,14 @@ public class Friend {
         this.isDeleted = false;
         this.deletedAt = null;
     }
+
+    public static Friend of(User user, User friend) {
+        return Friend.builder()
+                .user(user)
+                .friend(friend)
+                .createdAt(LocalDateTime.now())
+                .isDeleted(false)
+                .build();
+    }
+
 }

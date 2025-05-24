@@ -5,104 +5,112 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * [SignalingController]
- *
- * WebRTC 통신을 위한 signaling WebSocket 핸들러 (방 기반 확장)
+ * WebRTC 통신을 위한 signaling WebSocket 핸들러 (roomId 기반 브로드캐스트 처리)
  */
 @Slf4j
 @Component
 public class SignalingController extends TextWebSocketHandler {
 
-    // roomId → [세션 목록]
+    /** roomId -> 참여 세션 목록 */
     private final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
 
     /**
-     * 클라이언트로부터 메시지 수신 시
-     * - 같은 roomId에 속한 세션에만 메시지를 브로드캐스트
+     * 클라이언트 메시지 수신 시 → 같은 방 전체로 브로드캐스트
      */
     @Override
-    public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+    public void handleTextMessage(WebSocketSession session, TextMessage message) {
         String payload = message.getPayload();
-        String roomId = getRoomIdFromSession(session);
+        String roomId = getQueryParam(session, "roomId");
 
-        log.info("📨 메시지 수신 | session={}, roomId={}, message={}", session.getId(), roomId, payload);
+        if (roomId == null) {
+            log.warn("🚫 roomId 누락 - 수신 메시지 무시됨: session={}", session.getId());
+            return;
+        }
 
-        if (roomId != null) {
-            for (WebSocketSession s : roomSessions.getOrDefault(roomId, Set.of())) {
-                if (s.isOpen()) {
-                    s.sendMessage(new TextMessage(payload));
-                }
+        log.info("📨 메시지 수신 | roomId={}, session={}, message={}", roomId, session.getId(), payload);
+
+        Set<WebSocketSession> sessions = roomSessions.getOrDefault(roomId, Collections.emptySet());
+        for (WebSocketSession s : sessions) {
+            try {
+                if (s.isOpen()) s.sendMessage(new TextMessage(payload));
+            } catch (Exception e) {
+                log.error("❌ 메시지 전송 실패 | targetSession={}, error={}", s.getId(), e.getMessage());
             }
         }
     }
 
     /**
-     * 연결 시 roomId 파라미터로 방 등록
+     * 연결 수립 시 방 세션에 등록
      */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        String roomId = getRoomIdFromSession(session);
+        String roomId = getQueryParam(session, "roomId");
+
         if (roomId == null) {
-            log.warn("❌ 연결 거부됨: roomId 없음");
+            log.warn("❌ WebSocket 연결 거부: roomId 없음 | session={}", session.getId());
             session.close(CloseStatus.BAD_DATA);
             return;
         }
 
         roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
-        log.info("🔌 연결됨: session={}, roomId={}", session.getId(), roomId);
+        log.info("🔌 WebSocket 연결됨 | roomId={}, session={}", roomId, session.getId());
     }
 
     /**
-     * 연결 종료 시 방에서 제거
+     * 연결 종료 시 세션 제거 + 방 비우면 삭제
      */
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        String roomId = getRoomIdFromSession(session);
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+        String roomId = getQueryParam(session, "roomId");
+
         if (roomId != null) {
             Set<WebSocketSession> sessions = roomSessions.get(roomId);
             if (sessions != null) {
                 sessions.remove(session);
-                log.info("❎ 연결 종료: session={}, roomId={}", session.getId(), roomId);
+                log.info("❎ 연결 종료 | roomId={}, session={}, status={}", roomId, session.getId(), status);
+
                 if (sessions.isEmpty()) {
                     roomSessions.remove(roomId);
+                    log.info("🧹 방 제거됨 | roomId={}", roomId);
                 }
             }
         }
     }
 
     /**
-     * 에러 핸들링
+     * 연결 중 에러 처리
      */
     @Override
-    public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("🚨 WebSocket 오류 | session={}: {}", session.getId(), exception.getMessage());
+    public void handleTransportError(WebSocketSession session, Throwable exception) {
+        log.error("🚨 WebSocket 오류 | session={}, error={}", session.getId(), exception.getMessage());
     }
 
     /**
-     * URI 쿼리에서 roomId 파라미터 추출
-     * ex: ws://localhost:8080/ws/signal?roomId=abc123&userId=1
+     * 세션의 URI 쿼리 파라미터에서 특정 값 추출
      */
-    private String getRoomIdFromSession(WebSocketSession session) {
+    private String getQueryParam(WebSocketSession session, String key) {
         try {
             URI uri = session.getUri();
-            if (uri == null) return null;
+            if (uri == null || uri.getQuery() == null) return null;
 
-            String query = uri.getQuery(); // roomId=abc123&userId=1
-            if (query == null) return null;
-
-            for (String param : query.split("&")) {
-                String[] parts = param.split("=");
-                if (parts.length == 2 && parts[0].equals("roomId")) {
-                    return parts[1];
+            for (String param : uri.getQuery().split("&")) {
+                String[] pair = param.split("=");
+                if (pair.length == 2 && pair[0].equals(key)) {
+                    return URLDecoder.decode(pair[1], "UTF-8");
                 }
             }
+        } catch (UnsupportedEncodingException e) {
+            log.warn("❗ URL 디코딩 실패: {}", e.getMessage());
         } catch (Exception e) {
-            log.warn("roomId 파싱 실패: {}", e.getMessage());
+            log.warn("❗ URI 파싱 실패: {}", e.getMessage());
         }
         return null;
     }

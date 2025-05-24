@@ -1,7 +1,6 @@
 package com.hamcam.back.service.community.chat;
 
-import com.hamcam.back.dto.community.chat.request.ChatJoinRequest;
-import com.hamcam.back.dto.community.chat.request.ChatRoomCreateRequest;
+import com.hamcam.back.dto.community.chat.request.*;
 import com.hamcam.back.dto.community.chat.response.ChatParticipantDto;
 import com.hamcam.back.dto.community.chat.response.ChatRoomListResponse;
 import com.hamcam.back.dto.community.chat.response.ChatRoomResponse;
@@ -11,6 +10,8 @@ import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.chat.*;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,9 +31,9 @@ public class ChatRoomService {
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
 
-    public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request) {
-        User creator = userRepository.findById(request.getCreatorId())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+        User creator = getUser(userId);
 
         List<Long> inviteeIds = request.getInvitedUserIds();
         if (inviteeIds == null || inviteeIds.isEmpty()) {
@@ -40,11 +41,9 @@ public class ChatRoomService {
         }
 
         ChatRoomType type = (inviteeIds.size() == 1) ? ChatRoomType.DIRECT : ChatRoomType.GROUP;
-
-        String imageUrl = null;
-        if (request.getImage() != null && !request.getImage().isEmpty()) {
-            imageUrl = fileUploadService.storeChatRoomImage(request.getImage());
-        }
+        String imageUrl = request.getImage() != null && !request.getImage().isEmpty()
+                ? fileUploadService.storeChatRoomImage(request.getImage())
+                : null;
 
         ChatRoom room = ChatRoom.builder()
                 .name(request.getRoomName())
@@ -55,12 +54,10 @@ public class ChatRoomService {
 
         chatRoomRepository.save(room);
 
-        List<Long> participantIds = Stream.concat(Stream.of(creator.getId()), inviteeIds.stream())
-                .distinct()
-                .toList();
-
+        List<Long> participantIds = Stream.concat(Stream.of(userId), inviteeIds.stream()).distinct().toList();
         List<User> members = userRepository.findAllById(participantIds);
-        List<ChatParticipant> chatMembers = members.stream()
+
+        List<ChatParticipant> participants = members.stream()
                 .map(user -> ChatParticipant.builder()
                         .chatRoom(room)
                         .user(user)
@@ -68,13 +65,13 @@ public class ChatRoomService {
                         .build())
                 .toList();
 
-        chatParticipantRepository.saveAll(chatMembers);
+        chatParticipantRepository.saveAll(participants);
         return toResponse(room);
     }
 
-    public List<ChatRoomListResponse> getMyChatRooms(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public List<ChatRoomListResponse> getMyChatRooms(HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+        User user = getUser(userId);
         List<ChatParticipant> participants = chatParticipantRepository.findByUser(user);
 
         return participants.stream().map(participant -> {
@@ -100,51 +97,54 @@ public class ChatRoomService {
         }).toList();
     }
 
-    public ChatRoomResponse getChatRoomById(Long roomId) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-        return toResponse(room);
+    public ChatRoomResponse getChatRoomById(ChatRoomDetailRequest request) {
+        return toResponse(getRoom(request.getRoomId()));
     }
 
-    public void deleteChatRoom(Long roomId) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-        chatRoomRepository.delete(room);
+    public void deleteChatRoom(ChatRoomDeleteRequest request, HttpServletRequest httpRequest) {
+        SessionUtil.getUserId(httpRequest); // 유효성 확인만
+        chatRoomRepository.delete(getRoom(request.getRoomId()));
     }
 
     @Transactional
-    public void joinChatRoom(ChatJoinRequest request) {
-        ChatRoom room = chatRoomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public void joinChatRoom(ChatEnterRequest request, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+        ChatRoom room = getRoom(request.getRoomId());
+        User user = getUser(userId);
 
-        boolean alreadyJoined = chatParticipantRepository.findByChatRoomAndUser(room, user).isPresent();
-        if (!alreadyJoined) {
-            chatParticipantRepository.save(ChatParticipant.builder()
-                    .chatRoom(room)
-                    .user(user)
-                    .joinedAt(LocalDateTime.now())
-                    .build());
-        }
+        chatParticipantRepository.findByChatRoomAndUser(room, user)
+                .orElseGet(() -> chatParticipantRepository.save(ChatParticipant.builder()
+                        .chatRoom(room)
+                        .user(user)
+                        .joinedAt(LocalDateTime.now())
+                        .build()));
     }
 
     @Transactional
-    public void exitChatRoom(ChatJoinRequest request) {
-        ChatRoom room = chatRoomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public void exitChatRoom(ChatEnterRequest request, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+        ChatRoom room = getRoom(request.getRoomId());
+        User user = getUser(userId);
 
         ChatParticipant participant = chatParticipantRepository.findByChatRoomAndUser(room, user)
                 .orElseThrow(() -> new CustomException(ErrorCode.ACCESS_DENIED));
 
         chatParticipantRepository.delete(participant);
-
-        boolean noParticipantsLeft = chatParticipantRepository.findByChatRoom(room).isEmpty();
-        if (noParticipantsLeft) {
+        if (chatParticipantRepository.findByChatRoom(room).isEmpty()) {
             chatRoomRepository.delete(room);
         }
+    }
+
+    // ========== 내부 유틸 ==========
+
+    private User getUser(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private ChatRoom getRoom(Long id) {
+        return chatRoomRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
     }
 
     private ChatRoomResponse toResponse(ChatRoom room) {

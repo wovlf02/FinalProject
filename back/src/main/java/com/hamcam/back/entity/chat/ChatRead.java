@@ -7,8 +7,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 채팅 메시지 읽음 처리 정보 (MySQL 호환)
- * 한 사용자가 한 메시지를 읽었는지 여부를 저장
+ * [ChatRead]
+ * 채팅 메시지 읽음 처리 정보
+ * - 한 사용자가 한 메시지를 읽었는지 여부 저장
  */
 @Entity
 @Table(
@@ -23,34 +24,42 @@ import java.time.LocalDateTime;
 public class ChatRead {
 
     /**
-     * MySQL용 ID 생성 (AUTO_INCREMENT)
+     * PK: 읽음 ID (MySQL용 AUTO_INCREMENT)
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * 읽은 메시지
+     * ✅ 읽은 메시지 (ManyToOne)
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "message_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private ChatMessage message;
 
     /**
-     * 읽은 사용자
+     * ✅ 읽은 사용자 (ManyToOne)
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private User user;
 
+    @Column(name = "is_read", nullable = false)
+    private boolean isRead = true;
+
+
     /**
-     * 읽은 시각
+     * ✅ 읽은 시각
      */
     @Column(name = "read_at", nullable = false)
     private LocalDateTime readAt;
 
     /**
-     * 메시지 읽음 엔티티 생성 팩토리 메서드
+     * ✅ 엔티티 생성 유틸 메서드
      */
     public static ChatRead create(ChatMessage message, User user) {
         return ChatRead.builder()

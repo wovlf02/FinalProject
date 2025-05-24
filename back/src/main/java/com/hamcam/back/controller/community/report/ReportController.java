@@ -1,14 +1,15 @@
 package com.hamcam.back.controller.community.report;
 
 import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.dto.community.report.request.ReportRequest;
+import com.hamcam.back.dto.community.report.request.*;
 import com.hamcam.back.service.community.report.ReportService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 커뮤니티 리소스 신고 처리 컨트롤러 (보안 제거 + userId 전달 방식 확장)
+ * 커뮤니티 리소스 신고 처리 컨트롤러 (세션 기반)
  */
 @RestController
 @RequestMapping("/api/community")
@@ -17,51 +18,43 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    /** 게시글 신고 */
-    @PostMapping("/posts/{postId}/report")
+    /** ✅ 게시글 신고 */
+    @PostMapping("/posts/report")
     public ResponseEntity<MessageResponse> reportPost(
-            @RequestParam("userId") Long reporterId,
-            @PathVariable Long postId,
-            @RequestBody ReportRequest request
+            @RequestBody PostReportRequest request,
+            HttpServletRequest httpRequest
     ) {
-        reportService.reportPost(reporterId, postId, request);
+        reportService.reportPost(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("게시글이 신고되었습니다."));
     }
 
-    /** 댓글 신고 */
-    @PostMapping("/comments/{commentId}/report")
+    /** ✅ 댓글 신고 */
+    @PostMapping("/comments/report")
     public ResponseEntity<MessageResponse> reportComment(
-            @RequestParam("userId") Long reporterId,
-            @PathVariable Long commentId,
-            @RequestBody ReportRequest request
+            @RequestBody CommentReportRequest request,
+            HttpServletRequest httpRequest
     ) {
-        reportService.reportComment(reporterId, commentId, request);
+        reportService.reportComment(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("댓글이 신고되었습니다."));
     }
 
-    /** 대댓글 신고 */
-    @PostMapping("/replies/{replyId}/report")
+    /** ✅ 대댓글 신고 */
+    @PostMapping("/replies/report")
     public ResponseEntity<MessageResponse> reportReply(
-            @RequestParam("userId") Long reporterId,
-            @PathVariable Long replyId,
-            @RequestBody ReportRequest request
+            @RequestBody ReplyReportRequest request,
+            HttpServletRequest httpRequest
     ) {
-        reportService.reportReply(reporterId, replyId, request);
+        reportService.reportReply(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("대댓글이 신고되었습니다."));
     }
 
-    /** 사용자 신고 */
-    @PostMapping("/users/{targetUserId}/report")
+    /** ✅ 사용자 신고 */
+    @PostMapping("/users/report")
     public ResponseEntity<MessageResponse> reportUser(
-            @RequestParam("userId") Long reporterId,
-            @PathVariable Long targetUserId,
-            @RequestBody ReportRequest request
+            @RequestBody UserReportRequest request,
+            HttpServletRequest httpRequest
     ) {
-        reportService.reportUser(reporterId, targetUserId, request);
+        reportService.reportUser(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("사용자가 신고되었습니다."));
     }
-
-    // ====================== 관리자 기능 예시 ======================
-    // @GetMapping("/reports") → 전체 신고 목록 조회
-    // @PatchMapping("/reports/{reportId}/resolve") → 신고 상태 처리 (승인/반려 등)
 }

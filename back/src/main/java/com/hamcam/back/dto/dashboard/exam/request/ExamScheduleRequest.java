@@ -1,5 +1,7 @@
 package com.hamcam.back.dto.dashboard.exam.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -7,23 +9,23 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
+/**
+ * [ExamScheduleRequest]
+ * 시험 일정 생성 요청 DTO
+ */
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ExamScheduleRequest {
 
-    /**
-     * 시험명 (예: 중간고사, 수능, 모의고사 등)
-     */
     @NotBlank(message = "시험명을 입력해주세요.")
-    private String title;
+    @JsonProperty("exam_name")
+    private String examName;
 
-    /**
-     * 시험 날짜 (yyyy-MM-dd 형식)
-     */
     @NotNull(message = "시험 날짜를 입력해주세요.")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @JsonProperty("exam_date")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate examDate;
 }
+

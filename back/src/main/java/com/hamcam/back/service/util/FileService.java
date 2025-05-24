@@ -2,6 +2,9 @@ package com.hamcam.back.service.util;
 
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.repository.auth.UserRepository;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,23 +17,25 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileService {
 
-    private static final String PROFILE_UPLOAD_DIR = "uploads/profile/";
+    private static final String PROFILE_BASE_DIR = "uploads/profile/";
+
+    private final UserRepository userRepository;
 
     /**
-     * 프로필 이미지 저장 메서드
-     *
-     * @param file 업로드된 이미지 파일
-     * @return 저장된 파일의 웹 접근 경로 (/uploads/profile/...)
+     * ✅ 프로필 이미지 저장 (세션 기반)
      */
-    public String saveProfileImage(MultipartFile file) {
+    public String saveProfileImage(MultipartFile file, HttpServletRequest request) {
         if (file == null || file.isEmpty()) {
             return null;
         }
 
         try {
-            Path dirPath = Paths.get(PROFILE_UPLOAD_DIR);
-            if (Files.notExists(dirPath)) {
-                Files.createDirectories(dirPath);
+            Long userId = SessionUtil.getUserId(request);
+
+            // 사용자별 디렉토리 설정
+            Path userDir = Paths.get(PROFILE_BASE_DIR + userId);
+            if (Files.notExists(userDir)) {
+                Files.createDirectories(userDir);
             }
 
             String originalFilename = file.getOriginalFilename();
@@ -39,12 +44,12 @@ public class FileService {
             }
 
             String storedFilename = UUID.randomUUID() + "_" + originalFilename;
-            Path targetPath = dirPath.resolve(storedFilename);
+            Path targetPath = userDir.resolve(storedFilename);
 
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // ✅ 프론트에서 접근 가능한 상대 경로 리턴
-            return "/uploads/profile/" + storedFilename;
+            // 프론트 접근용 경로 반환
+            return "/uploads/profile/" + userId + "/" + storedFilename;
 
         } catch (IOException e) {
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
@@ -52,19 +57,18 @@ public class FileService {
     }
 
     /**
-     * 프로필 이미지 삭제
-     *
-     * @param storedPath 저장된 웹 경로 또는 파일명
+     * ✅ 프로필 이미지 삭제 (세션 기반)
      */
-    public void deleteProfileImage(String storedPath) {
+    public void deleteProfileImage(String storedPath, HttpServletRequest request) {
         try {
             if (storedPath == null || storedPath.isBlank()) return;
 
+            Long userId = SessionUtil.getUserId(request);
             String filename = storedPath.contains("/") ?
                     storedPath.substring(storedPath.lastIndexOf("/") + 1) :
                     storedPath;
 
-            Path path = Paths.get(PROFILE_UPLOAD_DIR).resolve(filename);
+            Path path = Paths.get(PROFILE_BASE_DIR + userId).resolve(filename);
             Files.deleteIfExists(path);
 
         } catch (Exception e) {

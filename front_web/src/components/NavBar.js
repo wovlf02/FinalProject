@@ -114,8 +114,10 @@ const NavBar = () => {
         const fetchUserInfo = async () => {
             try {
                 const res = await api.get('/users/me');
-                console.log(res);
-                setUser(res.data); // ✅ 반드시 data 안쪽으로!
+                console.log(res.data); // 구조 확인용
+
+                setUser(res.data.data); // ✅ 내부 data를 user로 설정
+
             } catch (error) {
                 console.error('프로필 조회 실패:', error);
             }
