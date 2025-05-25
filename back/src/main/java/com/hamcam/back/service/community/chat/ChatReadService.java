@@ -40,9 +40,10 @@ public class ChatReadService {
      */
     private int markAsReadInternal(ChatReadRequest request, Long userId) {
         ChatMessage message = getMessage(request.getMessageId());
+        User user = getUser(userId);
 
+        // 자기 메시지는 읽음 처리 제외
         if (!message.getSender().getId().equals(userId)) {
-            User user = getUser(userId);
             boolean alreadyRead = chatReadRepository.existsByMessageAndUser(message, user);
             if (!alreadyRead) {
                 ChatRead read = ChatRead.create(message, user);
@@ -64,11 +65,17 @@ public class ChatReadService {
 
     // ===== 내부 유틸 =====
 
+    /**
+     * ✅ 읽지 않은 인원 수 = (참여자 수 - 1) - (읽은 사람 수)
+     *    - 보낸 사람은 항상 제외
+     */
     private int calculateUnreadCount(ChatMessage message) {
         Long roomId = message.getChatRoom().getId();
         int totalParticipants = chatParticipantRepository.countByChatRoomId(roomId);
         long readCount = chatReadRepository.countByMessage(message);
-        return totalParticipants - (int) readCount;
+
+        // 보낸 사람 제외하고 계산
+        return Math.max(0, totalParticipants - 1 - (int) readCount);
     }
 
     private ChatMessage getMessage(Long messageId) {

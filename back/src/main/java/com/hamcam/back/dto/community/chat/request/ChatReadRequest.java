@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.community.chat.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -12,12 +13,13 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
 public class ChatReadRequest {
 
     @NotNull(message = "roomId는 필수입니다.")
+    @JsonProperty("room_id")
     private Long roomId;
 
     @NotNull(message = "messageId는 필수입니다.")
+    @JsonProperty("message_id")
     private Long messageId;
 }

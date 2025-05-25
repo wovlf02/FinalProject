@@ -56,7 +56,8 @@ const Friend = () => {
     const fetchBlocked = async () => {
         try {
             const res = await api.get('/friends/blocked');
-            setBlockedFriends(res.data.blocked || []);
+            setBlockedFriends(res.data.blocked_users || []);
+            console.log("차단목록", res.data.blocked_users);
         } catch (err) {
             console.error('❌ 차단 목록 조회 실패:', err);
         }
@@ -262,12 +263,12 @@ const Friend = () => {
                             <div className="friend-empty" style={{ padding: '18px 0' }}>차단한 친구가 없습니다.</div>
                         ) : (
                             blockedFriends.map((f) => (
-                                <div className="friend-row" key={f.userId}>
-                                    <img src={f.profileImageUrl || base_profile} alt={f.nickname} className="friend-avatar" />
+                                <div className="friend-row" key={f.user_id}>
+                                    <img src={f.profile_image_url || base_profile} alt={f.nickname} className="friend-avatar" />
                                     <div className="friend-info">
                                         <div className="friend-name">{f.nickname}</div>
                                     </div>
-                                    <button className="friend-accept" onClick={() => handleUnblock(f.userId)}>차단 해제</button>
+                                    <button className="friend-accept" onClick={() => handleUnblock(f.user_id)}>차단 해제</button>
                                 </div>
                             ))
                         )}
@@ -349,7 +350,7 @@ const Friend = () => {
                                 >
                                     ⋯
                                 </button>
-                                {showMoreId === f.userId && (
+                                {showMoreId === f.user_id && (
                                     <div className="friend-more-dropdown">
                                         <div onClick={() => handleRemoveFriend(f.user_id)}>친구 삭제</div>
                                         <div onClick={() => handleBlockFriend(f.user_id)}>차단</div>

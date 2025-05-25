@@ -58,14 +58,13 @@ public class ChatRead {
     @Column(name = "read_at", nullable = false)
     private LocalDateTime readAt;
 
-    /**
-     * ✅ 엔티티 생성 유틸 메서드
-     */
     public static ChatRead create(ChatMessage message, User user) {
         return ChatRead.builder()
                 .message(message)
                 .user(user)
                 .readAt(LocalDateTime.now())
+                .isRead(true) // ✅ 필수
                 .build();
     }
+
 }

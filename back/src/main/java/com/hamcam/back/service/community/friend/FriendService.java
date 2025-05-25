@@ -104,7 +104,7 @@ public class FriendService {
 
     public void deleteFriend(FriendDeleteRequest request, HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        User target = getUser(request.getFriendId());
+        User target = getUser(request.getTargetUserId());
 
         friendRepository.findByUserAndFriend(user, target).ifPresent(friendRepository::delete);
         friendRepository.findByUserAndFriend(target, user).ifPresent(friendRepository::delete);
@@ -121,7 +121,7 @@ public class FriendService {
         }
 
         deleteFriend(FriendDeleteRequest.builder()
-                .friendId(target.getId())
+                .targetUserId(target.getId())
                 .build(), httpRequest);
     }
 

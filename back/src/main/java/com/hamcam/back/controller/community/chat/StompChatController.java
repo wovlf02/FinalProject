@@ -18,7 +18,6 @@ import org.springframework.stereotype.Controller;
 /**
  * [StompChatController]
  * WebSocket 기반 실시간 채팅 메시지 처리 컨트롤러
- * - 메시지 수신, 저장, 읽음 처리, 브로드캐스트 수행
  */
 @Slf4j
 @Controller
@@ -32,29 +31,36 @@ public class StompChatController {
     private static final String CHAT_DEST_PREFIX = "/sub/chat/room/";
 
     /**
-     * ✅ 채팅 메시지 수신 및 전송
+     * ✅ 채팅 메시지 수신 및 전송 (TEXT, IMAGE, FILE, ENTER)
      */
     @MessageMapping("/chat/send")
-    public void handleChatMessage(@Payload @Valid ChatMessageRequest messageRequest,
+    public void handleChatMessage(@Payload ChatMessageRequest messageRequest,
                                   SimpMessageHeaderAccessor accessor) {
         Long userId = extractUserIdFromSession(accessor);
-        log.info("📥 [채팅 수신] roomId={}, userId={}, content={}", messageRequest.getRoomId(), userId, messageRequest.getContent());
+        log.info("📥 [채팅 수신] roomId={}, userId={}, type={}, content={}",
+                messageRequest.getRoomId(), userId, messageRequest.getType(), messageRequest.getContent());
+
+        // type READ_ACK는 방어
+        if (messageRequest.getType() == ChatMessageType.READ_ACK) {
+            log.warn("🚫 READ_ACK는 /chat/send 경로로 보낼 수 없습니다.");
+            return;
+        }
 
         // 메시지 저장 및 응답 생성
         ChatMessageResponse response = webSocketChatService.saveMessage(messageRequest, userId);
 
-        // 본인은 바로 읽음 처리
+        // 본인 메시지는 바로 읽음 처리
         chatReadService.markReadAsUserId(response.getRoomId(), response.getMessageId(), userId);
 
-        // 브로드캐스트 전송
+        // 구독자에게 브로드캐스트
         messagingTemplate.convertAndSend(CHAT_DEST_PREFIX + response.getRoomId(), response);
     }
 
     /**
-     * ✅ 메시지 읽음 처리 요청 (프론트가 메시지 받았을 때 호출)
+     * ✅ 메시지 읽음 처리 요청
      */
     @MessageMapping("/chat/read")
-    public void handleReadMessage(@Payload @Valid ChatReadRequest request,
+    public void handleReadMessage(@Payload ChatReadRequest request,
                                   SimpMessageHeaderAccessor accessor) {
         Long userId = extractUserIdFromSession(accessor);
         Long roomId = request.getRoomId();
