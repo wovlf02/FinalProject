@@ -15,5 +15,5 @@ import lombok.*;
 public class FriendDeleteRequest {
 
     @NotNull(message = "friendId는 필수입니다.")
-    private Long friendId;
+    private Long targetUserId;
 }
