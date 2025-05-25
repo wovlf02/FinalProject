@@ -37,6 +37,7 @@ const Login = () => {
 
                 // ✅ 대시보드 이동
                 navigate('/dashboard');
+                console.log('로그인 성공:', userRes.data);
             } else {
                 alert('로그인 실패: 서버 응답 오류');
             }
