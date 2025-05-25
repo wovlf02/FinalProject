@@ -12,10 +12,14 @@ import com.hamcam.back.repository.friend.*;
 import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ public class FriendService {
     private final FriendBlockRepository friendBlockRepository;
     private final FriendReportRepository friendReportRepository;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     public void sendFriendRequest(FriendRequestSendRequest request, HttpServletRequest httpRequest) {
         User sender = getSessionUser(httpRequest);
@@ -38,7 +43,6 @@ public class FriendService {
         friendRequestRepository.save(FriendRequest.builder()
                 .sender(sender)
                 .receiver(receiver)
-                .message(request.getMessage())
                 .build());
     }
 
@@ -77,17 +81,6 @@ public class FriendService {
         friendRequestRepository.delete(fr);
     }
 
-    public FriendListResponse getFriendList(HttpServletRequest httpRequest) {
-        User user = getSessionUser(httpRequest);
-        List<Friend> friends = friendRepository.findAllFriendsOfUser(user);
-
-        return new FriendListResponse(friends.stream()
-                .map(f -> f.getFriend().equals(user) ? f.getUser() : f.getFriend())
-                .distinct()
-                .map(FriendListResponse.FriendDto::from)
-                .toList());
-    }
-
     public FriendRequestListResponse getReceivedFriendRequests(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
         return new FriendRequestListResponse(friendRequestRepository.findByReceiver(user).stream()
@@ -111,7 +104,7 @@ public class FriendService {
 
     public void deleteFriend(FriendDeleteRequest request, HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        User target = getUser(request.getFriendId());
+        User target = getUser(request.getTargetUserId());
 
         friendRepository.findByUserAndFriend(user, target).ifPresent(friendRepository::delete);
         friendRepository.findByUserAndFriend(target, user).ifPresent(friendRepository::delete);
@@ -128,7 +121,7 @@ public class FriendService {
         }
 
         deleteFriend(FriendDeleteRequest.builder()
-                .friendId(target.getId())
+                .targetUserId(target.getId())
                 .build(), httpRequest);
     }
 
@@ -182,6 +175,45 @@ public class FriendService {
                 .reportedAt(LocalDateTime.now())
                 .build());
     }
+
+    public FriendListResponse getOnlineOfflineFriendList(HttpServletRequest request) {
+        User user = getSessionUser(request);
+        List<Friend> relations = friendRepository.findAllFriendsOfUser(user);
+
+        // 중복 제거를 위한 Set<Long> 사용
+        Set<Long> seenUserIds = new HashSet<>();
+        List<FriendListResponse.FriendDto> online = new ArrayList<>();
+        List<FriendListResponse.FriendDto> offline = new ArrayList<>();
+
+        for (Friend relation : relations) {
+            User friend = relation.getUser().equals(user) ? relation.getFriend() : relation.getUser();
+
+            // userId 중복 체크
+            if (!seenUserIds.add(friend.getId())) continue;
+
+            FriendListResponse.FriendDto dto = FriendListResponse.FriendDto.builder()
+                    .userId(friend.getId())
+                    .nickname(friend.getNickname())
+                    .profileImageUrl(friend.getProfileImageUrl())
+                    .build();
+
+            boolean isOnline = redisTemplate.hasKey("ws:connected:" + friend.getId());
+            if (isOnline) {
+                online.add(dto);
+            } else {
+                offline.add(dto);
+            }
+        }
+
+        return FriendListResponse.builder()
+                .onlineFriends(online)
+                .offlineFriends(offline)
+                .build();
+    }
+
+
+
+
 
     // ===== 내부 유틸 =====
 

@@ -17,19 +17,24 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
 
     const fetchFriends = async () => {
         try {
-            const res = await api.get('/friends');
-            const mapped = res.data.friends.map(f => ({
+            const res = await api.get('/friends/list'); // ✅ 여기 수정
+            const online = res.data?.online_friends || [];
+            const offline = res.data?.offline_friends || [];
+
+            const combined = [...online, ...offline].map(f => ({
                 userId: f.user_id,
                 nickname: f.nickname,
                 profileImageUrl: f.profile_image_url
                     ? `http://localhost:8080${f.profile_image_url}`
                     : baseProfile,
             }));
-            setFriends(mapped);
+
+            setFriends(combined);
         } catch (e) {
             console.error('❌ 친구 목록 불러오기 실패', e);
         }
     };
+
 
     const handleSelect = (id) => {
         setSelected(prev =>
@@ -41,13 +46,27 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
         if (!roomName.trim() || selected.length === 0) return;
 
         const formData = new FormData();
-        formData.append('roomName', roomName.trim());
-        formData.append('invitedUserIds', JSON.stringify(selected));
-        if (image) formData.append('image', image);
+
+        // ✅ "request"라는 key로 JSON 문자열을 Blob으로 감싸서 추가
+        const request = {
+            room_name: roomName.trim(),
+            invited_user_ids: selected
+        };
+        formData.append(
+            'request',
+            new Blob([JSON.stringify(request)], { type: 'application/json' })
+        );
+
+        // ✅ 파일이 있을 경우만 추가
+        if (image) {
+            formData.append('image', image);
+        }
 
         try {
             const res = await api.post('/chat/rooms', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
             const createdRoom = res.data?.data;
             onCreate(createdRoom);
@@ -56,6 +75,7 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
             console.error(e);
         }
     };
+
 
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];

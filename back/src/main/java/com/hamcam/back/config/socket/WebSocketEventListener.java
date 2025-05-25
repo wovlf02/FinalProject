@@ -9,10 +9,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
+import java.time.Duration;
+
 /**
  * WebSocket 연결/해제 이벤트 리스너
- * - Redis 세션 클린업
- * - 유저 세션 추적 또는 연결자 수 관리
+ * - Redis에 온라인 상태 저장/삭제
  */
 @Slf4j
 @Component
@@ -21,18 +22,28 @@ public class WebSocketEventListener {
 
     private final StringRedisTemplate redisTemplate;
 
+    private static final String ONLINE_KEY_PREFIX = "online:"; // online:{userId}
+
     /**
      * 사용자가 WebSocket에 연결될 때 호출됨
      */
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
-        String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
-        log.info("🔌 WebSocket 연결됨: sessionId = {}", sessionId);
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
+
+        String sessionId = accessor.getSessionId();
+        String userId = accessor.getFirstNativeHeader("userId"); // ✅ 헤더에서 userId 직접 추출
+
+        if (userId != null) {
+            redisTemplate.opsForValue().set(ONLINE_KEY_PREFIX + userId, "1", Duration.ofMinutes(30));
+            log.info("✅ 온라인 등록 완료: userId = {}, sessionId = {}", userId, sessionId);
+        } else {
+            log.warn("⚠️ WebSocket 연결에 userId 누락: sessionId = {}", sessionId);
+        }
     }
 
     /**
      * 사용자가 WebSocket에서 연결 종료될 때 호출됨
-     * - Redis에 저장된 sessionId → userId 매핑 정보 제거
      */
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
@@ -41,20 +52,21 @@ public class WebSocketEventListener {
 
         log.info("❌ WebSocket 연결 종료: sessionId = {}", sessionId);
 
-        // Redis 세션 정보 삭제
-        String redisKey = "ws:session:" + sessionId;
-        if (Boolean.TRUE.equals(redisTemplate.delete(redisKey))) {
-            log.info("🧹 Redis 세션 삭제 완료: key = {}", redisKey);
-        } else {
-            log.warn("⚠️ Redis 세션 삭제 실패 또는 없음: key = {}", redisKey);
-        }
-
-        // 사용자 ID 로그 (있으면)
-        Object userId = accessor.getSessionAttributes() != null
+        // 세션 속성에서 userId 추출
+        Object userIdObj = accessor.getSessionAttributes() != null
                 ? accessor.getSessionAttributes().get("userId")
                 : null;
-        if (userId != null) {
-            log.info("⛔ 종료된 사용자 ID: {}", userId);
+
+        if (userIdObj != null) {
+            String userId = userIdObj.toString();
+            String key = ONLINE_KEY_PREFIX + userId;
+            if (Boolean.TRUE.equals(redisTemplate.delete(key))) {
+                log.info("🧹 온라인 상태 제거 완료: {}", key);
+            } else {
+                log.warn("⚠️ 온라인 상태 키가 없거나 삭제 실패: {}", key);
+            }
+        } else {
+            log.warn("⚠️ 연결 종료된 세션에 userId 없음: sessionId = {}", sessionId);
         }
     }
 }

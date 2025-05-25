@@ -6,7 +6,6 @@ import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.service.community.chat.ChatReadService;
 import com.hamcam.back.service.community.chat.WebSocketChatService;
-import com.hamcam.back.util.SessionUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Controller;
 /**
  * [StompChatController]
  * WebSocket 기반 실시간 채팅 메시지 처리 컨트롤러
- * - 메시지 수신, 저장, 읽음 처리, 브로드캐스트 수행
  */
 @Slf4j
 @Controller
@@ -33,30 +31,42 @@ public class StompChatController {
     private static final String CHAT_DEST_PREFIX = "/sub/chat/room/";
 
     /**
-     * ✅ 채팅 메시지 수신 및 전송
+     * ✅ 채팅 메시지 수신 및 전송 (TEXT, IMAGE, FILE, ENTER)
      */
     @MessageMapping("/chat/send")
-    public void handleChatMessage(@Payload @Valid ChatMessageRequest messageRequest,
+    public void handleChatMessage(@Payload ChatMessageRequest messageRequest,
                                   SimpMessageHeaderAccessor accessor) {
         Long userId = extractUserIdFromSession(accessor);
-        log.info("📥 [채팅 수신] roomId={}, userId={}", messageRequest.getRoomId(), userId);
+        log.info("📥 [채팅 수신] roomId={}, userId={}, type={}, content={}",
+                messageRequest.getRoomId(), userId, messageRequest.getType(), messageRequest.getContent());
 
+        // type READ_ACK는 방어
+        if (messageRequest.getType() == ChatMessageType.READ_ACK) {
+            log.warn("🚫 READ_ACK는 /chat/send 경로로 보낼 수 없습니다.");
+            return;
+        }
+
+        // 메시지 저장 및 응답 생성
         ChatMessageResponse response = webSocketChatService.saveMessage(messageRequest, userId);
+
+        // 본인 메시지는 바로 읽음 처리
         chatReadService.markReadAsUserId(response.getRoomId(), response.getMessageId(), userId);
+
+        // 구독자에게 브로드캐스트
         messagingTemplate.convertAndSend(CHAT_DEST_PREFIX + response.getRoomId(), response);
     }
 
     /**
-     * ✅ 메시지 읽음 처리
+     * ✅ 메시지 읽음 처리 요청
      */
     @MessageMapping("/chat/read")
-    public void handleReadMessage(@Payload @Valid ChatReadRequest request,
+    public void handleReadMessage(@Payload ChatReadRequest request,
                                   SimpMessageHeaderAccessor accessor) {
         Long userId = extractUserIdFromSession(accessor);
         Long roomId = request.getRoomId();
         Long messageId = request.getMessageId();
 
-        log.info("📖 [읽음 처리] roomId={}, messageId={}, userId={}", roomId, messageId, userId);
+        log.info("📖 [읽음 처리 요청] roomId={}, messageId={}, userId={}", roomId, messageId, userId);
 
         int unreadCount = chatReadService.markReadAsUserId(roomId, messageId, userId);
 
@@ -75,13 +85,20 @@ public class StompChatController {
      * ✅ 세션에서 userId 추출
      */
     private Long extractUserIdFromSession(SimpMessageHeaderAccessor accessor) {
-        Object session = accessor.getSessionAttributes().get("HTTP.SESSION.ID");
-        if (session instanceof jakarta.servlet.http.HttpSession httpSession) {
-            Object userIdAttr = httpSession.getAttribute("userId");
-            if (userIdAttr instanceof Long userId) {
-                return userId;
+        Object userIdAttr = accessor.getSessionAttributes().get("userId");
+
+        if (userIdAttr instanceof Long userId) {
+            return userId;
+        } else if (userIdAttr instanceof Integer intId) {
+            return Long.valueOf(intId);
+        } else if (userIdAttr instanceof String strId) {
+            try {
+                return Long.parseLong(strId);
+            } catch (NumberFormatException e) {
+                log.warn("userId 세션 파싱 실패: {}", strId);
             }
         }
+
         throw new IllegalArgumentException("세션에서 userId를 가져올 수 없습니다.");
     }
 }
