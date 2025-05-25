@@ -2,6 +2,7 @@ package com.hamcam.back.config.web;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,18 +14,16 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @EnableRedisRepositories
 public class RedisConfig {
 
-    /**
-     * ✅ Redis 연결 팩토리 설정
-     */
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
         return new LettuceConnectionFactory("localhost", 6379);
     }
 
     /**
-     * ✅ 문자열 전용 RedisTemplate
+     * ✅ 문자열 전용 RedisTemplate (기본값으로 지정)
      */
     @Bean
+    @Primary
     public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory cf) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(cf);
@@ -36,7 +35,7 @@ public class RedisConfig {
     }
 
     /**
-     * ✅ 오브젝트 저장용 RedisTemplate (예: 접속자 수, JSON 객체 등)
+     * ✅ 오브젝트 저장용 RedisTemplate
      */
     @Bean
     public RedisTemplate<String, Object> redisTemplateObject(RedisConnectionFactory cf) {

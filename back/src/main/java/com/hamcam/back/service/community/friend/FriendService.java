@@ -12,6 +12,7 @@ import com.hamcam.back.repository.friend.*;
 import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +31,9 @@ public class FriendService {
     private final FriendBlockRepository friendBlockRepository;
     private final FriendReportRepository friendReportRepository;
     private final UserRepository userRepository;
-    private final RedisTemplate<String, String> redisTemplate;
+
+    // 🔥 수정: 어떤 RedisTemplate을 쓸지 명확히 지정
+    private final @Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate;
 
     public void sendFriendRequest(FriendRequestSendRequest request, HttpServletRequest httpRequest) {
         User sender = getSessionUser(httpRequest);
@@ -210,10 +213,6 @@ public class FriendService {
                 .offlineFriends(offline)
                 .build();
     }
-
-
-
-
 
     // ===== 내부 유틸 =====
 

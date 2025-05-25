@@ -4,6 +4,7 @@ import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.friend.Friend;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param; // ✅ 추가
 
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +48,7 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
      * @return 친구 관계 목록
      */
     @Query("SELECT f FROM Friend f WHERE f.user = :user OR f.friend = :user")
-    List<Friend> findAllFriendsOfUser(User user);
+    List<Friend> findAllFriendsOfUser(@Param("user") User user); // ✅ @Param 추가
 
     /**
      * [친구 관계 존재 여부 확인 - 조합 1]
