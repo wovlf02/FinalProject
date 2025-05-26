@@ -59,7 +59,7 @@ const StudyListPage = () => {
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                     {studyList.map(study => (
                         <li
-                            key={study.studyId}
+                            key={study.study_id}
                             style={{
                                 background: study.color,
                                 marginBottom: 18,
@@ -68,7 +68,7 @@ const StudyListPage = () => {
                                 cursor: 'pointer',
                                 boxShadow: '0 1px 6px rgba(0,0,0,0.06)'
                             }}
-                            onClick={() => navigate(`/study/${study.studyId}`)}
+                            onClick={() => navigate(`/study/${study.study_id}`)}
                         >
                             <div style={{
                                 fontWeight: 700,

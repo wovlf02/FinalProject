@@ -245,7 +245,7 @@ const Post = () => {
                                     className="postpage-study-item"
                                     key={s.studyId}
                                     style={{ background: s.color, cursor: 'pointer' }}
-                                    onClick={() => navigate(`/study/${s.studyId}`)}
+                                    onClick={() => navigate(`/study/${s.study_id}`)}
                                 >
                                     <div className="postpage-study-name">{s.name}</div>
                                     <span className="postpage-study-tag" style={{ background: s.tagColor }}>

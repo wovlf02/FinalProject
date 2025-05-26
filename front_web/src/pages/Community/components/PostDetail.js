@@ -17,6 +17,7 @@ const PostDetail = () => {
         try {
             const res = await api.post('/community/posts/detail', { post_id: id });
             setPost(res.data);
+            console.log(res.data);
         } catch (err) {
             console.error('게시글 불러오기 실패:', err);
         }
@@ -26,7 +27,8 @@ const PostDetail = () => {
     const fetchComments = async () => {
         try {
             const res = await api.post('/community/comments/by-post', { post_id: id });
-            setComments(res.data.data || []);
+            setComments(res.data.data.comments || []);
+            console.log("댓글 목록", res.data.data.comments);
         } catch (err) {
             console.error('댓글 목록 조회 실패:', err);
         }
@@ -86,12 +88,12 @@ const PostDetail = () => {
             <button className="post-detail-back" onClick={() => navigate(-1)}>← 목록으로</button>
             <div className="post-detail-title">{post.title}</div>
             <div className="post-detail-meta">
-                <span>{post.authorNickname || '익명'}</span>
-                <span>{post.createdAt?.slice(0, 10)}</span>
-                <span>조회 {post.viewCount}</span>
+                <span>{post.writer_nickname || '익명'}</span>
+                <span>{post.created_at?.slice(0, 10)}</span>
+                <span>조회 {post.view_count}</span>
                 <span>
           <button className="like-btn" onClick={handleLike}>
-            {liked ? '❤️' : '🤍'} {post.likeCount}
+            {liked ? '❤️' : '🤍'} {post.like_count}
           </button>
         </span>
             </div>
@@ -103,9 +105,9 @@ const PostDetail = () => {
                     <ul>
                         {comments.map(c => (
                             <li key={c.commentId}>
-                                <span className="comment-author">{c.authorNickname || '익명'}</span>
+                                <span className="comment-author">{c.writer_nickname || '익명'}</span>
                                 <span className="comment-text">{c.content}</span>
-                                <span className="comment-date">{c.createdAt?.slice(0, 16).replace('T', ' ')}</span>
+                                <span className="comment-date">{c.created_at?.slice(0, 16).replace('T', ' ')}</span>
                             </li>
                         ))}
                     </ul>

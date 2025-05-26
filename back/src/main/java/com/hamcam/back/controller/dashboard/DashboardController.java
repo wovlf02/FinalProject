@@ -1,6 +1,7 @@
 package com.hamcam.back.controller.dashboard;
 
 import com.hamcam.back.dto.common.MessageResponse;
+import com.hamcam.back.dto.community.notice.response.NoticeResponse;
 import com.hamcam.back.dto.dashboard.calendar.CalendarEventDto;
 import com.hamcam.back.dto.dashboard.calendar.request.CalendarRequest;
 import com.hamcam.back.dto.dashboard.exam.request.ExamScheduleRequest;
@@ -8,7 +9,6 @@ import com.hamcam.back.dto.dashboard.exam.response.DDayInfoResponse;
 import com.hamcam.back.dto.dashboard.exam.response.ExamScheduleResponse;
 import com.hamcam.back.dto.dashboard.goal.request.GoalUpdateRequest;
 import com.hamcam.back.dto.dashboard.goal.response.GoalSuggestionResponse;
-import com.hamcam.back.dto.dashboard.notice.response.NoticeResponse;
 import com.hamcam.back.dto.dashboard.reflection.request.OptionReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.request.RangeReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.request.WeeklyReflectionRequest;
@@ -20,7 +20,6 @@ import com.hamcam.back.dto.dashboard.todo.response.TodoResponse;
 import com.hamcam.back.service.dashboard.DashboardService;
 import com.hamcam.back.service.dashboard.GPTReflectionService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

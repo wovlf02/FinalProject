@@ -31,15 +31,17 @@ public enum ErrorCode {
     INVALID_VOTE_SCORE(HttpStatus.BAD_REQUEST, "E4012", "유효하지 않은 점수입니다."),
     INVALID_ROOM_STATUS(HttpStatus.BAD_REQUEST, "E4013", "현재 방의 상태에서 해당 작업을 수행할 수 없습니다."),
     TARGET_TIME_NOT_REACHED(HttpStatus.BAD_REQUEST, "E4014", "아직 목표 공부 시간에 도달하지 않았습니다."),
-    INVALID_POST_CATEGORY(HttpStatus.BAD_REQUEST, "E4015", "유효하지 않은 카테고리입니다."), // ✅ 추가된 항목
-
-    DUPLICATE_LIKE(HttpStatus.BAD_REQUEST, "E4094", "이미 좋아요를 눌렀습니다."),
-    DUPLICATE_REPORT(HttpStatus.BAD_REQUEST, "E4095", "이미 신고한 댓글입니다."),
+    INVALID_POST_CATEGORY(HttpStatus.BAD_REQUEST, "E4015", "유효하지 않은 카테고리입니다."),
+    STUDY_FULL(HttpStatus.BAD_REQUEST, "E4016", "스터디 정원이 이미 찼습니다."),
 
     // ❌ 중복 (409)
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "E4091", "이미 존재하는 아이디입니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "E4092", "이미 존재하는 닉네임입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "E4093", "이미 등록된 이메일입니다."),
+    ALREADY_APPLIED(HttpStatus.CONFLICT, "E4094", "이미 신청한 스터디입니다."),
+    ALREADY_PARTICIPATING(HttpStatus.CONFLICT, "E4095", "이미 참여 중인 스터디입니다."),
+    DUPLICATE_LIKE(HttpStatus.BAD_REQUEST, "E4094", "이미 좋아요를 눌렀습니다."),
+    DUPLICATE_REPORT(HttpStatus.BAD_REQUEST, "E4095", "이미 신고한 댓글입니다."),
 
     // 🔍 리소스 없음 (404)
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "E4041", "해당 사용자를 찾을 수 없습니다."),
@@ -52,6 +54,8 @@ public enum ErrorCode {
     VIDEO_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "E4048", "해당 학습방을 찾을 수 없습니다."),
     MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4049", "해당 메시지를 찾을 수 없습니다."),
     TODO_NOT_FOUND(HttpStatus.NOT_FOUND, "E4050", "해당 할 일을 찾을 수 없습니다."),
+    STUDY_NOT_FOUND(HttpStatus.NOT_FOUND, "E4051", "스터디 정보를 찾을 수 없습니다."),
+    APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "E4052", "신청 내역을 찾을 수 없습니다."),
 
     // 🛠 서버 내부 오류 (500)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E5001", "서버 내부 오류가 발생했습니다."),

@@ -47,7 +47,7 @@ const PostList = ({ posts = [] }) => {
                                 <span
                                     className="board-title-text"
                                     style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                    onClick={() => navigate(`/community/post/${post.post_id}`)}
+                                    onClick={() => navigate(`/community/post/${post.postId}`)}
                                 >
                                         {post.title}
                                     </span>

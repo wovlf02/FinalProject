@@ -5,7 +5,7 @@ import com.hamcam.back.dto.dashboard.calendar.request.CalendarRequest;
 import com.hamcam.back.dto.dashboard.exam.request.ExamScheduleRequest;
 import com.hamcam.back.dto.dashboard.goal.request.GoalUpdateRequest;
 import com.hamcam.back.dto.dashboard.goal.response.GoalSuggestionResponse;
-import com.hamcam.back.dto.dashboard.notice.response.NoticeResponse;
+import com.hamcam.back.dto.community.notice.response.NoticeResponse;
 import com.hamcam.back.dto.dashboard.stats.response.*;
 import com.hamcam.back.dto.dashboard.time.request.StudyTimeUpdateRequest;
 import com.hamcam.back.dto.dashboard.todo.request.*;
@@ -17,6 +17,7 @@ import com.hamcam.back.entity.dashboard.*;
 import com.hamcam.back.entity.study.StudySession;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.repository.auth.UserRepository;
+import com.hamcam.back.repository.community.notice.NoticeRepository;
 import com.hamcam.back.repository.dashboard.*;
 import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -320,8 +321,15 @@ public class DashboardService {
 
     public List<NoticeResponse> getNotices() {
         return noticeRepository.findAll().stream()
-                .map(n -> new NoticeResponse(n.getType(), n.getText(), n.getDate()))
+                .map(n -> NoticeResponse.builder()
+                        .id(n.getId())
+                        .title(n.getTitle())
+                        .content(n.getContent())
+                        .views(n.getViews())
+                        .createdAt(n.getCreatedAt())
+                        .build())
                 .toList();
     }
+
 
 }
