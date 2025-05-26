@@ -4,6 +4,8 @@
   "proxy": "http://localhost:8080",
   "private": true,
   "dependencies": {
+    "@chatscope/chat-ui-kit-react": "^2.1.1",
+    "@chatscope/chat-ui-kit-styles": "^1.4.0",
     "@stomp/stompjs": "^7.1.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",

@@ -80,7 +80,7 @@ public class ChatRoomService {
             ChatRoom room = participant.getChatRoom();
             ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomOrderBySentAtDesc(room);
 
-            int unreadCount = chatMessageRepository.countUnreadMessagesByReadTable(room, userId); // ✅ 수정된 방식
+            int unreadCount = chatMessageRepository.countUnreadMessagesByReadTable(room, userId);
             int totalMessageCount = chatMessageRepository.countByChatRoom(room);
 
             return ChatRoomListResponse.builder()
@@ -91,24 +91,20 @@ public class ChatRoomService {
                     .lastMessageAt(lastMessage != null ? lastMessage.getSentAt() : null)
                     .lastSenderNickname(lastMessage != null && lastMessage.getSender() != null ? lastMessage.getSender().getNickname() : null)
                     .lastSenderProfileImageUrl(lastMessage != null && lastMessage.getSender() != null
-                            ? (lastMessage.getSender().getProfileImageUrl() != null
-                            ? lastMessage.getSender().getProfileImageUrl()
-                            : DEFAULT_PROFILE_URL)
+                            ? (convertToWebProfileUrl(lastMessage.getSender().getProfileImageUrl()))
                             : DEFAULT_PROFILE_URL)
                     .lastMessageType(lastMessage != null ? lastMessage.getType().name() : null)
                     .participantCount(chatParticipantRepository.countByChatRoom(room))
                     .unreadCount(unreadCount)
                     .totalMessageCount(totalMessageCount)
-                    .profileImageUrl(room.getRepresentativeImageUrl() != null
-                            ? room.getRepresentativeImageUrl()
-                            : DEFAULT_PROFILE_URL)
+                    .profileImageUrl(convertToWebProfileUrl(room.getRepresentativeImageUrl()))
                     .build();
         }).toList();
     }
 
-
     public ChatRoomResponse getChatRoomById(ChatRoomDetailRequest request) {
-        return toResponse(getRoom(request.getRoomId()));
+        ChatRoom room = getRoom(request.getRoomId());
+        return toResponse(room);
     }
 
     public void deleteChatRoom(ChatRoomDeleteRequest request, HttpServletRequest httpRequest) {
@@ -145,7 +141,54 @@ public class ChatRoomService {
         }
     }
 
-    // ========== 내부 유틸 ==========
+    @Transactional
+    public void deleteChatRoomById(Long roomId, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+        ChatRoom room = getRoom(roomId);
+        User user = getUser(userId);
+
+        ChatParticipant participant = chatParticipantRepository.findByChatRoomAndUser(room, user)
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCESS_DENIED));
+
+        chatParticipantRepository.delete(participant);
+
+        if (chatParticipantRepository.findByChatRoom(room).isEmpty()) {
+            chatRoomRepository.delete(room);
+        }
+    }
+
+    // =======================
+    // 핵심: 프로필 이미지 경로 변환
+    // =======================
+    private ChatRoomResponse toResponse(ChatRoom room) {
+        List<ChatParticipantDto> participants = chatParticipantRepository.findByChatRoom(room).stream()
+                .map(p -> new ChatParticipantDto(
+                        p.getUser().getId(),
+                        p.getUser().getNickname(),
+                        convertToWebProfileUrl(p.getUser().getProfileImageUrl())
+                ))
+                .collect(Collectors.toList());
+
+        return ChatRoomResponse.builder()
+                .roomId(room.getId())
+                .roomName(room.getName())
+                .roomType(room.getType().name())
+                .createdAt(room.getCreatedAt())
+                .representativeImageUrl(convertToWebProfileUrl(room.getRepresentativeImageUrl()))
+                .participants(participants)
+                .build();
+    }
+
+    private String convertToWebProfileUrl(String url) {
+        if (url == null || url.isEmpty() || url.equals("프로필 사진이 없습니다")) {
+            return DEFAULT_PROFILE_URL;
+        }
+        if (url.startsWith("C:\\FinalProject")) {
+            String webUrl = url.replace("C:\\FinalProject", "").replace("\\", "/");
+            return webUrl.startsWith("/") ? webUrl : "/" + webUrl;
+        }
+        return url;
+    }
 
     private User getUser(Long id) {
         return userRepository.findById(id)
@@ -157,31 +200,6 @@ public class ChatRoomService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
     }
 
-    private ChatRoomResponse toResponse(ChatRoom room) {
-        List<ChatParticipantDto> participants = chatParticipantRepository.findByChatRoom(room).stream()
-                .map(p -> new ChatParticipantDto(
-                        p.getUser().getId(),
-                        p.getUser().getNickname(),
-                        p.getUser().getProfileImageUrl() != null
-                                ? p.getUser().getProfileImageUrl()
-                                : DEFAULT_PROFILE_URL))
-                .collect(Collectors.toList());
-
-        return ChatRoomResponse.builder()
-                .roomId(room.getId())
-                .roomName(room.getName())
-                .roomType(room.getType().name())
-                .createdAt(room.getCreatedAt())
-                .representativeImageUrl(room.getRepresentativeImageUrl() != null
-                        ? room.getRepresentativeImageUrl()
-                        : DEFAULT_PROFILE_URL)
-                .participants(participants)
-                .build();
-    }
-
-    /**
-     * ✅ 메시지 유형에 따른 미리보기 텍스트 반환
-     */
     private String generatePreview(ChatMessage message) {
         return switch (message.getType()) {
             case TEXT -> message.getContent();

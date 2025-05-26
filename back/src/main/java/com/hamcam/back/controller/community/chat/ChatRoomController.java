@@ -79,7 +79,7 @@ public class ChatRoomController {
     }
 
     /**
-     * ✅ 채팅방 삭제
+     * ✅ 기존: body로 요청받는 채팅방 삭제 (body에 roomId 등 정보)
      */
     @DeleteMapping
     public ResponseEntity<MessageResponse> deleteChatRoom(
@@ -87,6 +87,18 @@ public class ChatRoomController {
             HttpServletRequest httpRequest
     ) {
         chatRoomService.deleteChatRoom(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("채팅방이 삭제되었습니다."));
+    }
+
+    /**
+     * ✅ [신규] URL 경로로 roomId 받아서 채팅방 삭제 (프론트엔드에서 DELETE /api/chat/rooms/{roomId}로 요청할 때)
+     */
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<MessageResponse> deleteChatRoomById(
+            @PathVariable("roomId") Long roomId,   // ← 반드시 "roomId" 명시!
+            HttpServletRequest httpRequest
+    ) {
+        chatRoomService.deleteChatRoomById(roomId, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("채팅방이 삭제되었습니다."));
     }
 }
