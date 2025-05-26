@@ -26,8 +26,19 @@ public class ChatRoomController {
     private final ChatMessageService chatMessageService;
 
     /**
-     * ✅ 채팅방 생성
-     * - Multipart 요청 예외 적용
+     * ✅ [추가] JSON 요청(이미지 없이) 채팅방 생성
+     */
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MessageResponse> createChatRoomJson(
+            @RequestBody ChatRoomCreateRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        ChatRoomResponse createdRoom = chatRoomService.createChatRoom(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("채팅방이 생성되었습니다.", createdRoom));
+    }
+
+    /**
+     * ✅ 기존: Multipart 요청(이미지 포함) 채팅방 생성
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MessageResponse> createChatRoom(
@@ -66,7 +77,6 @@ public class ChatRoomController {
 
         return ResponseEntity.ok(MessageResponse.of("채팅방 상세 조회 성공", result));
     }
-
 
     /**
      * ✅ 채팅방 삭제

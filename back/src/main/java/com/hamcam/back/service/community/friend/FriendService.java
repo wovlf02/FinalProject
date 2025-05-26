@@ -11,7 +11,7 @@ import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.friend.*;
 import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Qualifier;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -30,23 +30,6 @@ public class FriendService {
     private final FriendReportRepository friendReportRepository;
     private final UserRepository userRepository;
     private final RedisTemplate<String, String> redisTemplate;
-
-    // 생성자에서 @Qualifier 적용!
-    public FriendService(
-            FriendRepository friendRepository,
-            FriendRequestRepository friendRequestRepository,
-            FriendBlockRepository friendBlockRepository,
-            FriendReportRepository friendReportRepository,
-            UserRepository userRepository,
-            @Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate
-    ) {
-        this.friendRepository = friendRepository;
-        this.friendRequestRepository = friendRequestRepository;
-        this.friendBlockRepository = friendBlockRepository;
-        this.friendReportRepository = friendReportRepository;
-        this.userRepository = userRepository;
-        this.redisTemplate = redisTemplate;
-    }
 
     public void sendFriendRequest(FriendRequestSendRequest request, HttpServletRequest httpRequest) {
         User sender = getSessionUser(httpRequest);
