@@ -1,6 +1,6 @@
 package com.hamcam.back.service.study.team;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -10,7 +10,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 public class StudyTimeService {
 
     private final RedisTemplate<String, String> redisTemplate;
@@ -18,6 +17,11 @@ public class StudyTimeService {
     private static final String PREFIX_START = "study:start"; // Key: roomId_userId -> timestamp
 
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    // 생성자에서 @Qualifier 적용!
+    public StudyTimeService(@Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     /**
      * 공부 시작 시간 기록

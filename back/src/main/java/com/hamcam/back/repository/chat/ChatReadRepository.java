@@ -4,6 +4,7 @@ import com.hamcam.back.entity.chat.ChatRead;
 import com.hamcam.back.entity.chat.ChatMessage;
 import com.hamcam.back.entity.auth.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param; // ✅ 추가
 
 /**
  * [ChatReadRepository]
@@ -20,7 +21,7 @@ public interface ChatReadRepository extends JpaRepository<ChatRead, Long> {
      * @param message 대상 메시지
      * @return 해당 메시지를 읽은 사용자 수
      */
-    long countByMessage(ChatMessage message);
+    long countByMessage(@Param("message") ChatMessage message); // ✅ @Param 추가
 
     /**
      * [특정 메시지를 특정 사용자가 읽었는지 여부]

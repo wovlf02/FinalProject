@@ -5,7 +5,8 @@
             "name": "BackApplication",
             "request": "launch",
             "mainClass": "com.hamcam.back.BackApplication",
-            "projectName": "back"
+            "projectName": "back",
+            "vmArgs": "-Dspring.profiles.active=dev -parameters"
         },
         {
             "type": "java",
@@ -14,7 +15,8 @@
             "cwd": "${workspaceFolder}",
             "mainClass": "com.studymate.back.BackApplication",
             "projectName": "back",
-            "args": "",
+            "args": "--spring.profiles.active=dev",
+            "vmArgs": "-parameters",
             "envFile": "${workspaceFolder}/.env"
         }
     ]
