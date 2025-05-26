@@ -31,6 +31,7 @@ public enum ErrorCode {
     INVALID_VOTE_SCORE(HttpStatus.BAD_REQUEST, "E4012", "유효하지 않은 점수입니다."),
     INVALID_ROOM_STATUS(HttpStatus.BAD_REQUEST, "E4013", "현재 방의 상태에서 해당 작업을 수행할 수 없습니다."),
     TARGET_TIME_NOT_REACHED(HttpStatus.BAD_REQUEST, "E4014", "아직 목표 공부 시간에 도달하지 않았습니다."),
+    INVALID_POST_CATEGORY(HttpStatus.BAD_REQUEST, "E4015", "유효하지 않은 카테고리입니다."), // ✅ 추가된 항목
 
     DUPLICATE_LIKE(HttpStatus.BAD_REQUEST, "E4094", "이미 좋아요를 눌렀습니다."),
     DUPLICATE_REPORT(HttpStatus.BAD_REQUEST, "E4095", "이미 신고한 댓글입니다."),

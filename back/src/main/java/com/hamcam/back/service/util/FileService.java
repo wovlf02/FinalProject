@@ -24,14 +24,12 @@ public class FileService {
     /**
      * ✅ 프로필 이미지 저장 (세션 기반)
      */
-    public String saveProfileImage(MultipartFile file, HttpServletRequest request) {
+    public String saveProfileImage(MultipartFile file, Long userId) {
         if (file == null || file.isEmpty()) {
             return null;
         }
 
         try {
-            Long userId = SessionUtil.getUserId(request);
-
             // 사용자별 디렉토리 설정
             Path userDir = Paths.get(PROFILE_BASE_DIR + userId);
             if (Files.notExists(userDir)) {

@@ -46,7 +46,7 @@ public class BlockService {
 
     public BlockedPostListResponse getBlockedPosts(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        List<Block> blocks = blockRepository.findByUserAndPostIsNotNullAndIsDeletedFalse(user);
+        List<Block> blocks = blockRepository.findByUserAndPostIsNotNull(user);
         return new BlockedPostListResponse(
                 blocks.stream()
                         .map(b -> new BlockedTargetResponse(b.getPost().getId(), "POST"))
@@ -69,7 +69,7 @@ public class BlockService {
 
     public BlockedCommentListResponse getBlockedComments(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        List<Block> blocks = blockRepository.findByUserAndCommentIsNotNullAndIsDeletedFalse(user);
+        List<Block> blocks = blockRepository.findByUserAndCommentIsNotNull(user);
         return new BlockedCommentListResponse(
                 blocks.stream()
                         .map(b -> new BlockedTargetResponse(b.getComment().getId(), "COMMENT"))
@@ -92,7 +92,7 @@ public class BlockService {
 
     public BlockedReplyListResponse getBlockedReplies(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        List<Block> blocks = blockRepository.findByUserAndReplyIsNotNullAndIsDeletedFalse(user);
+        List<Block> blocks = blockRepository.findByUserAndReplyIsNotNull(user);
         return new BlockedReplyListResponse(
                 blocks.stream()
                         .map(b -> new BlockedTargetResponse(b.getReply().getId(), "REPLY"))
@@ -115,7 +115,7 @@ public class BlockService {
 
     public BlockedUserListResponse getBlockedUsers(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        List<Block> blocks = blockRepository.findByUserAndBlockedUserIsNotNullAndIsDeletedFalse(user);
+        List<Block> blocks = blockRepository.findByUserAndBlockedUserIsNotNull(user);
         return new BlockedUserListResponse(
                 blocks.stream()
                         .map(b -> BlockedUserListResponse.BlockedUserDto.from(b.getBlockedUser()))
@@ -125,39 +125,26 @@ public class BlockService {
 
     // ===== 내부 공통 처리 =====
     private void block(User user, Object target) {
-        Block block = findBlock(user, target).orElseGet(() -> createBlock(user, target));
-        if (block.isDeleted()) {
-            block.restore();
+        if (findBlock(user, target).isEmpty()) {
+            Block block = createBlock(user, target);
             blockRepository.save(block);
         }
     }
 
     private void unblock(User user, Object target) {
-        findBlock(user, target).ifPresent(block -> {
-            if (!block.isDeleted()) {
-                block.softDelete();
-                blockRepository.save(block);
-            }
-        });
+        findBlock(user, target).ifPresent(blockRepository::delete);
     }
 
     private void blockUserInternal(User user, User target) {
-        Block block = blockRepository.findByUserAndBlockedUser(user, target)
-                .orElseGet(() -> Block.builder().user(user).blockedUser(target).build());
-
-        if (block.isDeleted()) {
-            block.restore();
+        if (blockRepository.findByUserAndBlockedUser(user, target).isEmpty()) {
+            Block block = Block.builder().user(user).blockedUser(target).build();
+            blockRepository.save(block);
         }
-        blockRepository.save(block);
     }
 
     private void unblockUserInternal(User user, User target) {
-        blockRepository.findByUserAndBlockedUser(user, target).ifPresent(block -> {
-            if (!block.isDeleted()) {
-                block.softDelete();
-                blockRepository.save(block);
-            }
-        });
+        blockRepository.findByUserAndBlockedUser(user, target)
+                .ifPresent(blockRepository::delete);
     }
 
     private Optional<Block> findBlock(User user, Object target) {

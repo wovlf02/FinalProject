@@ -78,20 +78,26 @@ public class CommentService {
         reply.updateContent(request.getContent());
     }
 
-    /** ✅ 댓글 삭제 */
+    /** ✅ 댓글 삭제 (하드 삭제 방식) */
     public void deleteComment(CommentDeleteRequest request, HttpServletRequest httpRequest) {
         Comment comment = getComment(request.getCommentId());
         validateUser(comment.getWriter(), httpRequest);
-        comment.softDelete();
+
+        // 댓글에 연결된 대댓글도 함께 삭제
+        List<Reply> replies = replyRepository.findByComment(comment);
+        replyRepository.deleteAll(replies);
+
         comment.getPost().decrementCommentCount();
+        commentRepository.delete(comment);
     }
 
-    /** ✅ 대댓글 삭제 */
+    /** ✅ 대댓글 삭제 (하드 삭제 방식) */
     public void deleteReply(ReplyDeleteRequest request, HttpServletRequest httpRequest) {
         Reply reply = getReply(request.getReplyId());
         validateUser(reply.getWriter(), httpRequest);
-        reply.softDelete();
+
         reply.getPost().decrementCommentCount();
+        replyRepository.delete(reply);
     }
 
     /** ✅ 게시글 기준 전체 댓글 + 대댓글 조회 */
@@ -99,8 +105,8 @@ public class CommentService {
         Post post = getPost(request.getPostId());
         Long sessionUserId = SessionUtil.getUserId(httpRequest);
 
-        List<Comment> comments = commentRepository.findByPostAndIsDeletedFalseOrderByCreatedAtAsc(post);
-        Map<Long, List<Reply>> replyMap = replyRepository.findByPostAndIsDeletedFalse(post).stream()
+        List<Comment> comments = commentRepository.findByPostOrderByCreatedAtAsc(post);
+        Map<Long, List<Reply>> replyMap = replyRepository.findByPost(post).stream()
                 .collect(Collectors.groupingBy(reply -> reply.getComment().getId()));
 
         List<CommentResponse> responseList = comments.stream()
