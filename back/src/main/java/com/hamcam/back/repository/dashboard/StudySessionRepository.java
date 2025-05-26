@@ -1,6 +1,5 @@
 package com.hamcam.back.repository.dashboard;
 
-import com.hamcam.back.entity.study.StudySession;
 import com.hamcam.back.entity.auth.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

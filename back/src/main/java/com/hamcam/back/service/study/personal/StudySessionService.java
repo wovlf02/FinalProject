@@ -2,8 +2,6 @@ package com.hamcam.back.service.study.personal;
 
 import com.hamcam.back.dto.study.personal.request.StudySessionRequest;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.study.StudySession;
-import com.hamcam.back.entity.study.StudySession.StudyType;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;

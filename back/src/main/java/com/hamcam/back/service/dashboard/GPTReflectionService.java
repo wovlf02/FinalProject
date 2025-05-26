@@ -6,7 +6,6 @@ import com.hamcam.back.dto.dashboard.reflection.request.WeeklyReflectionRequest;
 import com.hamcam.back.dto.dashboard.reflection.response.ReflectionType;
 import com.hamcam.back.dto.dashboard.reflection.response.WeeklyReflectionResponse;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.study.StudySession;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.dashboard.StudySessionRepository;
 import com.hamcam.back.util.SessionUtil;

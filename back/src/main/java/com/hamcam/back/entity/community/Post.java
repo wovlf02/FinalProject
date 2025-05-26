@@ -1,7 +1,6 @@
 package com.hamcam.back.entity.community;
 
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.study.TeamRoom;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -14,7 +14,6 @@ import com.hamcam.back.dto.dashboard.exam.response.DDayInfoResponse;
 import com.hamcam.back.dto.dashboard.exam.response.ExamScheduleResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.dashboard.*;
-import com.hamcam.back.entity.study.StudySession;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.notice.NoticeRepository;
