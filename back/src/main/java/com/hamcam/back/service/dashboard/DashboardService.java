@@ -142,13 +142,35 @@ public class DashboardService {
 
     public TotalStatsResponse getTotalStudyStats(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, LocalDate.of(2000, 1, 1), LocalDate.now());
+        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
+                user, LocalDate.of(2000, 1, 1), LocalDate.now()
+        );
+
+        int totalMinutes = sessions.stream()
+                .mapToInt(StudySession::getDurationMinutes)
+                .sum();
+
+        int avgFocusRate = (int) Math.round(
+                sessions.stream()
+                        .mapToDouble(StudySession::getFocusRate)
+                        .average()
+                        .orElse(0.0)
+        );
+
+        int avgAccuracy = (int) Math.round(
+                sessions.stream()
+                        .mapToDouble(StudySession::getAccuracy)
+                        .average()
+                        .orElse(0.0)
+        );
+
         return TotalStatsResponse.builder()
-                .totalStudyMinutes(sessions.stream().mapToInt(StudySession::getDurationMinutes).sum())
-                .averageFocusRate((int) sessions.stream().mapToInt(StudySession::getFocusRate).average().orElse(0))
-                .averageAccuracy((int) sessions.stream().mapToInt(StudySession::getAccuracy).average().orElse(0))
+                .totalStudyMinutes(totalMinutes)
+                .averageFocusRate(avgFocusRate)
+                .averageAccuracy(avgAccuracy)
                 .build();
     }
+
 
     public WeeklyStatsResponse getWeeklyStats(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
@@ -207,9 +229,14 @@ public class DashboardService {
         List<Integer> weeklyAvgFocus = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             List<StudySession> weekSessions = byWeek.getOrDefault(i, List.of());
-            int avg = (int) weekSessions.stream()
-                    .mapToInt(StudySession::getFocusRate)
-                    .average().orElse(0);
+
+            int avg = (int) Math.round(
+                    weekSessions.stream()
+                            .mapToDouble(StudySession::getFocusRate)
+                            .average()
+                            .orElse(0.0)
+            );
+
             weeklyAvgFocus.add(avg);
         }
 
@@ -218,6 +245,7 @@ public class DashboardService {
                 .weeklyAverageFocusRates(weeklyAvgFocus)
                 .build();
     }
+
 
     private Map<LocalDate, List<StudySession>> getStudySessionsByDate(User user, LocalDate start, LocalDate end) {
         return studySessionRepository.findByUserAndStudyDateBetween(user, start, end).stream()
@@ -234,10 +262,16 @@ public class DashboardService {
     public BestFocusDayResponse getBestFocusDay(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
         LocalDate start = LocalDate.now().minusDays(30);
-        return studySessionRepository.findTopFocusDay(user, start).stream().findFirst()
-                .map(s -> BestFocusDayResponse.builder().bestDay(s.getStudyDate()).bestFocusRate(s.getFocusRate()).build())
+
+        return studySessionRepository.findTopFocusDay(user, start).stream()
+                .findFirst()
+                .map(s -> BestFocusDayResponse.builder()
+                        .bestDay(s.getStudyDate())
+                        .bestFocusRate((int) Math.round(s.getFocusRate()))  // ✅ 오류 해결
+                        .build())
                 .orElse(null);
     }
+
 
     public GoalSuggestionResponse getSuggestedGoal(HttpServletRequest httpRequest) {
         getSessionUser(httpRequest); // 유효성만 확인
@@ -256,16 +290,32 @@ public class DashboardService {
 
     public List<SubjectStatsResponse> getSubjectStats(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, LocalDate.of(2000, 1, 1), LocalDate.now());
-        Map<String, List<StudySession>> bySubject = sessions.stream().filter(s -> s.getSubject() != null)
+        List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(
+                user, LocalDate.of(2000, 1, 1), LocalDate.now()
+        );
+
+        Map<String, List<StudySession>> bySubject = sessions.stream()
+                .filter(s -> s.getSubject() != null)
                 .collect(Collectors.groupingBy(StudySession::getSubject));
 
         return bySubject.entrySet().stream().map(entry -> {
             String subject = entry.getKey();
             List<StudySession> subjectSessions = entry.getValue();
-            int totalFocus = subjectSessions.stream().mapToInt(StudySession::getDurationMinutes).sum();
-            int avgAccuracy = (int) subjectSessions.stream().mapToInt(StudySession::getAccuracy).average().orElse(0);
-            int avgCorrectRate = (int) subjectSessions.stream().mapToInt(StudySession::getCorrectRate).average().orElse(0);
+
+            int totalFocus = subjectSessions.stream()
+                    .mapToInt(StudySession::getDurationMinutes)
+                    .sum();
+
+            int avgAccuracy = (int) Math.round(subjectSessions.stream()
+                    .mapToDouble(StudySession::getAccuracy)
+                    .average()
+                    .orElse(0.0));
+
+            int avgCorrectRate = (int) Math.round(subjectSessions.stream()
+                    .mapToDouble(StudySession::getCorrectRate)
+                    .average()
+                    .orElse(0.0));
+
             return SubjectStatsResponse.builder()
                     .subjectName(subject)
                     .totalFocusMinutes(totalFocus)
@@ -274,6 +324,7 @@ public class DashboardService {
                     .build();
         }).collect(Collectors.toList());
     }
+
 
     private User getSessionUser(HttpServletRequest request) {
         Long userId = SessionUtil.getUserId(request);

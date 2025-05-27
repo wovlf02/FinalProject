@@ -22,13 +22,14 @@ public class VideoRoomController {
 
     private final VideoRoomService videoRoomService;
 
-    /** ✅ 화상 채팅방 생성 (세션 기반) */
+    /** ✅ 화상 채팅방 생성 */
     @PostMapping("/create")
     public ResponseEntity<VideoRoomResponse> createRoom(
             @RequestBody VideoRoomCreateRequest request,
             HttpServletRequest httpRequest
     ) {
-        return ResponseEntity.ok(videoRoomService.createRoom(request, httpRequest));
+        VideoRoomResponse response = videoRoomService.createRoom(request, httpRequest);
+        return ResponseEntity.ok(response);
     }
 
     /** ✅ 팀 기준 화상 채팅방 목록 조회 */
@@ -36,7 +37,8 @@ public class VideoRoomController {
     public ResponseEntity<List<VideoRoomResponse>> getRoomsByTeam(
             @RequestBody VideoRoomListRequest request
     ) {
-        return ResponseEntity.ok(videoRoomService.getRoomsByTeam(request));
+        List<VideoRoomResponse> rooms = videoRoomService.getRoomsByTeam(request);
+        return ResponseEntity.ok(rooms);
     }
 
     /** ✅ 화상 채팅방 상세 조회 */
@@ -44,7 +46,8 @@ public class VideoRoomController {
     public ResponseEntity<VideoRoomResponse> getRoomById(
             @RequestBody VideoRoomDetailRequest request
     ) {
-        return ResponseEntity.ok(videoRoomService.getRoomById(request));
+        VideoRoomResponse room = videoRoomService.getRoomById(request);
+        return ResponseEntity.ok(room);
     }
 
     /** ✅ 방 입장 (접속자 수 증가 후 반환) */
@@ -72,6 +75,7 @@ public class VideoRoomController {
     public ResponseEntity<Long> getUserCount(
             @RequestBody VideoRoomUserRequest request
     ) {
-        return ResponseEntity.ok(videoRoomService.getUserCount(request));
+        Long count = videoRoomService.getUserCount(request);
+        return ResponseEntity.ok(count);
     }
 }

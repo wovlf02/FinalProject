@@ -1,14 +1,11 @@
 package com.hamcam.back.service.study.team;
 
-import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.dto.study.team.request.*;
+import com.hamcam.back.dto.study.team.rest.request.*;
 import com.hamcam.back.dto.study.team.response.*;
+import com.hamcam.back.dto.study.team.response.inner.TeamRoomSimpleInfo;
+import com.hamcam.back.dto.study.team.rest.response.TeamRoomDetailResponse;
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.study.*;
-import com.hamcam.back.entity.study.team.FocusRoom;
-import com.hamcam.back.entity.study.team.QuizRoom;
-import com.hamcam.back.entity.study.team.RoomType;
-import com.hamcam.back.entity.study.team.StudyRoom;
+import com.hamcam.back.entity.study.team.*;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.study.*;
 import com.hamcam.back.util.RedisService;
@@ -30,17 +27,16 @@ public class TeamStudyService {
     private final UserRepository userRepository;
     private final RedisService redisService;
 
-    /** ✅ 방 생성 */
+    /** ✅ 팀방 생성 (Quiz or Focus) */
     public Long createRoom(TeamRoomCreateRequest request, Long userId) {
         User user = getUser(userId);
-
         StudyRoom room;
+
         if (request.getRoomType() == RoomType.QUIZ) {
             room = QuizRoom.builder()
                     .title(request.getTitle())
                     .password(request.getPassword())
                     .inviteCode(generateInviteCode())
-                    .roomType(RoomType.QUIZ)
                     .subject(request.getSubject())
                     .grade(request.getGrade())
                     .month(request.getMonth())
@@ -54,7 +50,6 @@ public class TeamStudyService {
                     .title(request.getTitle())
                     .password(request.getPassword())
                     .inviteCode(generateInviteCode())
-                    .roomType(RoomType.FOCUS)
                     .goalMinutes(request.getGoalMinutes())
                     .isFinished(false)
                     .winnerUserId(null)
@@ -77,13 +72,13 @@ public class TeamStudyService {
         return room.getId();
     }
 
-    /** ✅ 방 입장 */
+    /** ✅ 입장 */
     public void enterRoom(Long roomId, Long userId) {
         StudyRoom room = getRoom(roomId);
         User user = getUser(userId);
 
-        boolean alreadyIn = participantRepository.existsByRoomAndUser(room, user);
-        if (!alreadyIn) {
+        boolean exists = participantRepository.existsByRoomAndUser(room, user);
+        if (!exists) {
             participantRepository.save(
                     StudyRoomParticipant.builder()
                             .room(room)
@@ -96,61 +91,66 @@ public class TeamStudyService {
         }
     }
 
-    /** ✅ 방 퇴장 */
+    /** ✅ 나가기 */
     public void leaveRoom(Long roomId, Long userId) {
+        StudyRoom room = getRoom(roomId);
+        User user = getUser(userId);
+        participantRepository.findByRoomAndUser(room, user)
+                .ifPresent(participantRepository::delete);
+    }
+
+    /** ✅ 삭제 (방장만 가능) */
+    public void deleteRoom(Long roomId, Long userId) {
         StudyRoom room = getRoom(roomId);
         User user = getUser(userId);
 
         StudyRoomParticipant participant = participantRepository.findByRoomAndUser(room, user)
                 .orElseThrow(() -> new IllegalArgumentException("방 참가자가 아닙니다."));
-        participantRepository.delete(participant);
-    }
 
-    /** ✅ 방 삭제 (종료) */
-    public void deleteRoom(Long roomId, Long userId) {
-        StudyRoom room = getRoom(roomId);
-        User user = getUser(userId);
-
-        // 방장만 삭제 가능
-        StudyRoomParticipant host = participantRepository.findByRoomAndUser(room, user)
-                .orElseThrow(() -> new IllegalArgumentException("방 참가자가 아닙니다."));
-        if (!host.isHost()) throw new IllegalArgumentException("방장만 삭제할 수 있습니다.");
-
-        // 연관 엔티티 cascade 제거
-        participantRepository.deleteAllByRoom(room);
-        if (room instanceof QuizRoom) {
-            quizRoomRepository.delete((QuizRoom) room);
-        } else if (room instanceof FocusRoom) {
-            focusRoomRepository.delete((FocusRoom) room);
-        } else {
-            studyRoomRepository.delete(room); // fallback
+        if (!participant.isHost()) {
+            throw new IllegalArgumentException("방장만 삭제할 수 있습니다.");
         }
 
-        // Redis 로그 삭제
+        participantRepository.deleteAllByRoom(room);
+        if (room instanceof QuizRoom quizRoom) {
+            quizRoomRepository.delete(quizRoom);
+        } else if (room instanceof FocusRoom focusRoom) {
+            focusRoomRepository.delete(focusRoom);
+        } else {
+            studyRoomRepository.delete(room);
+        }
+
         redisService.deleteRoomLogs(roomId);
     }
 
     /** ✅ 방 상세 조회 */
     public TeamRoomDetailResponse getRoomDetail(Long roomId, Long userId) {
         StudyRoom room = getRoom(roomId);
-        User user = getUser(userId);
+        getUser(userId); // 유효성 체크
         List<StudyRoomParticipant> participants = participantRepository.findAllByRoom(room);
         return TeamRoomDetailResponse.of(room, participants);
     }
 
-    /** ✅ 나의 방 리스트 */
+    /** ✅ 나의 팀방 리스트 */
     public TeamRoomListResponse getMyRoomList(Long userId) {
         User user = getUser(userId);
-        List<StudyRoomParticipant> participation = participantRepository.findAllByUser(user);
-        return TeamRoomListResponse.of(participation);
+        List<StudyRoomParticipant> list = participantRepository.findAllByUser(user);
+        return TeamRoomListResponse.of(list);
+    }
+//
+//    /** ✅ 전체 활성 팀방 리스트 */
+    public TeamRoomListResponse getAllActiveRoomList() {
+        List<StudyRoom> activeRooms = studyRoomRepository.findByIsActiveTrue();
+        List<TeamRoomSimpleInfo> infoList = activeRooms.stream()
+                .map(TeamRoomSimpleInfo::from)
+                .toList();
+        return TeamRoomListResponse.builder().rooms(infoList).build();
     }
 
-    // =========================
-    // 🔧 내부 유틸 메서드
-    // =========================
+    // ===== 내부 유틸 =====
 
     private String generateInviteCode() {
-        return "C" + System.currentTimeMillis(); // TODO: 임시 로직, 추후 UUID 등 대체
+        return "C" + System.currentTimeMillis();
     }
 
     private User getUser(Long userId) {
@@ -160,6 +160,6 @@ public class TeamStudyService {
 
     private StudyRoom getRoom(Long roomId) {
         return studyRoomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 방이 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("팀방이 존재하지 않습니다."));
     }
 }

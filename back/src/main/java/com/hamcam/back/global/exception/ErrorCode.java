@@ -11,6 +11,7 @@ public enum ErrorCode {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "E4012", "토큰이 유효하지 않습니다."),
     LOGIN_USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "E1001", "존재하지 않는 사용자입니다."),
     LOGIN_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "E1002", "비밀번호가 일치하지 않습니다."),
+    UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "E4013", "인증되지 않은 사용자입니다."),
 
     // 🔒 권한 오류 (403)
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "E4031", "접근 권한이 없습니다."),

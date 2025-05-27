@@ -2,6 +2,7 @@ package com.hamcam.back.service.study.personal;
 
 import com.hamcam.back.dto.study.personal.request.StudySessionRequest;
 import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.entity.dashboard.StudySession;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
@@ -32,18 +33,16 @@ public class StudySessionService {
 
         StudySession session = StudySession.builder()
                 .user(user)
-                .unitName(request.getUnitName())
-                .durationMinutes(request.getDurationMinutes())
                 .studyDate(LocalDate.now())
-                .startedAt(LocalDateTime.now().minusMinutes(request.getDurationMinutes()))
-                .endedAt(LocalDateTime.now())
-                .focusRate(100) // 추후 개선 가능
-                .accuracy(100)
-                .correctRate(100)
-                .studyType(StudyType.valueOf(request.getStudyType())) // "PERSONAL"
-                .subject("자율") // 또는 "기타", 추후 단원명으로 대체 가능
+                .totalMinutes(request.getDurationMinutes())
+                .focusMinutes(request.getDurationMinutes())  // 전체를 집중했다고 가정
+                .focusRate(100.0)
+                .accuracy(100.0)
+                .correctRate(100.0)
+                .subject(request.getSubject() != null ? request.getSubject() : "자율")
                 .build();
 
         studySessionRepository.save(session);
     }
+
 }

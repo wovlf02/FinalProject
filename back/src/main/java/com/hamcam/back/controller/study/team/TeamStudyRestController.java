@@ -1,8 +1,12 @@
 package com.hamcam.back.controller.study.team;
 
 import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.dto.study.team.request.*;
 import com.hamcam.back.dto.study.team.response.*;
+import com.hamcam.back.dto.study.team.rest.request.TeamRoomCreateRequest;
+import com.hamcam.back.dto.study.team.rest.request.TeamRoomDeleteRequest;
+import com.hamcam.back.dto.study.team.rest.request.TeamRoomDetailRequest;
+import com.hamcam.back.dto.study.team.rest.request.TeamRoomUserRequest;
+import com.hamcam.back.dto.study.team.rest.response.TeamRoomDetailResponse;
 import com.hamcam.back.service.study.team.TeamStudyService;
 import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -72,11 +76,19 @@ public class TeamStudyRestController {
         return ResponseEntity.ok(response);
     }
 
-    /** ✅ 나의 팀방 리스트 조회 */
+    /** ✅ 나의 팀방 목록 조회 */
     @PostMapping("/my")
     public ResponseEntity<TeamRoomListResponse> getMyRooms(HttpServletRequest httpRequest) {
         Long userId = SessionUtil.getUserId(httpRequest);
         TeamRoomListResponse response = teamStudyService.getMyRoomList(userId);
         return ResponseEntity.ok(response);
     }
+
+    /** ✅ 전체 활성화된 팀방 목록 조회 */
+    @PostMapping("/list")
+    public ResponseEntity<TeamRoomListResponse> getAllActiveRooms() {
+        TeamRoomListResponse response = teamStudyService.getAllActiveRoomList();
+        return ResponseEntity.ok(response);
+    }
+
 }

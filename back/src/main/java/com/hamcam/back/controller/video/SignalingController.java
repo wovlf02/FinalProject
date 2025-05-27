@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -21,9 +23,11 @@ public class SignalingController extends TextWebSocketHandler {
 
     /** roomId -> 참여 세션 목록 */
     private final Map<String, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
+    private final Map<String, WebSocketSession> sessionIdMap = new ConcurrentHashMap<>(); // sessionId → session
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 클라이언트 메시지 수신 시 → 같은 방 전체로 브로드캐스트
+     * 클라이언트 메시지 수신 시 → 대상에게 전송 또는 전체 브로드캐스트
      */
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) {
@@ -35,15 +39,29 @@ public class SignalingController extends TextWebSocketHandler {
             return;
         }
 
-        log.info("📨 메시지 수신 | roomId={}, session={}, message={}", roomId, session.getId(), payload);
+        try {
+            JsonNode root = objectMapper.readTree(payload);
+            String senderId = root.path("senderId").asText();
+            String targetId = root.has("targetId") ? root.path("targetId").asText(null) : null;
 
-        Set<WebSocketSession> sessions = roomSessions.getOrDefault(roomId, Collections.emptySet());
-        for (WebSocketSession s : sessions) {
-            try {
-                if (s.isOpen()) s.sendMessage(new TextMessage(payload));
-            } catch (Exception e) {
-                log.error("❌ 메시지 전송 실패 | targetSession={}, error={}", s.getId(), e.getMessage());
+            log.info("📨 signaling 수신 | roomId={}, senderId={}, targetId={}, payload={}", roomId, senderId, targetId, payload);
+
+            if (targetId != null && sessionIdMap.containsKey(targetId)) {
+                WebSocketSession targetSession = sessionIdMap.get(targetId);
+                if (targetSession != null && targetSession.isOpen()) {
+                    targetSession.sendMessage(new TextMessage(payload));
+                }
+            } else {
+                Set<WebSocketSession> sessions = roomSessions.getOrDefault(roomId, Collections.emptySet());
+                for (WebSocketSession s : sessions) {
+                    if (s.isOpen() && !s.equals(session)) {
+                        s.sendMessage(new TextMessage(payload));
+                    }
+                }
             }
+
+        } catch (Exception e) {
+            log.error("❌ 메시지 파싱/전송 실패 | session={}, error={}", session.getId(), e.getMessage());
         }
     }
 
@@ -61,6 +79,8 @@ public class SignalingController extends TextWebSocketHandler {
         }
 
         roomSessions.computeIfAbsent(roomId, k -> ConcurrentHashMap.newKeySet()).add(session);
+        sessionIdMap.put(session.getId(), session);
+
         log.info("🔌 WebSocket 연결됨 | roomId={}, session={}", roomId, session.getId());
     }
 
@@ -83,6 +103,8 @@ public class SignalingController extends TextWebSocketHandler {
                 }
             }
         }
+
+        sessionIdMap.remove(session.getId());
     }
 
     /**

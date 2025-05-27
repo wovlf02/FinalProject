@@ -6,7 +6,7 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 
 /**
  * Web 관련 설정 (정적 자원 + CORS 정책)
- * - 보안 제거 버전 (Credentials X)
+ * - ngrok 등 외부 접속 도메인 포함 테스트용 설정
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -24,10 +24,16 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // 모든 경로 허용
-                .allowedOrigins("http://192.168.0.2:3000", "http://localhost:3000", "http://192.168.78.59:3000") // 모든 도메인 허용
+        registry.addMapping("/**")
+                .allowedOriginPatterns("https://*.ngrok-free.app") // ✅ 모든 ngrok 주소 허용
                 .allowedMethods("*")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.setUseTrailingSlashMatch(true);
+    }
 }
+

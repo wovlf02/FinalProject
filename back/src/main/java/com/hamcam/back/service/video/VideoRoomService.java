@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 /**
  * [VideoRoomService]
- * WebRTC 기반 화상 학습방 관리 서비스 (세션 기반 전환 완료)
+ * WebRTC 기반 화상 학습방 관리 서비스 (세션 기반)
  */
 @Service
 @RequiredArgsConstructor
@@ -32,12 +32,13 @@ public class VideoRoomService {
 
     private static final String USER_COUNT_KEY = "videoRoom:userCount:";
 
-    /**
-     * ✅ 화상 채팅방 생성 (세션 기반)
-     */
+    /** ✅ 화상 채팅방 생성 */
     @Transactional
     public VideoRoomResponse createRoom(VideoRoomCreateRequest request, HttpServletRequest httpRequest) {
         Long userId = getSessionUserId(httpRequest);
+        if (userId == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
 
         VideoRoom room = VideoRoom.builder()
                 .teamId(request.getTeamId())
@@ -50,49 +51,50 @@ public class VideoRoomService {
         return VideoRoomResponse.fromEntity(saved);
     }
 
-    /**
-     * ✅ 팀 ID 기준 방 목록 조회
-     */
+    /** ✅ 팀 ID 기준 방 목록 조회 */
     public List<VideoRoomResponse> getRoomsByTeam(VideoRoomListRequest request) {
         return videoRoomRepository.findByTeamId(request.getTeamId()).stream()
                 .map(VideoRoomResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * ✅ 단일 방 조회
-     */
+    /** ✅ 단일 방 조회 */
     public VideoRoomResponse getRoomById(VideoRoomDetailRequest request) {
         VideoRoom room = videoRoomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new CustomException(ErrorCode.VIDEO_ROOM_NOT_FOUND));
         return VideoRoomResponse.fromEntity(room);
     }
 
-    /**
-     * ✅ 입장 시 접속자 수 증가
-     */
+    /** ✅ 입장 시 접속자 수 증가 (최초값 null 방지) */
     public void increaseUserCount(VideoRoomUserRequest request) {
-        redisTemplate.opsForValue().increment(USER_COUNT_KEY + request.getRoomId());
+        String key = USER_COUNT_KEY + request.getRoomId();
+        redisTemplate.opsForValue().setIfAbsent(key, 0);
+        redisTemplate.opsForValue().increment(key);
     }
 
-    /**
-     * ✅ 퇴장 시 접속자 수 감소
-     */
+    /** ✅ 퇴장 시 접속자 수 감소 (0 미만 방지) */
     public void decreaseUserCount(VideoRoomUserRequest request) {
-        redisTemplate.opsForValue().decrement(USER_COUNT_KEY + request.getRoomId());
+        String key = USER_COUNT_KEY + request.getRoomId();
+        Long current = getUserCount(request);
+        if (current > 0) {
+            redisTemplate.opsForValue().decrement(key);
+        } else {
+            redisTemplate.opsForValue().set(key, 0); // 혹시 모를 음수 방지
+        }
     }
 
-    /**
-     * ✅ 현재 접속자 수 조회
-     */
+    /** ✅ 현재 접속자 수 조회 */
     public Long getUserCount(VideoRoomUserRequest request) {
-        Object count = redisTemplate.opsForValue().get(USER_COUNT_KEY + request.getRoomId());
-        return count == null ? 0L : Long.parseLong(count.toString());
+        String key = USER_COUNT_KEY + request.getRoomId();
+        Object count = redisTemplate.opsForValue().get(key);
+        try {
+            return count == null ? 0L : Long.parseLong(count.toString());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
-    /**
-     * ✅ 세션에서 사용자 ID 조회
-     */
+    /** ✅ 세션에서 사용자 ID 조회 */
     private Long getSessionUserId(HttpServletRequest request) {
         return SessionUtil.getUserId(request);
     }

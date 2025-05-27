@@ -24,26 +24,29 @@ public class WebSocketStompConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // ✅ 전역 WebSocket (온라인 상태, 알림 등)
+        // ✅ WebSocket Endpoint 공통 설정
+        String[] allowedOrigins = {
+                "http://localhost:3000",          // 로컬 개발용
+                "https://*.ngrok-free.app"        // ngrok 환경 허용
+        };
+
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns("*") // ✅ credentials: true를 쓰려면 * 대신 정확한 origin 쓰거나 "*" 사용 가능 (Spring 5.3+)
                 .addInterceptors(stompHandshakeInterceptor)
                 .withSockJS()
-                .setSessionCookieNeeded(true); // ✅ 세션 공유 위해 반드시 필요
+                .setSessionCookieNeeded(true);
 
-        // ✅ 팀방 전용 WebSocket
         registry.addEndpoint("/ws/team")
                 .setAllowedOriginPatterns("*")
                 .addInterceptors(stompHandshakeInterceptor)
                 .withSockJS()
                 .setSessionCookieNeeded(true);
 
-        // ✅ 채팅 전용 WebSocket
         registry.addEndpoint("/ws/chat")
                 .setAllowedOriginPatterns("*")
                 .addInterceptors(stompHandshakeInterceptor)
                 .withSockJS()
-                .setSessionCookieNeeded(true); // ✅ 핵심
+                .setSessionCookieNeeded(true);
     }
 
     @Override

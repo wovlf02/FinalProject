@@ -13,13 +13,13 @@ public class TeamStudySocketService {
 
     private final RedisService redisService;
 
-    /** ✅ 채팅 메시지 Redis 저장 */
+    /** ✅ 채팅 메시지 저장 */
     public void saveChatMessage(TeamChatMessage message) {
         String key = "study_chat:" + message.getRoomId();
-        redisService.pushList(key, message); // List 구조 저장
+        redisService.pushList(key, message);
     }
 
-    /** ✅ 발표 투표 수집 + 과반 판단 */
+    /** ✅ 투표 결과 수집 + 과반수 판단 */
     public boolean collectVote(VoteMessage vote) {
         String key = "quiz_vote:" + vote.getRoomId();
         redisService.incrementHash(key, vote.getUserId().toString(), vote.isSuccess() ? 1 : 0);
@@ -28,17 +28,16 @@ public class TeamStudySocketService {
         int total = votes.size();
         long successCount = votes.values().stream().filter(v -> v == 1).count();
 
-        // ✅ 과반수 이상 성공 판정
         return successCount > total / 2;
     }
 
-    /** ✅ Focus 모드 집중 시간 업데이트 */
+    /** ✅ Focus 모드 시간 갱신 */
     public void updateFocusTime(FocusTimeUpdate update) {
         String key = "focus_timer:" + update.getRoomId() + ":" + update.getUserId();
         redisService.incrementValue(key, update.getDeltaMinutes());
     }
 
-    /** ✅ Focus 모드 현재 랭킹 조회 */
+    /** ✅ Focus 모드 랭킹 조회 */
     public List<FocusRankResponse> getCurrentRanking(Long roomId) {
         String prefix = "focus_timer:" + roomId + ":";
         Map<String, Integer> userTimeMap = redisService.scanByPrefix(prefix); // key → time

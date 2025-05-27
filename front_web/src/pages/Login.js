@@ -15,9 +15,11 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
+            // ✅ 세션 기반 로그인
             const res = await api.post('/auth/login', { username, password });
 
             if (res.status === 200) {
+                // ✅ 로그인 후 세션 기반 사용자 정보 요청
                 const userRes = await api.get('/users/me');
                 const user = userRes.data?.data;
                 console.log('user:', user);
@@ -52,7 +54,8 @@ const Login = () => {
             return;
         }
 
-        const socket = new SockJS('http://localhost:8080/ws');
+        // ✅ 최신 signaling 서버 ngrok 주소 사용
+        const socket = new SockJS('https://a26f-2001-2d8-699b-7a4b-f170-d29-bd64-7e6e.ngrok-free.app/ws');
         const client = new Client({
             webSocketFactory: () => socket,
             connectHeaders: { userId: String(userId) },
@@ -71,7 +74,6 @@ const Login = () => {
 
         client.activate();
         stompClientGlobal = client;
-        // window.stompClient = client; // 디버깅용
     };
 
     return (
@@ -112,11 +114,7 @@ const Login = () => {
 
                 <div className="login-main-bottom" style={{ marginTop: "16px" }}>
                     <span className="login-main-link">계정이 없으신가요?</span>
-                    <button
-                        type="button"
-                        className="login-main-admin-btn"
-                        onClick={() => navigate('/register')}
-                    >
+                    <button type="button" className="login-main-admin-btn" onClick={() => navigate('/register')}>
                         회원가입
                     </button>
                     <button
