@@ -41,11 +41,15 @@ public enum ErrorCode {
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "E4043", "해당 방을 찾을 수 없습니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "E4044", "해당 게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E4045", "해당 댓글을 찾을 수 없습니다."),
+    // 🔍 리소스 없음 (404)
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4046", "해당 파일을 찾을 수 없습니다."),
 
     // 🛠 서버 내부 오류 (500)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E5001", "서버 내부 오류가 발생했습니다."),
     FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E5002", "파일 삭제 중 오류가 발생했습니다."),
     FILE_DOWNLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E5003", "파일 다운로드 중 오류가 발생했습니다."),
+    // 🛠 서버 내부 오류 (500)
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E5004", "파일 업로드에 실패했습니다."),
 
     // 📚 WebRTC 팀 학습방 전용
     ROOM_ALREADY_CLOSED(HttpStatus.BAD_REQUEST, "E6001", "이미 종료된 방입니다.");
