@@ -26,6 +26,7 @@ public enum ErrorCode {
     ROOM_IS_FULL(HttpStatus.BAD_REQUEST, "E4005", "방 정원이 초과되었습니다."),
     ALREADY_JOINED_ROOM(HttpStatus.BAD_REQUEST, "E4006", "이미 해당 방에 참여 중입니다."),
     ALREADY_STARTED(HttpStatus.BAD_REQUEST, "E4007", "이미 시작된 방입니다."),
+    INVALID_POST_CATEGORY(HttpStatus.BAD_REQUEST, "E4008", "적절하지 않은 카테고리입니다."),
 
     // ❌ 중복 (409)
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "E4091", "이미 존재하는 아이디입니다."),
@@ -43,6 +44,8 @@ public enum ErrorCode {
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E4045", "해당 댓글을 찾을 수 없습니다."),
     // 🔍 리소스 없음 (404)
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4046", "해당 파일을 찾을 수 없습니다."),
+    REPLY_NOT_FOUND(HttpStatus.NOT_FOUND, "E4047", "해당 대댓글을 찾을 수 없습니다."),
+    STUDY_NOT_FOUND(HttpStatus.NOT_FOUND, "E4048", "해당 스터디를 찾을 수 없습니다."),
 
     // 🛠 서버 내부 오류 (500)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E5001", "서버 내부 오류가 발생했습니다."),
