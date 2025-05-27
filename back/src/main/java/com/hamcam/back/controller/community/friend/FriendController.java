@@ -94,7 +94,7 @@ public class FriendController {
         return ResponseEntity.ok(MessageResponse.of("차단을 해제하였습니다."));
     }
 
-    @PostMapping("/blocked")
+    @GetMapping("/blocked")
     public ResponseEntity<BlockedFriendListResponse> getBlockedUsers(HttpServletRequest httpRequest) {
         return ResponseEntity.ok(friendService.getBlockedUsers(httpRequest));
     }

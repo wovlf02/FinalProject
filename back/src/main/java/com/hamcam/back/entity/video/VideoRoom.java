@@ -1,41 +1,65 @@
+// src/main/java/com/hamcam/back/entity/video/VideoRoom.java
 package com.hamcam.back.entity.video;
 
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "video_room")
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor @Builder
 public class VideoRoom {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "room_id")
-    private Long id;
+    private Integer id;
 
-    @Column(name = "team_id", nullable = false)
+    @Column(nullable = false)
+    private Long hostId;
+
+    @Column(nullable = false)
     private Long teamId;
 
-    @Column(name = "host_id", nullable = false)
-    private Long hostId; // ✅ 추가된 필드
-
-    @Column(name = "title", nullable = false)
+    @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private RoomType type;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(nullable = false)
+    private Integer maxParticipants;
 
-    /** 생성 시각 자동 설정 */
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+    @Column(length = 100)
+    private String password;
+
+    @Column
+    private Integer targetTime;  // FOCUS 방용
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private RoomStatus status;
+
+    @OneToMany(
+      mappedBy = "room",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<VideoRoomParticipant> participants = new ArrayList<>();
+
+    /** 편의 메서드: 참가자 추가 */
+    public void addParticipant(VideoRoomParticipant participant) {
+        participants.add(participant);
+        participant.setRoom(this);
+    }
+
+    /** 편의 메서드: 참가자 제거 */
+    public void removeParticipant(VideoRoomParticipant participant) {
+        participants.remove(participant);
+        participant.setRoom(null);
     }
 }

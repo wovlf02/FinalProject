@@ -1,17 +1,15 @@
+// src/main/java/com/hamcam/back/dto/video/request/VideoRoomListRequest.java
 package com.hamcam.back.dto.video.request;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * [VideoRoomListRequest]
- * 특정 팀의 화상 채팅방 목록 요청 DTO
+ * 팀 기준 화상 채팅방 목록 조회 요청 DTO
  */
-@Getter
-@NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 public class VideoRoomListRequest {
-
-    @NotNull(message = "teamId는 필수입니다.")
+    /** 조회할 팀 ID */
     private Long teamId;
 }

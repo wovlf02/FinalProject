@@ -4,6 +4,7 @@ import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessage;
+import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.chat.ChatRoom;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
@@ -18,11 +19,7 @@ import java.time.LocalDateTime;
 
 /**
  * [WebSocketChatService]
- *
  * WebSocket 기반 채팅 메시지 처리 서비스
- * - 메시지 저장
- * - 마지막 메시지 갱신
- * - 응답 DTO 생성
  */
 @Service
 @RequiredArgsConstructor
@@ -36,18 +33,25 @@ public class WebSocketChatService {
 
     /**
      * WebSocket을 통해 수신된 채팅 메시지를 저장하고 응답으로 반환
+     * - TEXT, FILE, IMAGE, ENTER 타입만 저장
      */
     public ChatMessageResponse saveMessage(ChatMessageRequest request, Long userId) {
+        if (request.getType() == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+
+        // READ_ACK는 저장 대상 아님 (예외 던지지 않고 무시 처리)
+        if (request.getType() == ChatMessageType.READ_ACK) {
+            return null;
+        }
+
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
         User sender = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if (request.getType() == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
-
+        // 메시지 저장
         ChatMessage message = ChatMessage.builder()
                 .chatRoom(room)
                 .sender(sender)
@@ -59,12 +63,14 @@ public class WebSocketChatService {
 
         chatMessageRepository.save(message);
 
-        // ✅ 마지막 메시지 정보 갱신
-        String preview = generatePreview(message);
-        room.setLastMessage(preview);
-        room.setLastMessageAt(message.getSentAt());
-        chatRoomRepository.save(room);
+        // 마지막 메시지 갱신 (TEXT, FILE, IMAGE만)
+        if (request.getType().isPreviewType()) {
+            room.setLastMessage(generatePreview(message));
+            room.setLastMessageAt(message.getSentAt());
+            chatRoomRepository.save(room);
+        }
 
+        // 미읽음 인원 수 계산
         int unreadCount = chatReadService.getUnreadCountForMessage(message.getId());
 
         return ChatMessageResponse.builder()
@@ -73,7 +79,7 @@ public class WebSocketChatService {
                 .senderId(sender.getId())
                 .nickname(sender.getNickname())
                 .profileUrl(sender.getProfileImageUrl() != null ? sender.getProfileImageUrl() : "")
-                .content(preview)
+                .content(message.getContent())
                 .type(message.getType())
                 .storedFileName(message.getStoredFileName())
                 .sentAt(message.getSentAt())
@@ -88,6 +94,7 @@ public class WebSocketChatService {
         return switch (message.getType()) {
             case FILE, IMAGE -> "[파일]";
             case TEXT -> message.getContent();
+            case ENTER -> message.getContent();
             default -> "";
         };
     }

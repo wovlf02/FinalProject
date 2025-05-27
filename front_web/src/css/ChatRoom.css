@@ -64,22 +64,12 @@
     align-items: flex-end;
 }
 
-/* ─── 닉네임 + 프로필 (윗줄) ───────────── */
+/* ─── 닉네임 + 프로필 ───────────── */
 .message-header {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 4px;
-}
-
-.message-wrapper.left .message-header {
-    flex-direction: row;
-    justify-content: flex-start;
-}
-
-.message-wrapper.right .message-header {
-    flex-direction: row-reverse;
-    justify-content: flex-end;
 }
 
 .message-avatar {
@@ -99,7 +89,6 @@
 .message-content-group {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     gap: 6px;
 }
 
@@ -107,10 +96,25 @@
     align-items: flex-end;
 }
 
+.message-content-group.left {
+    align-items: flex-start;
+}
+
 .message-bubble-wrapper {
     display: flex;
     align-items: flex-end;
     gap: 6px;
+    position: relative;
+}
+
+.message-bubble-wrapper.right {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.message-bubble-wrapper.left {
+    flex-direction: row;
+    justify-content: flex-start;
 }
 
 /* ─── 말풍선 ───────────── */
@@ -133,18 +137,36 @@
 
 /* ─── 메시지 시간 ───────────── */
 .message-time {
+    position: absolute;
+    bottom: -16px;
     font-size: 11px;
     color: #999;
     white-space: nowrap;
-    margin: 0 4px;
 }
 
-.message-time.left {
-    margin-left: 4px;
+.message-time.bottom-left {
+    left: 0;
 }
 
-.message-time.right {
-    margin-right: 4px;
+.message-time.bottom-right {
+    right: 0;
+}
+
+/* ─── 읽지 않은 사람 수 ───────────── */
+.unread-count-number {
+    position: absolute;
+    top: -16px;
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+}
+
+.unread-count-number.top-left {
+    left: 0;
+}
+
+.unread-count-number.top-right {
+    right: 0;
 }
 
 /* ─── 입력창 ───────────── */
@@ -193,104 +215,8 @@
     font-size: 14px;
 }
 
-/* ─── 메시지 그룹 좌우 정렬 및 말풍선/시간 배치 개선 ───────────── */
-.message-meta {
-    display: flex;
-    gap: 6px;
-    align-items: flex-end;
+.message-wrapper.unread {
+    background-color: #f3f6ff; /* 연한 파란색 배경으로 구분 */
+    border-left: 4px solid #4285f4;
+    border-radius: 6px;
 }
-
-.message-meta.right {
-    flex-direction: row-reverse;
-}
-
-.message-content-group.right .message-bubble-wrapper {
-    flex-direction: row-reverse;
-}
-
-.message-content-group.right .message-time {
-    text-align: left;
-    align-self: flex-start;
-    margin-left: 6px;
-}
-
-.message-content-group.left .message-time {
-    text-align: right;
-    align-self: flex-end;
-    margin-right: 6px;
-}
-
-.message-bubble-container {
-    position: relative;
-    display: inline-block;
-}
-
-.chat-unread-top-left {
-    position: absolute;
-    top: 0;
-    left: -40px;
-    font-size: 11px;
-    color: #666;
-}
-
-.message-time-bottom-left {
-    position: absolute;
-    bottom: -5px;
-    left: -53px;
-    font-size: 11px;
-    color: #999;
-    white-space: nowrap;
-}
-
-.chat-unread-count {
-    font-size: 12px;
-    color: #888;
-    margin-top: 2px;
-    padding: 0 6px;
-    white-space: nowrap;
-}
-
-.chat-unread-count.left {
-    margin-left: 6px;
-    text-align: left;
-}
-
-.chat-unread-count.right {
-    margin-right: 6px;
-    text-align: right;
-}
-
-.message-bubble-wrapper.right {
-    flex-direction: row-reverse;
-    justify-content: flex-end;
-    align-items: flex-end;
-}
-
-.message-bubble-wrapper.left {
-    flex-direction: row;
-    justify-content: flex-start;
-    align-items: flex-end;
-}
-
-.unread-count-number {
-    font-size: 11px;
-    color: #888;
-    margin-top: 2px;
-    margin-left: 4px;
-    text-align: right;
-}
-
-.unread-count-number.right {
-    text-align: right;
-    margin-right: 10px;
-    color: #888;
-    font-size: 11px;
-}
-
-.unread-count-number.left {
-    text-align: left;
-    margin-left: 10px;
-    color: #888;
-    font-size: 11px;
-}
-

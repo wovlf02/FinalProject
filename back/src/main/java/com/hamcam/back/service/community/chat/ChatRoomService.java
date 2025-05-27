@@ -31,6 +31,8 @@ public class ChatRoomService {
     private final UserRepository userRepository;
     private final FileUploadService fileUploadService;
 
+    private static final String DEFAULT_PROFILE_URL = "/icons/base_profile.png";
+
     public ChatRoomResponse createChatRoom(ChatRoomCreateRequest request, HttpServletRequest httpRequest) {
         Long userId = SessionUtil.getUserId(httpRequest);
         User creator = getUser(userId);
@@ -77,25 +79,33 @@ public class ChatRoomService {
         return participants.stream().map(participant -> {
             ChatRoom room = participant.getChatRoom();
             ChatMessage lastMessage = chatMessageRepository.findTopByChatRoomOrderBySentAtDesc(room);
-            int unreadCount = chatMessageRepository.countUnreadMessages(room, user, participant.getLastReadMessageId());
+
+            int unreadCount = chatMessageRepository.countUnreadMessagesByReadTable(room, userId); // ✅ 수정된 방식
             int totalMessageCount = chatMessageRepository.countByChatRoom(room);
 
             return ChatRoomListResponse.builder()
                     .roomId(room.getId())
                     .roomName(room.getName())
                     .roomType(room.getType().name())
-                    .lastMessage(lastMessage != null ? lastMessage.getContent() : null)
+                    .lastMessage(lastMessage != null ? generatePreview(lastMessage) : null)
                     .lastMessageAt(lastMessage != null ? lastMessage.getSentAt() : null)
                     .lastSenderNickname(lastMessage != null && lastMessage.getSender() != null ? lastMessage.getSender().getNickname() : null)
-                    .lastSenderProfileImageUrl(lastMessage != null && lastMessage.getSender() != null ? lastMessage.getSender().getProfileImageUrl() : null)
+                    .lastSenderProfileImageUrl(lastMessage != null && lastMessage.getSender() != null
+                            ? (lastMessage.getSender().getProfileImageUrl() != null
+                            ? lastMessage.getSender().getProfileImageUrl()
+                            : DEFAULT_PROFILE_URL)
+                            : DEFAULT_PROFILE_URL)
                     .lastMessageType(lastMessage != null ? lastMessage.getType().name() : null)
                     .participantCount(chatParticipantRepository.countByChatRoom(room))
                     .unreadCount(unreadCount)
                     .totalMessageCount(totalMessageCount)
-                    .profileImageUrl(room.getRepresentativeImageUrl())
+                    .profileImageUrl(room.getRepresentativeImageUrl() != null
+                            ? room.getRepresentativeImageUrl()
+                            : DEFAULT_PROFILE_URL)
                     .build();
         }).toList();
     }
+
 
     public ChatRoomResponse getChatRoomById(ChatRoomDetailRequest request) {
         return toResponse(getRoom(request.getRoomId()));
@@ -152,7 +162,9 @@ public class ChatRoomService {
                 .map(p -> new ChatParticipantDto(
                         p.getUser().getId(),
                         p.getUser().getNickname(),
-                        p.getUser().getProfileImageUrl()))
+                        p.getUser().getProfileImageUrl() != null
+                                ? p.getUser().getProfileImageUrl()
+                                : DEFAULT_PROFILE_URL))
                 .collect(Collectors.toList());
 
         return ChatRoomResponse.builder()
@@ -160,8 +172,22 @@ public class ChatRoomService {
                 .roomName(room.getName())
                 .roomType(room.getType().name())
                 .createdAt(room.getCreatedAt())
-                .representativeImageUrl(room.getRepresentativeImageUrl())
+                .representativeImageUrl(room.getRepresentativeImageUrl() != null
+                        ? room.getRepresentativeImageUrl()
+                        : DEFAULT_PROFILE_URL)
                 .participants(participants)
                 .build();
+    }
+
+    /**
+     * ✅ 메시지 유형에 따른 미리보기 텍스트 반환
+     */
+    private String generatePreview(ChatMessage message) {
+        return switch (message.getType()) {
+            case TEXT -> message.getContent();
+            case FILE, IMAGE -> "[파일]";
+            case ENTER -> message.getContent();
+            case READ_ACK -> "";
+        };
     }
 }

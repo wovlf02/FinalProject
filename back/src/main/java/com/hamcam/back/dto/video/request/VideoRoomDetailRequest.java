@@ -1,17 +1,15 @@
+// src/main/java/com/hamcam/back/dto/video/request/VideoRoomDetailRequest.java
 package com.hamcam.back.dto.video.request;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * [VideoRoomDetailRequest]
- * 단일 화상 채팅방 상세 요청 DTO
+ * 화상 채팅방 상세 조회 요청 DTO
  */
-@Getter
-@NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 public class VideoRoomDetailRequest {
-
-    @NotNull(message = "roomId는 필수입니다.")
+    /** 조회할 방 ID */
     private Long roomId;
 }

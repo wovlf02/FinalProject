@@ -1,81 +1,73 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/api';
+// import '../css/RoomList.css';
 
 const RoomList = () => {
-  const [rooms, setRooms] = useState([]);
-  const [newRoomTitle, setNewRoomTitle] = useState('');
-  const [roomType, setRoomType] = useState('QUIZ');
-  const [maxParticipants, setMaxParticipants] = useState(10);
   const navigate = useNavigate();
+  const [rooms, setRooms] = useState([]);
+  const [newTitle, setNewTitle] = useState('');
+  const [maxParticipants, setMaxParticipants] = useState(10);
 
   useEffect(() => {
-    axios
-      .get('http://localhost:8080/api/rooms')
-      .then((res) => setRooms(res.data))
-      .catch((err) => console.error('방 목록 가져오기 실패:', err));
+    api.get('/api/video/rooms')
+      .then(res => setRooms(res.data))
+      .catch(err => console.error('방 목록 오류:', err));
   }, []);
 
-  const handleCreateRoom = () => {
-    axios
-      .post('http://localhost:8080/api/rooms/create', {
-        title: newRoomTitle,
-        roomType,
-        maxParticipants,
-      })
-      .then((res) => {
-        setRooms((prev) => [...prev, res.data]);
-        setNewRoomTitle('');
-        setRoomType('QUIZ');
+  const createRoom = () => {
+    const stored = localStorage.getItem('user');
+    if (!stored) return alert('로그인이 필요합니다.');
+    const user = JSON.parse(stored);
+
+    api.post('/api/video/create', {
+      hostId: user.user_id,
+      title: newTitle,
+      maxParticipants
+    })
+      .then(res => {
+        setRooms(prev => [...prev, res.data]);
+        setNewTitle('');
         setMaxParticipants(10);
       })
-      .catch((err) => console.error('방 생성 실패:', err));
+      .catch(err => console.error('생성 실패:', err));
   };
 
-  const handleJoin = (room) => {
-    // currentParticipants 필드가 백엔드에서 내려온다고 가정
-    if (room.currentParticipants >= room.maxParticipants) {
-      navigate('/room-full');
-    } else {
-      navigate(`/video-room/${room.id}`);
-    }
+  const joinRoom = roomId => {
+    const stored = localStorage.getItem('user');
+    if (!stored) return alert('로그인이 필요합니다.');
+    const user = JSON.parse(stored);
+
+    api.post('/api/video/join', { roomId, userId: user.user_id })
+      .then(() => navigate(`/video-room/${roomId}`))
+      .catch(err => console.error('참여 실패:', err));
   };
 
   return (
-    <div>
+    <div className="room-list-container">
       <h1>방 목록</h1>
-      <div>
+      <div className="create-form">
         <input
-          type="text"
-          placeholder="방 이름"
-          value={newRoomTitle}
-          onChange={(e) => setNewRoomTitle(e.target.value)}
+          value={newTitle}
+          onChange={e => setNewTitle(e.target.value)}
+          placeholder="방 제목"
         />
-        <select value={roomType} onChange={(e) => setRoomType(e.target.value)}>
-          <option value="QUIZ">문제풀이방</option>
-          <option value="FOCUS">공부방</option>
-        </select>
         <input
           type="number"
-          placeholder="최대 참여자 수"
           value={maxParticipants}
-          onChange={(e) => setMaxParticipants(parseInt(e.target.value, 10))}
+          onChange={e => setMaxParticipants(+e.target.value)}
+          placeholder="최대 참여자"
         />
-        <button onClick={handleCreateRoom}>방 만들기</button>
+        <button onClick={createRoom}>방 만들기</button>
       </div>
-      <ul>
-        {rooms.map((room) => {
-          const isFull = room.currentParticipants >= room.maxParticipants;
-          return (
-            <li key={room.id}>
-              {room.title} ({room.roomType}) —{' '}
-              {room.currentParticipants}/{room.maxParticipants}명
-              <button onClick={() => handleJoin(room)} style={{ marginLeft: 8 }}>
-                {isFull ? '꽉 찬 방' : '입장'}
-              </button>
-            </li>
-          );
-        })}
+      <ul className="room-list">
+        {rooms.map(room => (
+          <li key={room.roomId} className="room-item">
+            <span>{room.title}</span>
+            <span>최대 {room.maxParticipants || '무제한'}</span>
+            <button onClick={() => joinRoom(room.roomId)}>입장</button>
+          </li>
+        ))}
       </ul>
     </div>
   );

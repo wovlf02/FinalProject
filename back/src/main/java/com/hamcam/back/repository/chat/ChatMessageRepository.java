@@ -82,4 +82,19 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             @Param("user") User user,
             @Param("lastReadMessageId") Long lastReadMessageId
     );
+
+    @Query("""
+    SELECT COUNT(m) FROM ChatMessage m
+    WHERE m.chatRoom = :chatRoom
+      AND m.sender.id <> :userId
+      AND m.id NOT IN (
+          SELECT cr.message.id FROM com.hamcam.back.entity.chat.ChatRead cr
+          WHERE cr.user.id = :userId
+      )
+""")
+    int countUnreadMessagesByReadTable(
+            @Param("chatRoom") ChatRoom chatRoom,
+            @Param("userId") Long userId
+    );
+
 }

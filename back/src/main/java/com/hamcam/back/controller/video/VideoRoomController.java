@@ -1,77 +1,74 @@
+// src/main/java/com/hamcam/back/controller/video/VideoRoomController.java
 package com.hamcam.back.controller.video;
 
-import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.dto.video.request.*;
+import com.hamcam.back.dto.video.request.VideoRoomCreateRequest;
+import com.hamcam.back.dto.video.request.VideoRoomUserRequest;
 import com.hamcam.back.dto.video.response.VideoRoomResponse;
+import com.hamcam.back.entity.video.VideoRoom;
 import com.hamcam.back.service.video.VideoRoomService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * [VideoRoomController]
- * WebRTC 화상 채팅방 관련 REST API 컨트롤러 (세션 기반)
- */
 @RestController
 @RequestMapping("/api/video")
 @RequiredArgsConstructor
 public class VideoRoomController {
+    private final VideoRoomService svc;
 
-    private final VideoRoomService videoRoomService;
-
-    /** ✅ 화상 채팅방 생성 (세션 기반) */
-    @PostMapping("/create")
-    public ResponseEntity<VideoRoomResponse> createRoom(
-            @RequestBody VideoRoomCreateRequest request,
-            HttpServletRequest httpRequest
-    ) {
-        return ResponseEntity.ok(videoRoomService.createRoom(request, httpRequest));
-    }
-
-    /** ✅ 팀 기준 화상 채팅방 목록 조회 */
+    /** 1) 방 생성 **/
     @PostMapping("/rooms")
-    public ResponseEntity<List<VideoRoomResponse>> getRoomsByTeam(
-            @RequestBody VideoRoomListRequest request
+    public ResponseEntity<VideoRoomResponse> create(
+            @RequestBody VideoRoomCreateRequest req
     ) {
-        return ResponseEntity.ok(videoRoomService.getRoomsByTeam(request));
+        VideoRoom room = svc.createRoom(
+            req.getHostId(),
+            req.getTeamId(),
+            req.getTitle(),
+            req.getType(),
+            req.getMaxParticipants(),
+            req.getPassword(),
+            req.getTargetTime()
+        );
+        return ResponseEntity.ok(VideoRoomResponse.fromEntity(room));
     }
 
-    /** ✅ 화상 채팅방 상세 조회 */
-    @PostMapping("/detail")
-    public ResponseEntity<VideoRoomResponse> getRoomById(
-            @RequestBody VideoRoomDetailRequest request
+    /** 2) 팀별 방 목록 조회 **/
+    @GetMapping("/rooms")
+    public ResponseEntity<List<VideoRoomResponse>> listByTeam(
+            @RequestParam Long teamId
     ) {
-        return ResponseEntity.ok(videoRoomService.getRoomById(request));
+        List<VideoRoom> rooms = svc.getRoomsByTeam(teamId);
+        List<VideoRoomResponse> dtoList = rooms.stream()
+                .map(VideoRoomResponse::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtoList);
     }
 
-    /** ✅ 방 입장 (접속자 수 증가 후 반환) */
-    @PostMapping("/join")
-    public ResponseEntity<MessageResponse> joinRoom(
-            @RequestBody VideoRoomUserRequest request
+    /** 3) 방 참가 **/
+    @PostMapping("/rooms/join")
+    public ResponseEntity<Void> join(
+            @RequestBody VideoRoomUserRequest req
     ) {
-        videoRoomService.increaseUserCount(request);
-        Long count = videoRoomService.getUserCount(request);
-        return ResponseEntity.ok(MessageResponse.of("방에 입장했습니다.", count));
+        svc.joinRoom(req.getRoomId(), req.getUserId());
+        return ResponseEntity.ok().build();
     }
 
-    /** ✅ 방 퇴장 (접속자 수 감소 후 반환) */
-    @PostMapping("/leave")
-    public ResponseEntity<MessageResponse> leaveRoom(
-            @RequestBody VideoRoomUserRequest request
+    /** 4) 방 나가기 **/
+    @PostMapping("/rooms/leave")
+    public ResponseEntity<Void> leave(
+            @RequestBody VideoRoomUserRequest req
     ) {
-        videoRoomService.decreaseUserCount(request);
-        Long count = videoRoomService.getUserCount(request);
-        return ResponseEntity.ok(MessageResponse.of("방에서 퇴장했습니다.", count));
+        svc.leaveRoom(req.getRoomId(), req.getUserId());
+        return ResponseEntity.ok().build();
     }
 
-    /** ✅ 현재 접속자 수 조회 */
-    @PostMapping("/count")
-    public ResponseEntity<Long> getUserCount(
-            @RequestBody VideoRoomUserRequest request
-    ) {
-        return ResponseEntity.ok(videoRoomService.getUserCount(request));
+    /** 5) 참여자 수 조회 **/
+    @GetMapping("/rooms/{roomId}/count")
+    public ResponseEntity<Long> count(@PathVariable Integer roomId) {
+        return ResponseEntity.ok(svc.getParticipantCount(roomId));
     }
 }

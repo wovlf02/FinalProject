@@ -1,37 +1,41 @@
+// src/main/java/com/hamcam/back/dto/video/response/VideoRoomResponse.java
 package com.hamcam.back.dto.video.response;
 
 import com.hamcam.back.entity.video.VideoRoom;
-import lombok.Builder;
+import com.hamcam.back.entity.video.RoomStatus;
+import com.hamcam.back.entity.video.RoomType;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.format.DateTimeFormatter;
-
-/**
- * [VideoRoomResponse]
- * 화상 채팅방 정보 응답 DTO
- */
 @Getter
-@Builder
+@Setter
+@NoArgsConstructor
 public class VideoRoomResponse {
-
-    private Long roomId;
-    private Long teamId;
+    private Integer id;
     private Long hostId;
+    private Long teamId;
     private String title;
-    private int currentUserCount;
-    private String createdAt;
+    private RoomType type;
+    private Integer maxParticipants;
+    private boolean locked;
+    private Integer targetTime;
+    private RoomStatus status;
+    private int currentParticipants;
 
-    /**
-     * VideoRoom 엔티티를 DTO로 변환하는 정적 메서드
-     */
+    /** 엔티티 → DTO 변환 */
     public static VideoRoomResponse fromEntity(VideoRoom room) {
-        return VideoRoomResponse.builder()
-                .roomId(room.getId())
-                .teamId(room.getTeamId())
-                .hostId(room.getHostId())
-                .title(room.getTitle())
-                .createdAt(room.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
-                .currentUserCount(0) // Redis 값은 별도로 조회
-                .build();
+        VideoRoomResponse dto = new VideoRoomResponse();
+        dto.setId(room.getId());
+        dto.setHostId(room.getHostId());
+        dto.setTeamId(room.getTeamId());
+        dto.setTitle(room.getTitle());
+        dto.setType(room.getType());
+        dto.setMaxParticipants(room.getMaxParticipants());
+        dto.setLocked(room.getPassword() != null && !room.getPassword().isEmpty());
+        dto.setTargetTime(room.getTargetTime());
+        dto.setStatus(room.getStatus());
+        dto.setCurrentParticipants(room.getParticipants().size());
+        return dto;
     }
 }
