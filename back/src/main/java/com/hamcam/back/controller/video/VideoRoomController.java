@@ -1,9 +1,10 @@
 package com.hamcam.back.controller.video;
 
-import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.dto.video.request.*;
-import com.hamcam.back.dto.video.response.VideoRoomResponse;
+import com.hamcam.back.dto.video.request.CreateRoomRequest;
+import com.hamcam.back.dto.video.request.JoinRoomRequest;
+import com.hamcam.back.dto.video.response.VideoRoomInfoResponse;
 import com.hamcam.back.service.video.VideoRoomService;
+import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,70 +13,83 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * [VideoRoomController]
- * WebRTC 화상 채팅방 관련 REST API 컨트롤러 (세션 기반)
+ * ✅ WebRTC 기반 팀 학습방 REST API Controller
  */
 @RestController
-@RequestMapping("/api/video")
+@RequestMapping("/api/video-room")
 @RequiredArgsConstructor
 public class VideoRoomController {
 
     private final VideoRoomService videoRoomService;
 
-    /** ✅ 화상 채팅방 생성 */
+    /**
+     * ✅ 방 생성
+     */
     @PostMapping("/create")
-    public ResponseEntity<VideoRoomResponse> createRoom(
-            @RequestBody VideoRoomCreateRequest request,
+    public ResponseEntity<VideoRoomInfoResponse> createRoom(
+            @RequestBody CreateRoomRequest request,
             HttpServletRequest httpRequest
     ) {
-        VideoRoomResponse response = videoRoomService.createRoom(request, httpRequest);
+        Long userId = SessionUtil.getUserId(httpRequest);
+        VideoRoomInfoResponse response = videoRoomService.createRoom(request, userId);
         return ResponseEntity.ok(response);
     }
 
-    /** ✅ 팀 기준 화상 채팅방 목록 조회 */
-    @PostMapping("/rooms")
-    public ResponseEntity<List<VideoRoomResponse>> getRoomsByTeam(
-            @RequestBody VideoRoomListRequest request
-    ) {
-        List<VideoRoomResponse> rooms = videoRoomService.getRoomsByTeam(request);
-        return ResponseEntity.ok(rooms);
-    }
-
-    /** ✅ 화상 채팅방 상세 조회 */
-    @PostMapping("/detail")
-    public ResponseEntity<VideoRoomResponse> getRoomById(
-            @RequestBody VideoRoomDetailRequest request
-    ) {
-        VideoRoomResponse room = videoRoomService.getRoomById(request);
-        return ResponseEntity.ok(room);
-    }
-
-    /** ✅ 방 입장 (접속자 수 증가 후 반환) */
+    /**
+     * ✅ 방 입장
+     */
     @PostMapping("/join")
-    public ResponseEntity<MessageResponse> joinRoom(
-            @RequestBody VideoRoomUserRequest request
+    public ResponseEntity<VideoRoomInfoResponse> joinRoom(
+            @RequestBody JoinRoomRequest request,
+            HttpServletRequest httpRequest
     ) {
-        videoRoomService.increaseUserCount(request);
-        Long count = videoRoomService.getUserCount(request);
-        return ResponseEntity.ok(MessageResponse.of("방에 입장했습니다.", count));
+        Long userId = SessionUtil.getUserId(httpRequest);
+        VideoRoomInfoResponse response = videoRoomService.joinRoom(request, userId);
+        return ResponseEntity.ok(response);
     }
 
-    /** ✅ 방 퇴장 (접속자 수 감소 후 반환) */
-    @PostMapping("/leave")
-    public ResponseEntity<MessageResponse> leaveRoom(
-            @RequestBody VideoRoomUserRequest request
+    /**
+     * ✅ 방 정보 조회
+     */
+    @GetMapping("/{roomId}")
+    public ResponseEntity<VideoRoomInfoResponse> getRoomInfo(
+            @PathVariable Long roomId
     ) {
-        videoRoomService.decreaseUserCount(request);
-        Long count = videoRoomService.getUserCount(request);
-        return ResponseEntity.ok(MessageResponse.of("방에서 퇴장했습니다.", count));
+        VideoRoomInfoResponse response = videoRoomService.getRoomInfo(roomId);
+        return ResponseEntity.ok(response);
     }
 
-    /** ✅ 현재 접속자 수 조회 */
-    @PostMapping("/count")
-    public ResponseEntity<Long> getUserCount(
-            @RequestBody VideoRoomUserRequest request
+    /**
+     * ✅ 방 종료 (방장만 가능)
+     */
+    @PostMapping("/{roomId}/end")
+    public ResponseEntity<Void> endRoom(
+            @PathVariable Long roomId,
+            HttpServletRequest httpRequest
     ) {
-        Long count = videoRoomService.getUserCount(request);
-        return ResponseEntity.ok(count);
+        Long userId = SessionUtil.getUserId(httpRequest);
+        videoRoomService.endRoom(roomId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * ✅ 내가 참여 중인 방 리스트
+     */
+    @GetMapping("/my")
+    public ResponseEntity<List<VideoRoomInfoResponse>> getMyRooms(
+            HttpServletRequest httpRequest
+    ) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+        List<VideoRoomInfoResponse> response = videoRoomService.getRoomsByUser(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * ✅ 전체 활성화된 방 리스트
+     */
+    @GetMapping("/all")
+    public ResponseEntity<List<VideoRoomInfoResponse>> getAllRooms() {
+        List<VideoRoomInfoResponse> response = videoRoomService.getAllActiveRooms();
+        return ResponseEntity.ok(response);
     }
 }

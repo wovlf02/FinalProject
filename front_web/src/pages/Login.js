@@ -55,7 +55,7 @@ const Login = () => {
         }
 
         // ✅ 최신 signaling 서버 ngrok 주소 사용
-        const socket = new SockJS('https://a26f-2001-2d8-699b-7a4b-f170-d29-bd64-7e6e.ngrok-free.app/ws');
+        const socket = new SockJS('https://3069-121-127-165-110.ngrok-free.app/ws');
         const client = new Client({
             webSocketFactory: () => socket,
             connectHeaders: { userId: String(userId) },

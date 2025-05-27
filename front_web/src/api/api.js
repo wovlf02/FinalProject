@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // ✅ 백엔드 기본 API URL
-const BASE_URL = 'https://a26f-2001-2d8-699b-7a4b-f170-d29-bd64-7e6e.ngrok-free.app/api';
+const BASE_URL = 'https://3069-121-127-165-110.ngrok-free.app/api';
 
 // ✅ Axios 인스턴스 생성 (withCredentials 필수)
 const api = axios.create({

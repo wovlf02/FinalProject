@@ -1,101 +1,162 @@
 package com.hamcam.back.service.video;
 
-import com.hamcam.back.dto.video.request.*;
-import com.hamcam.back.dto.video.response.VideoRoomResponse;
+import com.hamcam.back.dto.video.request.CreateRoomRequest;
+import com.hamcam.back.dto.video.request.JoinRoomRequest;
+import com.hamcam.back.dto.video.response.VideoRoomInfoResponse;
 import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.entity.video.Participant;
 import com.hamcam.back.entity.video.VideoRoom;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
+import com.hamcam.back.repository.video.ParticipantRepository;
 import com.hamcam.back.repository.video.VideoRoomRepository;
-import com.hamcam.back.util.SessionUtil;
-import jakarta.servlet.http.HttpServletRequest;
+import com.hamcam.back.util.InviteCodeGenerator;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * [VideoRoomService]
- * WebRTC 기반 화상 학습방 관리 서비스 (세션 기반)
+ * ✅ WebRTC 기반 팀 학습방 서비스
  */
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class VideoRoomService {
 
     private final VideoRoomRepository videoRoomRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final ParticipantRepository participantRepository;
     private final UserRepository userRepository;
 
-    private static final String USER_COUNT_KEY = "videoRoom:userCount:";
-
-    /** ✅ 화상 채팅방 생성 */
-    @Transactional
-    public VideoRoomResponse createRoom(VideoRoomCreateRequest request, HttpServletRequest httpRequest) {
-        Long userId = getSessionUserId(httpRequest);
-        if (userId == null) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
-        }
+    /**
+     * ✅ 팀 학습방 생성
+     */
+    public VideoRoomInfoResponse createRoom(CreateRoomRequest request, Long userId) {
+        User host = getUser(userId);
 
         VideoRoom room = VideoRoom.builder()
-                .teamId(request.getTeamId())
                 .title(request.getTitle())
-                .hostId(userId)
-                .isActive(true)
+                .password(request.getPassword())
+                .maxParticipants(request.getMaxParticipants())
+                .roomType(request.getRoomType())
+                .inviteCode(InviteCodeGenerator.generate())
+                .host(host)
                 .build();
 
-        VideoRoom saved = videoRoomRepository.save(room);
-        return VideoRoomResponse.fromEntity(saved);
+        videoRoomRepository.save(room);
+
+        Participant participant = Participant.builder()
+                .user(host)
+                .room(room)
+                .isPresenter(false)
+                .focusTime(0)
+                .build();
+
+        participantRepository.save(participant);
+
+        return VideoRoomInfoResponse.from(room);
     }
 
-    /** ✅ 팀 ID 기준 방 목록 조회 */
-    public List<VideoRoomResponse> getRoomsByTeam(VideoRoomListRequest request) {
-        return videoRoomRepository.findByTeamId(request.getTeamId()).stream()
-                .map(VideoRoomResponse::fromEntity)
+    /**
+     * ✅ 팀 학습방 입장
+     */
+    public VideoRoomInfoResponse joinRoom(JoinRoomRequest request, Long userId) {
+        User user = getUser(userId);
+        VideoRoom room = findRoomByIdOrInviteCode(request.getRoomId(), request.getInviteCode());
+
+        if (!room.isActive()) {
+            throw new CustomException(ErrorCode.ROOM_ALREADY_CLOSED);
+        }
+
+        if (room.getPassword() != null && !room.getPassword().isBlank()) {
+            if (!room.getPassword().equals(request.getPassword())) {
+                throw new CustomException(ErrorCode.INVALID_PASSWORD);
+            }
+        }
+
+        if (participantRepository.existsByUserIdAndRoomId(userId, room.getId())) {
+            throw new CustomException(ErrorCode.ALREADY_JOINED_ROOM);
+        }
+
+        if (room.getParticipants().size() >= room.getMaxParticipants()) {
+            throw new CustomException(ErrorCode.ROOM_IS_FULL);
+        }
+
+        Participant participant = Participant.builder()
+                .user(user)
+                .room(room)
+                .socketId(request.getSocketId())
+                .isPresenter(false)
+                .focusTime(0)
+                .build();
+
+        participantRepository.save(participant);
+
+        return VideoRoomInfoResponse.from(room);
+    }
+
+    /**
+     * ✅ 단일 방 정보 조회
+     */
+    public VideoRoomInfoResponse getRoomInfo(Long roomId) {
+        VideoRoom room = videoRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        return VideoRoomInfoResponse.from(room);
+    }
+
+    /**
+     * ✅ 방 종료 (방장만 가능)
+     */
+    public void endRoom(Long roomId, Long userId) {
+        VideoRoom room = videoRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (!room.getHost().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.NO_PERMISSION);
+        }
+
+        room.setActive(false);
+        videoRoomRepository.save(room);
+    }
+
+    /**
+     * ✅ 내가 속한 방 목록
+     */
+    public List<VideoRoomInfoResponse> getRoomsByUser(Long userId) {
+        return participantRepository.findAllByUserId(userId).stream()
+                .map(p -> VideoRoomInfoResponse.from(p.getRoom()))
+                .filter(VideoRoomInfoResponse::isActive)
                 .collect(Collectors.toList());
     }
 
-    /** ✅ 단일 방 조회 */
-    public VideoRoomResponse getRoomById(VideoRoomDetailRequest request) {
-        VideoRoom room = videoRoomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new CustomException(ErrorCode.VIDEO_ROOM_NOT_FOUND));
-        return VideoRoomResponse.fromEntity(room);
+    /**
+     * ✅ 전체 활성화 방 목록
+     */
+    public List<VideoRoomInfoResponse> getAllActiveRooms() {
+        return videoRoomRepository.findByIsActiveTrue().stream()
+                .map(VideoRoomInfoResponse::from)
+                .collect(Collectors.toList());
     }
 
-    /** ✅ 입장 시 접속자 수 증가 (최초값 null 방지) */
-    public void increaseUserCount(VideoRoomUserRequest request) {
-        String key = USER_COUNT_KEY + request.getRoomId();
-        redisTemplate.opsForValue().setIfAbsent(key, 0);
-        redisTemplate.opsForValue().increment(key);
+    // ==================== 내부 메서드 ====================
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
-    /** ✅ 퇴장 시 접속자 수 감소 (0 미만 방지) */
-    public void decreaseUserCount(VideoRoomUserRequest request) {
-        String key = USER_COUNT_KEY + request.getRoomId();
-        Long current = getUserCount(request);
-        if (current > 0) {
-            redisTemplate.opsForValue().decrement(key);
+    private VideoRoom findRoomByIdOrInviteCode(Long roomId, String inviteCode) {
+        if (roomId != null) {
+            return videoRoomRepository.findById(roomId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+        } else if (inviteCode != null && !inviteCode.isBlank()) {
+            return videoRoomRepository.findByInviteCode(inviteCode)
+                    .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
         } else {
-            redisTemplate.opsForValue().set(key, 0); // 혹시 모를 음수 방지
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
-    }
-
-    /** ✅ 현재 접속자 수 조회 */
-    public Long getUserCount(VideoRoomUserRequest request) {
-        String key = USER_COUNT_KEY + request.getRoomId();
-        Object count = redisTemplate.opsForValue().get(key);
-        try {
-            return count == null ? 0L : Long.parseLong(count.toString());
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
-    }
-
-    /** ✅ 세션에서 사용자 ID 조회 */
-    private Long getSessionUserId(HttpServletRequest request) {
-        return SessionUtil.getUserId(request);
     }
 }

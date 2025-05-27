@@ -214,21 +214,33 @@ public class PostService {
         return PopularPostListResponse.from(posts.getContent());
     }
 
-    /** ✅ 자동완성 */
+    /**
+     * ✅ 문제풀이 실패 → 자동 게시글 템플릿 생성
+     */
     public ProblemReferenceResponse autoFillPost(ProblemReferenceRequest request) {
-        PostCategory category;
-        try {
-            category = PostCategory.valueOf(request.getCategory().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
+        // category가 없거나 잘못된 경우 QUESTION으로 고정
+        PostCategory category = PostCategory.QUESTION;
+
+        String title = "[질문] " + request.getProblemTitle();
+
+        StringBuilder content = new StringBuilder();
+        content.append("### ❗ 풀이 실패 문제\n");
+        content.append("- 문제 제목: ").append(request.getProblemTitle()).append("\n");
+        if (request.getSource() != null) {
+            content.append("- 출처: ").append(request.getSource()).append("\n");
         }
+        content.append("- 분류: ").append(category.getLabel()).append("\n\n");
+        content.append("### 📌 질문 내용\n");
+        content.append("이 문제에 대해 팀 학습 중 풀이에 실패했습니다.\n");
+        content.append("다른 사람들의 해결 전략이나 접근 방식을 공유해주세요!");
 
         return ProblemReferenceResponse.builder()
-                .title("문제: " + request.getProblemTitle())
-                .content("이 문제는 " + category.getLabel() + " 유형에 속하며 해결 전략은 다음과 같습니다...")
+                .title(title)
+                .content(content.toString())
                 .category(category)
                 .build();
     }
+
 
     /** ✅ 즐겨찾기 추가 */
     @Transactional

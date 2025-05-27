@@ -7,17 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * [ProblemReferenceResponse]
- *
- * 문제 기반 게시글 자동 완성 응답 DTO입니다.
- * 추천된 제목, 본문, 카테고리 정보를 제공합니다.
- *
- * 예시 응답:
- * {
- *   "title": "문제 풀이 요약: DFS 탐색",
- *   "content": "이 문제는 DFS 전략을 사용하여 해결할 수 있습니다...",
- *   "category": "STUDY"
- * }
+ * ✅ 문제 기반 게시글 자동 완성 응답 DTO
+ * - 제목, 본문, 카테고리 자동 추천 결과
  */
 @Getter
 @Builder
@@ -25,18 +16,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ProblemReferenceResponse {
 
-    /**
-     * 자동 생성된 게시글 제목
-     */
+    /** 자동 생성된 게시글 제목 */
     private String title;
 
-    /**
-     * 자동 생성된 게시글 내용
-     */
+    /** 자동 생성된 게시글 본문 */
     private String content;
 
-    /**
-     * 게시글 카테고리 (예: STUDY, INFO, QUESTION, ANONYMOUS)
-     */
+    /** 게시글 카테고리 (고정값: QUESTION) */
     private PostCategory category;
 }

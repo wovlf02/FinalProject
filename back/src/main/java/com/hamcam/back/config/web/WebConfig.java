@@ -25,7 +25,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("https://*.ngrok-free.app") // ✅ 모든 ngrok 주소 허용
+                .allowedOriginPatterns(
+                        "http://localhost:3000",
+                        "https://*.ngrok-free.app"
+                )
                 .allowedMethods("*")
                 .allowedHeaders("*")
                 .allowCredentials(true);
