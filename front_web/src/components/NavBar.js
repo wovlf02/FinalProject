@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../css/Navbar.css';
 import api from '../api/api';
-import base_profile from '../icons/base_profile.png'; // ✅ 이미지 import로 수정
+import base_profile from '../icons/base_profile.png';
 
-const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab, user }) => {
+const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab, user, isMobile }) => {
     return (
-        <div className="side-menu">
+        <div className={`side-menu ${isMobile ? 'mobile' : ''}`}>
             <div className="side-menu-logo">로고</div>
 
             <ul className="side-menu-list">
@@ -41,32 +41,19 @@ const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab, us
                 ))}
             </ul>
 
-            {/* ✅ 사용자 프로필 */}
-            {user && (
+            {!isMobile && user && (
                 <div className="side-user-profile">
                     <img
                         src={user.profile_image_url ? user.profile_image_url : base_profile}
                         alt="프로필"
                         className="side-user-image"
                     />
-
                     <div className="side-user-nickname">{user.nickname}</div>
                 </div>
             )}
-
-            {/* ✅ 마이페이지 버튼 */}
-            <div className="side-menu-bottom">
-                <button
-                    className={`side-menu-button${selectedTab === '마이페이지' ? ' active' : ''}`}
-                    onClick={() => handleNavigation('마이페이지', '/mypage')}
-                >
-                    마이페이지
-                </button>
-            </div>
         </div>
     );
 };
-
 
 const NavBar = () => {
     const navigate = useNavigate();
@@ -74,8 +61,7 @@ const NavBar = () => {
     const [selectedTab, setSelectedTab] = useState('');
     const [selectedSubTab, setSelectedSubTab] = useState('');
     const [user, setUser] = useState(null);
-
-    const hideSidebarPaths = ['/unit-evaluation/start'];
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
 
     const menuItems = [
         { name: '대시보드', path: '/dashboard' },
@@ -95,38 +81,25 @@ const NavBar = () => {
     ];
 
     useEffect(() => {
-        const path = location.pathname;
-        if (path.startsWith('/community')) {
-            setSelectedTab('커뮤니티');
-            if (path.includes('/notice')) setSelectedSubTab('공지사항');
-            else if (path.includes('/chat')) setSelectedSubTab('채팅');
-            else if (path.includes('/post')) setSelectedSubTab('게시판');
-            else if (path.includes('/friend')) setSelectedSubTab('친구');
-            else setSelectedSubTab('');
-        } else {
-            const mainItem = menuItems.find((item) => path.startsWith(item.path));
-            setSelectedTab(mainItem ? mainItem.name : '');
-            setSelectedSubTab('');
-        }
-    }, [location.pathname]);
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 900);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const fetchUserInfo = async () => {
             try {
                 const res = await api.get('/users/me');
-                console.log(res.data); // 구조 확인용
-
-                setUser(res.data.data); // ✅ 내부 data를 user로 설정
-
+                setUser(res.data.data);
             } catch (error) {
                 console.error('프로필 조회 실패:', error);
             }
         };
         fetchUserInfo();
     }, []);
-
-
-    if (hideSidebarPaths.includes(location.pathname)) return null;
 
     const handleNavigation = (name, path, subName = '') => {
         setSelectedTab(name);
@@ -141,6 +114,7 @@ const NavBar = () => {
             selectedTab={selectedTab}
             selectedSubTab={selectedSubTab}
             user={user}
+            isMobile={isMobile}
         />
     );
 };

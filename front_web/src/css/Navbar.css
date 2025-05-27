@@ -1,8 +1,17 @@
+/* 기본 스타일 */
 .side-menu {
     width: 200px;
     background-color: #f9f9f9;
     height: 100vh;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease-in-out;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
 }
 
 .side-menu-logo {
@@ -40,96 +49,6 @@
     border-radius: 6px;
 }
 
-.side-submenu-list {
-    list-style: none;
-    padding-left: 28px; /* 좀 더 들여쓰기 */
-    margin-top: 12px;
-}
-
-.side-submenu-item {
-    margin-bottom: 10px;
-}
-
-.side-submenu-button {
-    background: none;
-    border: none;
-    font-size: 16px;
-    color: #444;
-    cursor: pointer;
-    padding: 6px 8px;
-    text-align: left;
-    width: 100%;
-    border-radius: 6px;
-}
-
-.side-submenu-button.active {
-    background-color: #d8e9ff;
-    color: #1c78dd;
-    font-weight: bold;
-}
-
-/* ✅ hover 효과는 최소한으로 */
-.side-menu-button:hover {
-    color: #1c78dd !important;
-    background-color: #ececec !important;
-}
-
-.side-submenu-button:hover {
-    background-color: #ececec;
-}
-
-.community-post-card {
-    background-color: #f9fafc;
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e0e4e8;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-/* 상단 영역: 좌측 제목 + 우측 날짜+메뉴 */
-.post-card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 6px;
-}
-
-.post-title {
-    font-size: 16px;
-    font-weight: bold;
-    margin: 0;
-    flex: 1;
-}
-
-/* 날짜 + 점 3개 버튼 */
-.post-top-meta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #888;
-    font-size: 13px;
-}
-
-.post-date {
-    font-size: 13px;
-    color: #888;
-}
-
-.post-menu {
-    font-size: 20px;
-    line-height: 1;
-    cursor: pointer;
-    user-select: none;
-}
-
-.post-menu:hover {
-    color: #555;
-}
-
 .side-user-profile {
     display: flex;
     flex-direction: column;
@@ -149,4 +68,68 @@
     font-weight: bold;
     font-size: 14px;
     color: #111;
+}
+
+/* ✅ 반응형 스타일 추가 */
+@media (max-width: 900px) {
+    .side-menu {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        padding: 10px 20px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+        border-bottom: 1px solid #ddd;
+        background-color: #f9f9f9;
+    }
+
+    .side-menu-logo {
+        font-size: 18px;
+        margin-bottom: 0;
+        padding-left: 0;
+    }
+
+    .side-menu-list {
+        display: flex;
+        flex-direction: row;
+        padding-left: 0;
+        margin: 0;
+        gap: 12px;
+    }
+
+    .side-menu-list-item {
+        margin-bottom: 0;
+    }
+
+    .side-menu-button {
+        font-size: 14px;
+        padding: 6px 12px;
+        text-align: center;
+        border-radius: 4px;
+    }
+
+    .side-user-profile {
+        display: none; /* 사용자 프로필 숨김 */
+    }
+}
+
+@media (max-width: 600px) {
+    .side-menu {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px;
+    }
+
+    .side-menu-list {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .side-menu-button {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
 }

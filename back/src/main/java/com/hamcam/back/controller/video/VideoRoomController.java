@@ -1,4 +1,3 @@
-// src/main/java/com/hamcam/back/controller/video/VideoRoomController.java
 package com.hamcam.back.controller.video;
 
 import com.hamcam.back.dto.video.request.VideoRoomCreateRequest;
@@ -9,7 +8,6 @@ import com.hamcam.back.service.video.VideoRoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,7 +17,6 @@ import java.util.stream.Collectors;
 public class VideoRoomController {
     private final VideoRoomService svc;
 
-    /** 1) 방 생성 **/
     @PostMapping("/rooms")
     public ResponseEntity<VideoRoomResponse> create(
             @RequestBody VideoRoomCreateRequest req
@@ -36,7 +33,6 @@ public class VideoRoomController {
         return ResponseEntity.ok(VideoRoomResponse.fromEntity(room));
     }
 
-    /** 2) 팀별 방 목록 조회 **/
     @GetMapping("/rooms")
     public ResponseEntity<List<VideoRoomResponse>> listByTeam(
             @RequestParam Long teamId
@@ -48,7 +44,6 @@ public class VideoRoomController {
         return ResponseEntity.ok(dtoList);
     }
 
-    /** 3) 방 참가 **/
     @PostMapping("/rooms/join")
     public ResponseEntity<Void> join(
             @RequestBody VideoRoomUserRequest req
@@ -57,7 +52,6 @@ public class VideoRoomController {
         return ResponseEntity.ok().build();
     }
 
-    /** 4) 방 나가기 **/
     @PostMapping("/rooms/leave")
     public ResponseEntity<Void> leave(
             @RequestBody VideoRoomUserRequest req
@@ -66,9 +60,14 @@ public class VideoRoomController {
         return ResponseEntity.ok().build();
     }
 
-    /** 5) 참여자 수 조회 **/
     @GetMapping("/rooms/{roomId}/count")
     public ResponseEntity<Long> count(@PathVariable Integer roomId) {
         return ResponseEntity.ok(svc.getParticipantCount(roomId));
+    }
+
+    // ✅ 추가: 참여자 목록 조회 엔드포인트
+    @GetMapping("/rooms/{roomId}/participants")
+    public ResponseEntity<List<Long>> getParticipants(@PathVariable Integer roomId) {
+        return ResponseEntity.ok(svc.getParticipants(roomId));
     }
 }
