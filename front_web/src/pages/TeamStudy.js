@@ -7,20 +7,18 @@ import '../css/TeamStudy.css';
 const TeamStudy = () => {
   const navigate = useNavigate();
   const { teamId: routeTeamId } = useParams();
+  const teamId = Number(routeTeamId) || 1;
 
-  // 1) 로그인된 유저 정보 가져오기
+  // 로그인된 유저
   const stored = localStorage.getItem('user');
-  const initialUser = stored ? JSON.parse(stored) : null;
-  const [user, setUser] = useState(initialUser);
+  const [user] = useState(stored ? JSON.parse(stored) : null);
 
-  // 2) 방 목록 상태
+  // 방 목록
   const [studyRooms, setStudyRooms] = useState([]);
-  const [filteredRooms, setFilteredRooms] = useState([]);
-
-  // 3) 검색어
+  // 검색어
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 4) 모달 & 새 방 폼 상태
+  // 새 방 모달 & 폼 상태
   const [showModal, setShowModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState('QUIZ');
@@ -28,7 +26,7 @@ const TeamStudy = () => {
   const [newMax, setNewMax] = useState(10);
   const [newTargetTime, setNewTargetTime] = useState(60);
 
-  // 5) 로그인 체크
+  // 로그인 체크
   useEffect(() => {
     if (!user) {
       alert('로그인이 필요합니다.');
@@ -36,45 +34,39 @@ const TeamStudy = () => {
     }
   }, [user, navigate]);
 
-  // 6) hostId / teamId
-  const hostId = user?.user_id;
-  const teamId = Number(routeTeamId) || 1;
-
-  // 7) 방 목록 조회
-  useEffect(() => {
+  // 방 목록 가져오는 함수 (콘솔에 계속 찍히게)
+  const fetchRooms = () => {
     if (!user) return;
     axios
       .get('/api/video/rooms', { params: { teamId } })
       .then(res => {
-        const rooms = res.data;            // res.data.data → res.data 로
-        setStudyRooms(rooms);
-        setFilteredRooms(rooms);
+        console.log(
+          `[${new Date().toLocaleTimeString()}] 팀 ${teamId} 방 목록 응답:`,
+          res.data
+        );
+        setStudyRooms(res.data);
       })
       .catch(err => {
-        console.error('❌ 방 목록 조회 에러:', err);
-        alert('방 목록을 불러오지 못했습니다.');
+        console.error('방 목록 조회 에러', err);
       });
-  }, [user, teamId]);
-
-  // 8) 검색 핸들러
-  const handleSearch = () => {
-    setFilteredRooms(
-      studyRooms.filter(room =>
-        room.title.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
   };
 
-  // 9) 방 생성 핸들러
+  // 마운트 시와 50초마다 목록 갱신
+  useEffect(() => {
+    fetchRooms();
+    const id = setInterval(fetchRooms, 50000);
+    return () => clearInterval(id);
+  }, [user, teamId]);
+
+  // 방 생성
   const handleCreateRoom = () => {
     if (!newTitle.trim()) {
-      alert('방 제목을 입력하세요.');
-      return;
+      return alert('방 제목을 입력하세요.');
     }
     axios
       .post('/api/video/rooms', {
-        hostId,
-        teamId,
+        hostId: user.user_id,
+        teamId,   // 절대 빠뜨리지 말 것!
         title: newTitle,
         type: newType,
         maxParticipants: newMax,
@@ -82,12 +74,9 @@ const TeamStudy = () => {
         targetTime: newType === 'FOCUS' ? newTargetTime : null,
       })
       .then(res => {
-        const created = res.data;          // res.data.data → res.data
-        const updated = [...studyRooms, created];
-        setStudyRooms(updated);
-        setFilteredRooms(updated);
+        console.log('생성 응답:', res.data);
+        fetchRooms();
         setShowModal(false);
-        // 폼 초기화
         setNewTitle('');
         setNewType('QUIZ');
         setNewPassword('');
@@ -95,17 +84,24 @@ const TeamStudy = () => {
         setNewTargetTime(60);
       })
       .catch(err => {
-        console.error('❌ 방 생성 실패:', err);
+        console.error('방 생성 실패', err);
         alert('방 생성에 실패했습니다.');
       });
   };
 
-  // 10) 방 참여 핸들러
+  // 방 입장
   const handleJoin = roomId => {
     navigate(`/video-room/${roomId}`);
   };
 
   if (!user) return null;
+
+  // 검색어가 있으면 필터링, 없으면 전체
+  const displayedRooms = searchTerm
+    ? studyRooms.filter(r =>
+        r.title.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : studyRooms;
 
   return (
     <div className="team-study-container">
@@ -113,17 +109,18 @@ const TeamStudy = () => {
 
       <div className="search-bar">
         <input
-          type="text"
-          placeholder="학습방 검색하기"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
+          placeholder="학습방 검색하기"
         />
-        <button onClick={handleSearch}>검색</button>
-        <button onClick={() => setShowModal(true)}>+ 새 학습방 만들기</button>
+        <button onClick={() => {}}>검색</button>
+        <button onClick={() => setShowModal(true)}>
+          + 새 학습방 만들기
+        </button>
       </div>
 
       <ul className="study-room-list">
-        {filteredRooms.map(room => (
+        {displayedRooms.map(room => (
           <li key={room.id} className="study-room-item">
             <div className="room-info">
               <h2>
@@ -131,7 +128,8 @@ const TeamStudy = () => {
                 {room.locked && <span className="lock">🔒</span>}
               </h2>
               <p>
-                참여자: {room.currentParticipants} / {room.maxParticipants} ·{' '}
+                참여자: {room.currentParticipants ?? 0} /{' '}
+                {room.maxParticipants ?? '무제한'} ·{' '}
                 {room.type === 'QUIZ' ? '문제풀이방' : '공부방'}
               </p>
               {room.type === 'FOCUS' && (
@@ -156,7 +154,6 @@ const TeamStudy = () => {
 
             <label>방 제목</label>
             <input
-              type="text"
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
             />
@@ -192,7 +189,6 @@ const TeamStudy = () => {
 
             <label>비밀번호 (선택)</label>
             <input
-              type="text"
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               placeholder="4자리 숫자 등"

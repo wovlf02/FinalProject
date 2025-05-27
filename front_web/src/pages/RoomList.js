@@ -1,51 +1,93 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/api';
-// import '../css/RoomList.css';
 
 const RoomList = () => {
   const navigate = useNavigate();
+  const { teamId: rawTeamId } = useParams();
+  const teamId = rawTeamId ? Number(rawTeamId) : 1;
+
   const [rooms, setRooms] = useState([]);
   const [newTitle, setNewTitle] = useState('');
   const [maxParticipants, setMaxParticipants] = useState(10);
 
-  useEffect(() => {
-    api.get('/api/video/rooms')
-      .then(res => setRooms(res.data))
-      .catch(err => console.error('방 목록 오류:', err));
-  }, []);
-
-  const createRoom = () => {
-    const stored = localStorage.getItem('user');
-    if (!stored) return alert('로그인이 필요합니다.');
-    const user = JSON.parse(stored);
-
-    api.post('/api/video/create', {
-      hostId: user.user_id,
-      title: newTitle,
-      maxParticipants
-    })
+  // 방 목록 조회
+  const fetchRooms = () => {
+    api.get('/api/video/rooms', { params: { teamId } })
       .then(res => {
-        setRooms(prev => [...prev, res.data]);
-        setNewTitle('');
-        setMaxParticipants(10);
+        console.log('RoomList 조회 응답:', res.data);
+        const list = res.data?.data ?? res.data;
+        setRooms(list);
       })
-      .catch(err => console.error('생성 실패:', err));
+      .catch(err => {
+        console.error('방 목록 조회 오류:', err);
+        alert('방 목록을 불러오지 못했습니다.');
+      });
   };
 
-  const joinRoom = roomId => {
+  useEffect(() => {
+    fetchRooms();
+  }, [teamId]);
+
+  // 방 생성
+  const createRoom = () => {
     const stored = localStorage.getItem('user');
-    if (!stored) return alert('로그인이 필요합니다.');
+    if (!stored) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
     const user = JSON.parse(stored);
 
-    api.post('/api/video/join', { roomId, userId: user.user_id })
-      .then(() => navigate(`/video-room/${roomId}`))
-      .catch(err => console.error('참여 실패:', err));
+    if (!newTitle.trim()) {
+      alert('방 제목을 입력하세요.');
+      return;
+    }
+
+    api.post('/api/video/rooms', {
+      hostId: user.user_id,
+      teamId,
+      title: newTitle,
+      type: 'QUIZ',
+      maxParticipants,
+      password: null,
+      targetTime: null
+    })
+    .then(res => {
+      console.log('RoomList 생성 응답:', res.data);
+      fetchRooms();
+      setNewTitle('');
+      setMaxParticipants(10);
+    })
+    .catch(err => {
+      console.error('방 생성 실패:', err);
+      alert('방 생성에 실패했습니다.');
+    });
+  };
+
+  // 방 입장
+  const joinRoom = roomId => {
+    const stored = localStorage.getItem('user');
+    if (!stored) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    const user = JSON.parse(stored);
+
+    api.post('/api/video/rooms/join', {
+      roomId,
+      userId: user.user_id
+    })
+    .then(() => navigate(`/video-room/${roomId}`))
+    .catch(err => {
+      console.error('방 참여 실패:', err);
+      alert('방 참여에 실패했습니다.');
+    });
   };
 
   return (
     <div className="room-list-container">
-      <h1>방 목록</h1>
+      <h1>팀 {teamId} 학습방 목록</h1>
+
       <div className="create-form">
         <input
           value={newTitle}
@@ -54,18 +96,20 @@ const RoomList = () => {
         />
         <input
           type="number"
+          min={1}
           value={maxParticipants}
           onChange={e => setMaxParticipants(+e.target.value)}
           placeholder="최대 참여자"
         />
         <button onClick={createRoom}>방 만들기</button>
       </div>
+
       <ul className="room-list">
         {rooms.map(room => (
-          <li key={room.roomId} className="room-item">
+          <li key={room.id} className="room-item">
             <span>{room.title}</span>
-            <span>최대 {room.maxParticipants || '무제한'}</span>
-            <button onClick={() => joinRoom(room.roomId)}>입장</button>
+            <span>최대 {room.maxParticipants}</span>
+            <button onClick={() => joinRoom(room.id)}>입장</button>
           </li>
         ))}
       </ul>

@@ -2,6 +2,7 @@
 package com.hamcam.back.dto.video.request;
 
 import com.hamcam.back.entity.video.RoomType;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,28 +10,15 @@ import lombok.Setter;
 /**
  * 화상 채팅방 생성 요청 DTO
  */
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class VideoRoomCreateRequest {
-    /** 방장(생성자) 회원 ID */
     private Long hostId;
-
-    /** 연동할 팀 스터디방 ID */
-    private Long teamId;
-
-    /** 생성할 화상 채팅방 제목 */
+    private Long teamId;            // ← 여기에 teamId 추가
     private String title;
-
-    /** 방 유형: QUIZ 또는 FOCUS */
-    private RoomType type;
-
-    /** 최대 참여자 수 */
+    private RoomType type;          // QUIZ 또는 FOCUS
     private Integer maxParticipants;
-
-    /** 비밀번호 (선택) */
-    private String password;
-
-    /** 목표 시간(FOCUS 방 전용, 분 단위) */
-    private Integer targetTime;
+    private String password;        // 선택
+    private Integer targetTime;     // FOCUS 전용
 }
