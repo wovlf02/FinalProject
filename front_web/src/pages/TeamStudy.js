@@ -4,16 +4,16 @@ import api from '../api/api';
 import '../css/TeamStudy.css';
 
 const TeamStudy = () => {
-    const [tab, setTab] = useState('ALL'); // 'ALL' 또는 'MY'
+    const [tab, setTab] = useState('ALL');
     const [searchTerm, setSearchTerm] = useState('');
     const [studyRooms, setStudyRooms] = useState([]);
+    const [filteredRooms, setFilteredRooms] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [newRoomTitle, setNewRoomTitle] = useState('');
     const [roomType, setRoomType] = useState('QUIZ');
     const [maxParticipants, setMaxParticipants] = useState(10);
     const [password, setPassword] = useState('');
     const [targetTime, setTargetTime] = useState(60);
-    const [filteredRooms, setFilteredRooms] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -22,9 +22,9 @@ const TeamStudy = () => {
 
     const fetchRooms = async () => {
         try {
-            const endpoint = tab === 'ALL' ? '/study/team/list' : '/study/team/my';
-            const res = await api.post(endpoint);
-            const roomList = res.data.rooms || [];
+            const endpoint = tab === 'ALL' ? '/video-room/all' : '/video-room/my';
+            const res = await api.get(endpoint);
+            const roomList = res.data || [];
             setStudyRooms(roomList);
             setFilteredRooms(roomList);
         } catch (error) {
@@ -39,10 +39,10 @@ const TeamStudy = () => {
         setFilteredRooms(filtered);
     };
 
-    const handleJoinRoom = async (room_id) => {
+    const handleJoinRoom = async (roomId) => {
         try {
-            await api.post('/study/team/enter', { room_id });
-            navigate(`/video-room/${room_id}`);
+            const res = await api.post('/video-room/join', { roomId });
+            navigate(`/video-room/${roomId}`); // 방 상세/입장 페이지로 이동
         } catch (err) {
             console.error('팀방 입장 실패:', err);
             alert('팀방 입장에 실패했습니다.');
@@ -53,14 +53,14 @@ const TeamStudy = () => {
         try {
             const createRequest = {
                 title: newRoomTitle,
-                password,
-                room_type: roomType,
-                max_participants: maxParticipants,
-                target_time: roomType === 'FOCUS' ? targetTime : null
+                password: password || null,
+                roomType,
+                maxParticipants,
+                targetTime: roomType === 'FOCUS' ? targetTime : null
             };
 
-            const res = await api.post('/study/team/create', createRequest);
-            const newRoomId = res.data.data;
+            const res = await api.post('/video-room/create', createRequest);
+            const newRoomId = res.data.roomId || res.data.data; // 서버 반환 형식에 따라 조정
 
             alert('학습방이 생성되었습니다!');
             setShowModal(false);
@@ -69,8 +69,7 @@ const TeamStudy = () => {
             setPassword('');
             setMaxParticipants(10);
             setTargetTime(60);
-
-            fetchRooms(); // 새로고침
+            fetchRooms();
         } catch (error) {
             console.error('팀방 생성 실패:', error);
             alert('학습방 생성에 실패했습니다.');
@@ -81,7 +80,6 @@ const TeamStudy = () => {
         <div className="team-study-container">
             <h1>팀 학습 참여하기</h1>
 
-            {/* ✅ 탭 전환 버튼 */}
             <div className="tab-buttons">
                 <button className={tab === 'ALL' ? 'active' : ''} onClick={() => setTab('ALL')}>전체 팀방</button>
                 <button className={tab === 'MY' ? 'active' : ''} onClick={() => setTab('MY')}>참여 중인 팀</button>
@@ -100,13 +98,13 @@ const TeamStudy = () => {
 
             <ul className="study-room-list">
                 {filteredRooms.map((room) => (
-                    <li key={room.room_id} className="study-room-item">
+                    <li key={room.roomId} className="study-room-item">
                         <div className="room-info">
                             <h2>{room.title}</h2>
-                            <p>참여자 수: {room.max_participants ?? '-'}</p>
-                            <p>유형: {room.room_type === 'FOCUS' ? '공부방' : '문제풀이방'}</p>
+                            <p>참여자 수: {room.maxParticipants ?? '-'}</p>
+                            <p>유형: {room.roomType === 'FOCUS' ? '공부방' : '문제풀이방'}</p>
                         </div>
-                        <button className="join-button" onClick={() => handleJoinRoom(room.room_id)}>참여하기</button>
+                        <button className="join-button" onClick={() => handleJoinRoom(room.roomId)}>참여하기</button>
                     </li>
                 ))}
             </ul>
