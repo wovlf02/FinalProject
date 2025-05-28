@@ -6,7 +6,7 @@
             "request": "launch",
             "mainClass": "com.hamcam.back.BackApplication",
             "projectName": "back",
-            "vmArgs": "-Dspring.profiles.active=dev -parameters"
+            "vmArgs": "-Dspring.profiles.active=dev"
         },
         {
             "type": "java",

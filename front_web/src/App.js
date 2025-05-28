@@ -32,6 +32,8 @@ import PostDetail from './pages/Community/components/PostDetail';
 import StudyListPage from './pages/Community/components/StudyListPage';
 import StudyDetail from './pages/Community/components/StudyDetail';
 import StudyCreatePage from './pages/Community/components/StudyCreatePage';
+import UnitEvaluationPlanList from './pages/UnitEvaluationPlanList';
+import PlanMenu from './pages/PlanMenu';
 
 // 초기 스터디 목록
 const initialStudyList = [];
@@ -85,6 +87,9 @@ function App() {
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/write" element={<PostWritePage onAddPost={handleAddPost} />} />
                     <Route path="/quiz-result" element={<QuizResult />} />
+                    <Route path="/plan/menu" element={<PlanMenu />} />
+                    <Route path="/plan/create" element={<UnitEvaluationPlan />} />
+                    <Route path="/plan/list" element={<UnitEvaluationPlanList />} />
                     <Route path="/unit-evaluation/plan" element={<UnitEvaluationPlan />} />
                     <Route path="/unit-evaluation/feedback" element={<UnitEvaluationFeedback />} />
                     <Route path="/unit-evaluation/schedule" element={<UnitEvaluationSchedule />} />

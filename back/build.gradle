@@ -21,6 +21,7 @@ configurations {
 
 repositories {
     mavenCentral()
+
 }
 
 dependencies {
@@ -46,9 +47,12 @@ dependencies {
     implementation 'org.springframework.integration:spring-integration-redis'
     implementation 'org.springframework.integration:spring-integration-stomp'
     implementation 'org.springframework.integration:spring-integration-websocket'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    implementation platform("org.springframework.ai:spring-ai-bom:1.0.0")
+    implementation 'org.springframework.ai:spring-ai-openai'
+
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.mysql:mysql-connector-j'
