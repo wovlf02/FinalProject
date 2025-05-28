@@ -2,12 +2,14 @@
     min-height: 100vh;
     background: linear-gradient(120deg, #f7fafd 60%, #e0e7ff 100%);
     padding: 0 0 60px 0;
+    margin-left: 160px; /* 사이드바 만큼 띄우기 */
 }
 
 .plan-list-container {
-    max-width: 1200px;
+    max-width: 900px; /* 1200px → 900px로 줄이면 더 가운데로 모임 */
     margin: 0 auto;
     padding: 48px 0 0 0;
+    /* 필요하다면 padding: 48px 24px 0 24px; */
 }
 
 .plan-list-title {
@@ -140,8 +142,12 @@
 }
 
 @media (max-width: 900px) {
+    .plan-list-bg {
+        margin-left: 0;
+    }
     .plan-list-container {
         padding: 32px 2vw 0 2vw;
+        max-width: 100vw;
     }
     .plan-list-cards {
         gap: 18px;
