@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDate;
 import java.util.*;
 
 @RestController
@@ -21,24 +24,36 @@ public class PlanController {
     private StudyPlanRepository studyPlanRepository;
 
     @PostMapping("/generate")
-    public ResponseEntity<String> generatePlan(@RequestBody PlanRequest request) {
-        // === [추가] units(범위) 필수 입력 검증 ===
+    public ResponseEntity<String> generatePlan(@RequestBody PlanRequest request, HttpServletRequest httpRequest) {
+        Object userIdObj = httpRequest.getSession().getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("로그인이 필요합니다.");
+        }
+        String userId = String.valueOf(userIdObj);
+
         if (request.getRange() == null || request.getRange().isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("학습 범위(units)를 반드시 선택해야 합니다.");
         }
 
-        // 1. 프론트엔드에서 prompt를 직접 보냈으면 그걸 사용
-        String prompt = request.getPrompt();
+        // 오늘 날짜와 종료 날짜 계산
+        LocalDate today = LocalDate.now();
+        int totalDays = request.getWeeks() * 7;
+        LocalDate endDate = today.plusDays(totalDays - 1);
 
-        // 2. prompt가 없으면(호환성) 기존 방식으로 생성
+        // 프롬프트 생성: 날짜 컬럼 포함
+        String prompt = request.getPrompt();
         if (prompt == null || prompt.isBlank()) {
             prompt = String.format(
-                "%s %s 과목의 \"%s\" 범위만 포함해서 %d주 학습 계획을 마크다운 표로 만들어줘. " +
-                "표에는 Day, 학습 목표, 시간, 주요 과제, 참고사항 컬럼만 포함하고, 반드시 \"%s\"와 관련된 내용만 넣어줘. " +
-                "\"%s\" 범위 외의 다른 단원, 중학교/초등학교 수준의 내용은 절대 포함하지 마. " +
+                "오늘 날짜(%s)부터 %d주 동안 %s \"%s\" 범위 학습계획을 마크다운 표로 만들어줘. " +
+                "표에는 날짜(YYYY-MM-DD), 학습 목표, 시간, 주요 과제, 참고사항 컬럼만 포함해. " +
+                "각 날짜는 오늘(%s)부터 하루씩 증가해서 %s까지 실제 날짜(YYYY-MM-DD)로 써줘. " +
+                "\"Day 1\", \"Day 2\", \"월\", \"화\" 이런 식으로 쓰지 말고, 반드시 2025-05-30처럼 써. " +
+                "\"%s\" 범위 외의 내용은 절대 넣지 마. " +
                 "표 아래에는 아무 설명도 붙이지 마.",
-                request.getGrade(), request.getSubject(), request.getRange(), request.getWeeks(), request.getRange(), request.getRange()
+                today, request.getWeeks(), request.getSubject(), request.getRange(),
+                today, endDate, request.getRange()
             );
         }
 
@@ -57,10 +72,7 @@ public class PlanController {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
 
-        // Gemini 응답에서 텍스트만 추출
         Map responseBody = response.getBody();
-
-        // [1] Gemini 응답 전체 로그 추가
         System.out.println("Gemini 응답 전체: " + responseBody);
 
         String planText = "";
@@ -77,10 +89,8 @@ public class PlanController {
             }
         }
 
-        // [2] planText 로그 추가
         System.out.println("planText 저장 전: [" + planText + "]");
 
-        // === [최종] 줄바꿈, 공백, 개행 모두 처리 ===
         if (planText != null) {
             planText = planText.trim();
             planText = planText.replace("\r\n", "\n").replace("\r", "\n");
@@ -89,8 +99,6 @@ public class PlanController {
             }
         }
 
-        // === DB 저장 코드 (userId를 무조건 spongebob1234로) ===
-        String userId = "spongebob1234";
         StudyPlan plan = new StudyPlan();
         plan.setUserId(userId);
         plan.setSubject(request.getSubject());
@@ -98,15 +106,95 @@ public class PlanController {
         plan.setWeeks(request.getWeeks());
         plan.setUnits(request.getRange());
         plan.setPlanContent(planText);
+        plan.setChecked(false); // 생성 시 기본값
         studyPlanRepository.save(plan);
 
         return ResponseEntity.ok(planText);
     }
 
-    // === [추가] 내 학습계획 목록 조회 ===
     @GetMapping("/my")
-    public ResponseEntity<List<StudyPlan>> getMyPlans() {
-        List<StudyPlan> plans = studyPlanRepository.findByUserId("spongebob1234");
+    public ResponseEntity<List<StudyPlan>> getMyPlans(HttpServletRequest httpRequest) {
+        Object userIdObj = httpRequest.getSession().getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.emptyList());
+        }
+        String userId = String.valueOf(userIdObj);
+        List<StudyPlan> plans = studyPlanRepository.findByUserId(userId);
         return ResponseEntity.ok(plans);
+    }
+
+    @DeleteMapping("/{planId}")
+    public ResponseEntity<?> deletePlan(@PathVariable("planId") Long planId, HttpServletRequest httpRequest) {
+        Object userIdObj = httpRequest.getSession().getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+        String userId = String.valueOf(userIdObj);
+
+        Optional<StudyPlan> planOpt = studyPlanRepository.findById(planId);
+        if (planOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("계획을 찾을 수 없습니다.");
+        }
+        StudyPlan plan = planOpt.get();
+        if (!userId.equals(plan.getUserId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("본인 계획만 삭제할 수 있습니다.");
+        }
+        studyPlanRepository.deleteById(planId);
+        return ResponseEntity.ok("삭제되었습니다.");
+    }
+
+    @PatchMapping("/{planId}/check")
+    public ResponseEntity<?> checkPlan(
+            @PathVariable("planId") Long planId,
+            @RequestParam("checked") boolean checked,
+            HttpServletRequest httpRequest
+    ) {
+        Object userIdObj = httpRequest.getSession().getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+        String userId = String.valueOf(userIdObj);
+
+        Optional<StudyPlan> planOpt = studyPlanRepository.findById(planId);
+        if (planOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("계획을 찾을 수 없습니다.");
+        }
+        StudyPlan plan = planOpt.get();
+        if (!userId.equals(plan.getUserId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("본인 계획만 체크할 수 있습니다.");
+        }
+        plan.setChecked(checked);
+        studyPlanRepository.save(plan);
+        return ResponseEntity.ok("상태가 변경되었습니다.");
+    }
+
+    // === planContent(계획 내용) 수정 API ===
+    @PatchMapping("/{planId}/content")
+    public ResponseEntity<?> updatePlanContent(
+            @PathVariable("planId") Long planId,
+            @RequestBody Map<String, String> body,
+            HttpServletRequest httpRequest
+    ) {
+        Object userIdObj = httpRequest.getSession().getAttribute("userId");
+        if (userIdObj == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+        }
+        String userId = String.valueOf(userIdObj);
+
+        Optional<StudyPlan> planOpt = studyPlanRepository.findById(planId);
+        if (planOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("계획을 찾을 수 없습니다.");
+        }
+        StudyPlan plan = planOpt.get();
+        if (!userId.equals(plan.getUserId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("본인 계획만 수정할 수 있습니다.");
+        }
+        String newContent = body.get("planContent");
+        if (newContent == null || newContent.isBlank()) {
+            return ResponseEntity.badRequest().body("내용이 비어 있습니다.");
+        }
+        plan.setPlanContent(newContent);
+        studyPlanRepository.save(plan);
+        return ResponseEntity.ok("계획이 수정되었습니다.");
     }
 }

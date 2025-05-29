@@ -25,6 +25,9 @@ public class StudyPlan {
     @JsonProperty("planContent")
     private String planContent;
 
+    @Column(name = "checked")
+    private Boolean checked = false; // 계획 완료(체크) 여부
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // Getter/Setter
@@ -49,6 +52,9 @@ public class StudyPlan {
     @JsonProperty("planContent")
     public String getPlanContent() { return planContent; }
     public void setPlanContent(String planContent) { this.planContent = planContent; }
+
+    public Boolean getChecked() { return checked; }
+    public void setChecked(Boolean checked) { this.checked = checked; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

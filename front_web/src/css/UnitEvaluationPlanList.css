@@ -140,6 +140,104 @@
 .plan-list-card tr:hover td {
     background: #e0e7ff66;
 }
+/* 체크된 카드 스타일 */
+.plan-list-card.checked {
+    background: #e0e7ff;
+    opacity: 0.7;
+    transition: background 0.2s, opacity 0.2s;
+}
+
+/* 체크박스와 삭제 버튼을 한 줄에 정렬 */
+.plan-list-card-header-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 8px;
+}
+
+/* 제목에 취소선 스타일 */
+.plan-list-card-title.checked {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* 삭제 버튼 스타일 */
+.plan-list-delete-btn {
+    margin-left: auto;
+    background: #f87171;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.18s;
+}
+.plan-list-delete-btn:hover {
+    background: #dc2626;
+}
+/* 수정 버튼 스타일 */
+.plan-list-edit-btn {
+    margin-left: 8px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.18s;
+}
+.plan-list-edit-btn:hover {
+    background: #1d4ed8;
+}
+
+/* 수정 모드 textarea */
+.plan-list-edit-textarea {
+    width: 100%;
+    font-family: monospace;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1.5px solid #c7d2fe;
+    padding: 10px;
+    min-height: 200px;
+    resize: vertical;
+    box-sizing: border-box;
+    margin-top: 12px;
+}
+
+/* 저장/취소 버튼 스타일 */
+.plan-list-edit-save-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 18px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: background 0.18s;
+}
+.plan-list-edit-save-btn:hover {
+    background: #1d4ed8;
+}
+.plan-list-edit-cancel-btn {
+    background: #e5e7eb;
+    color: #444;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s;
+}
+.plan-list-edit-cancel-btn:hover {
+    background: #cbd5e1;
+}
+
+
 
 @media (max-width: 900px) {
     .plan-list-bg {
