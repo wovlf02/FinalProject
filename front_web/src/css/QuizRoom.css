@@ -1,0 +1,117 @@
+/* 🎯 공통 스타일 */
+.card-box {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+/* ✋ 손든 사람 */
+.hand-raise-list {
+    composes: card-box;
+}
+.hand-raise-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.hand-user {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+.hand-user.presenter {
+    background-color: #e3f2fd;
+    font-weight: bold;
+}
+.me-tag {
+    color: #4caf50;
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+}
+
+/* 👥 참가자 리스트 */
+.participant-list {
+    composes: card-box;
+}
+.participant-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+.participant-item.presenter {
+    background-color: #fffbe7;
+    font-weight: bold;
+}
+.badge {
+    font-size: 0.85rem;
+    color: #ff9800;
+    margin-left: 0.5rem;
+}
+
+/* 📚 문제 보드 */
+.quiz-board {
+    composes: card-box;
+}
+.problem-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+}
+.problem-content {
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
+}
+.options-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.option-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+.option-item:hover {
+    background-color: #f1f1f1;
+}
+.option-number {
+    width: 24px;
+    font-weight: bold;
+    color: #1976d2;
+}
+.option-text {
+    flex: 1;
+}
+
+/* 💬 해설 */
+.explanation-box {
+    margin-top: 1.2rem;
+    background-color: #f9f9f9;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* 📱 반응형 대응 */
+@media (max-width: 768px) {
+    .hand-user,
+    .participant-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    .option-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .problem-title, .problem-content {
+        font-size: 1rem;
+    }
+}

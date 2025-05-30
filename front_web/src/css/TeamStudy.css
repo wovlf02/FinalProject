@@ -1,7 +1,8 @@
 .team-study-container {
     padding: 20px;
     font-family: Arial, sans-serif;
-    margin-left: 160px;
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
 h1 {
@@ -9,14 +10,36 @@ h1 {
     margin-bottom: 20px;
 }
 
+/* TAB BUTTONS */
+.tab-buttons {
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.tab-buttons button {
+    padding: 8px 16px;
+    background-color: #f1f1f1;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.tab-buttons button.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* SEARCH BAR */
 .search-bar {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 20px;
 }
 
 .search-bar input {
-    width: 70%;
+    flex: 1 1 60%;
+    min-width: 200px;
     padding: 10px;
     font-size: 16px;
     border: 1px solid #ccc;
@@ -24,34 +47,32 @@ h1 {
 }
 
 .search-bar button {
-    padding: 10px 20px;
+    padding: 10px 16px;
     font-size: 16px;
-    background-color: #007bff;
-    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-}
-
-.search-bar button:hover {
-    background-color: #0056b3;
+    flex-shrink: 0;
 }
 
 .search-bar button.search {
-    padding: 10px 20px;
-    font-size: 16px;
     background-color: #6c757d;
     color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: 10px;
 }
 
 .search-bar button.search:hover {
     background-color: #5a6268;
 }
 
+.search-bar button:not(.search) {
+    background-color: #007bff;
+    color: white;
+}
+.search-bar button:not(.search):hover {
+    background-color: #0056b3;
+}
+
+/* ROOM LIST */
 .study-room-list {
     list-style: none;
     padding: 0;
@@ -61,10 +82,12 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     padding: 15px;
     border: 1px solid #ccc;
     border-radius: 4px;
     margin-bottom: 10px;
+    background-color: #fafafa;
 }
 
 .room-info h2 {
@@ -78,6 +101,7 @@ h1 {
 }
 
 .join-button {
+    margin-top: 10px;
     padding: 10px 20px;
     font-size: 14px;
     background-color: #28a745;
@@ -91,6 +115,7 @@ h1 {
     background-color: #218838;
 }
 
+/* MODAL */
 .modal {
     position: fixed;
     top: 0;
@@ -101,24 +126,19 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 1000;
 }
 
 .modal-content {
     background: white;
     padding: 20px;
     border-radius: 8px;
-    width: 300px;
+    width: 90%;
+    max-width: 350px;
     text-align: center;
 }
 
-.modal-content input {
-    width: 100%;
-    margin-bottom: 10px;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
+.modal-content input,
 .modal-content select {
     width: 100%;
     margin-bottom: 10px;
@@ -139,23 +159,69 @@ h1 {
     background-color: #28a745;
     color: white;
 }
-
 .modal-content button:last-child {
     background-color: #dc3545;
     color: white;
 }
-.tab-buttons {
-    margin-bottom: 16px;
-    display: flex;
-    gap: 8px;
+
+/* EMPTY STATE */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+    font-size: 1.1rem;
 }
-.tab-buttons button {
-    padding: 8px 16px;
-    background-color: #f1f1f1;
-    border: 1px solid #ccc;
-    cursor: pointer;
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
 }
-.tab-buttons button.active {
-    background-color: #4CAF50;
-    color: white;
+
+.empty-message {
+    margin: 0;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+    .search-bar {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .study-room-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .join-button {
+        align-self: flex-end;
+    }
+
+    .tab-buttons {
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 20px;
+    }
+
+    .search-bar input {
+        font-size: 14px;
+    }
+
+    .search-bar button {
+        font-size: 14px;
+        padding: 8px 14px;
+    }
+
+    .modal-content {
+        padding: 16px;
+    }
+
+    .join-button {
+        width: 100%;
+    }
 }
