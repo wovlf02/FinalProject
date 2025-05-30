@@ -1,30 +1,31 @@
 package com.hamcam.back.repository.study;
 
-import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.study.team.StudyRoom;
 import com.hamcam.back.entity.study.team.StudyRoomParticipant;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
+@Repository
 public interface StudyRoomParticipantRepository extends JpaRepository<StudyRoomParticipant, Long> {
 
-    /** ✅ 특정 방의 참가자 전체 조회 */
-    List<StudyRoomParticipant> findByRoom(StudyRoom room);
+    /**
+     * ✅ 특정 유저가 참여 중인 모든 팀방 조회
+     */
+    List<StudyRoomParticipant> findByUserId(Long userId);
 
-    /** ✅ 참가 여부 체크 (중복 입장 방지) */
-    boolean existsByRoomAndUser(StudyRoom room, User user);
+    /**
+     * ✅ 특정 방의 모든 참가자 조회
+     */
+    List<StudyRoomParticipant> findByStudyRoomId(Long roomId);
 
-    /** ✅ 참가자 정보 단건 조회 */
-    Optional<StudyRoomParticipant> findByRoomAndUser(StudyRoom room, User user);
+    /**
+     * ✅ 특정 유저가 해당 방에 참여 중인지 여부 확인
+     */
+    boolean existsByStudyRoomIdAndUserId(Long roomId, Long userId);
 
-    /** ✅ 방 참가자 수 */
-    int countByRoom(StudyRoom room);
-
-    /** ✅ 방장 정보 조회 */
-    Optional<StudyRoomParticipant> findByRoomAndIsHostTrue(StudyRoom room);
-
-    /** ✅ 특정 유저가 방장인지 확인 */
-    boolean existsByRoomAndUserAndIsHostTrue(StudyRoom room, User user);
+    /**
+     * ✅ 특정 방의 전체 인원 수
+     */
+    int countByStudyRoomId(Long roomId);
 }

@@ -2,23 +2,25 @@ package com.hamcam.back.repository.study;
 
 import com.hamcam.back.entity.study.team.QuizRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
+@Repository
 public interface QuizRoomRepository extends JpaRepository<QuizRoom, Long> {
 
-    /** ✅ 초대 코드로 방 조회 (입장 시 사용) */
-    Optional<QuizRoom> findByInviteCode(String inviteCode);
+    /**
+     * ✅ 문제 ID로 방 조회 (예: 중복 문제 방 방지, 분석용 등)
+     */
+    List<QuizRoom> findByProblemId(Long problemId);
 
-    /** ✅ 방이 아직 유효한지 확인 (중복 입장 방지 or 종료 방 차단) */
-    boolean existsByIdAndIsActiveTrue(Long roomId);
-
-    /** ✅ 문제 필터 조건 (과목, 학년, 월, 난이도) 기반 조회 */
+    /**
+     * ✅ 문제 필터링 조건 기반 조회 (선택적으로 사용 가능)
+     */
     List<QuizRoom> findBySubjectAndGradeAndMonthAndDifficulty(
             String subject,
-            String grade,
-            String month,
+            int grade,
+            int month,
             String difficulty
     );
 }

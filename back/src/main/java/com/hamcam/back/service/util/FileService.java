@@ -18,20 +18,41 @@ import java.util.UUID;
 public class FileService {
 
     private static final String PROFILE_BASE_DIR = "uploads/profile/";
+    private static final String STUDY_BASE_DIR = "uploads/study/";
 
     private final UserRepository userRepository;
 
-    /**
-     * ✅ 프로필 이미지 저장 (세션 기반)
-     */
-    public String saveProfileImage(MultipartFile file, Long userId) {
-        if (file == null || file.isEmpty()) {
-            return null;
-        }
+    // ----------------------------------
+    // ✅ 기존: 프로필 업로드
+    // ----------------------------------
 
+    public String saveProfileImage(MultipartFile file, Long userId) {
+        if (file == null || file.isEmpty()) return null;
+        return saveFile(file, userId, PROFILE_BASE_DIR);
+    }
+
+    public void deleteProfileImage(String storedPath, HttpServletRequest request) {
+        deleteFile(storedPath, SessionUtil.getUserId(request), PROFILE_BASE_DIR);
+    }
+
+    // ----------------------------------
+    // ✅ 추가: 팀 학습 파일 업로드
+    // ----------------------------------
+
+    public String saveStudyFile(MultipartFile file, Long userId) {
+        if (file == null || file.isEmpty()) {
+            throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+        return saveFile(file, userId, STUDY_BASE_DIR);
+    }
+
+    // ----------------------------------
+    // ✅ 공통 파일 저장 메서드
+    // ----------------------------------
+
+    private String saveFile(MultipartFile file, Long userId, String baseDir) {
         try {
-            // 사용자별 디렉토리 설정
-            Path userDir = Paths.get(PROFILE_BASE_DIR + userId);
+            Path userDir = Paths.get(baseDir + userId);
             if (Files.notExists(userDir)) {
                 Files.createDirectories(userDir);
             }
@@ -46,27 +67,27 @@ public class FileService {
 
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 프론트 접근용 경로 반환
-            return "/uploads/profile/" + userId + "/" + storedFilename;
+            // 프론트 접근 경로 반환
+            return "/" + baseDir + userId + "/" + storedFilename;
 
         } catch (IOException e) {
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }
 
-    /**
-     * ✅ 프로필 이미지 삭제 (세션 기반)
-     */
-    public void deleteProfileImage(String storedPath, HttpServletRequest request) {
+    // ----------------------------------
+    // ✅ 공통 파일 삭제 메서드
+    // ----------------------------------
+
+    private void deleteFile(String storedPath, Long userId, String baseDir) {
         try {
             if (storedPath == null || storedPath.isBlank()) return;
 
-            Long userId = SessionUtil.getUserId(request);
             String filename = storedPath.contains("/") ?
                     storedPath.substring(storedPath.lastIndexOf("/") + 1) :
                     storedPath;
 
-            Path path = Paths.get(PROFILE_BASE_DIR + userId).resolve(filename);
+            Path path = Paths.get(baseDir + userId).resolve(filename);
             Files.deleteIfExists(path);
 
         } catch (Exception e) {

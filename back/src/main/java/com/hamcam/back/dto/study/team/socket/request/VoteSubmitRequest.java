@@ -3,9 +3,12 @@ package com.hamcam.back.dto.study.team.socket.request;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * ✅ 투표 제출 요청
+ */
 @Getter
 @Setter
-public class FocusReadyRequest {
+public class VoteSubmitRequest {
     private Long roomId;
-    private Long userId; // 세션으로 받을 수도 있지만 socket 식별용으로 포함 가능
+    private VoteType vote; // "SUCCESS" 또는 "FAIL"
 }

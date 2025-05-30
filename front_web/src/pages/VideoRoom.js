@@ -35,6 +35,7 @@ const VideoRoom = () => {
                 console.error("❌ 사용자 정보 가져오기 실패:", err);
             });
 
+        // 4000번 포트 url
         socket.current = io("https://e212-121-127-165-110.ngrok-free.app", {
             withCredentials: true,
             transports: ["websocket"]

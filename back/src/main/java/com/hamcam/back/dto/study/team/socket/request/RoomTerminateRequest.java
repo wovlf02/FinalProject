@@ -3,9 +3,11 @@ package com.hamcam.back.dto.study.team.socket.request;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * ✅ 방 종료 요청
+ */
 @Getter
 @Setter
-public class PresenterSelectRequest {
+public class RoomTerminateRequest {
     private Long roomId;
-    private Long selectedUserId; // 방장이 선택한 발표자 ID
 }

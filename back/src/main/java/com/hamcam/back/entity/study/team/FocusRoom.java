@@ -1,18 +1,32 @@
 package com.hamcam.back.entity.study.team;
 
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+/**
+ * ✅ 공부시간 경쟁방 엔티티
+ * StudyRoom의 하위 클래스 (상속 구조)
+ */
 @Entity
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@SuperBuilder
-@DiscriminatorValue("FOCUS")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@DiscriminatorValue("FOCUS") // 상위 클래스에서 구분자 지정
 public class FocusRoom extends StudyRoom {
 
+    /**
+     * 목표 공부 시간 (단위: 분)
+     */
     @Column(nullable = false)
-    private Integer targetTime;
+    private int targetTime;
+
+    @Builder
+    public FocusRoom(String title, String password, String inviteCode, int targetTime) {
+        super(title, password, inviteCode, RoomType.FOCUS);
+        this.targetTime = targetTime;
+    }
 }

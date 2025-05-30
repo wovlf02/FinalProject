@@ -1,6 +1,9 @@
 package com.hamcam.back.entity.study.team;
 
+/**
+ * ✅ 팀 학습방 유형 구분 ENUM
+ */
 public enum RoomType {
-    QUIZ,
-    FOCUS
+    QUIZ,   // 문제풀이방
+    FOCUS   // 공부시간 경쟁방
 }

@@ -1,21 +1,22 @@
-package com.hamcam.back.dto.study.team.rest.response.inner;
+package com.hamcam.back.dto.study.team.response.inner;
 
 import com.hamcam.back.entity.auth.User;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * ✅ 팀방 내 참가자 정보
+ */
 @Getter
 @Builder
 public class ParticipantInfo {
     private Long userId;
     private String nickname;
-    private boolean isHost;
 
-    public static ParticipantInfo from(User user, boolean isHost) {
+    public static ParticipantInfo from(User user) {
         return ParticipantInfo.builder()
                 .userId(user.getId())
                 .nickname(user.getNickname())
-                .isHost(isHost)
                 .build();
     }
 }

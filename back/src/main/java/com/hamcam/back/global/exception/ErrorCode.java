@@ -19,6 +19,7 @@ public enum ErrorCode {
     NO_PERMISSION(HttpStatus.FORBIDDEN, "E4033", "해당 작업에 대한 권한이 없습니다."),
     NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "E4034", "해당 방의 참가자가 아닙니다."),
     NOT_HOST(HttpStatus.FORBIDDEN, "E4035", "해당 방의 방장이 아닙니다."),
+    USER_NOT_PARTICIPANT(HttpStatus.FORBIDDEN, "E4036", "해당 방의 참가자가 아닙니다."),
 
     // ⚠️ 잘못된 요청 (400)
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "E4001", "잘못된 요청입니다."),
@@ -35,6 +36,9 @@ public enum ErrorCode {
     INVALID_CHATROOM_INVITEE(HttpStatus.BAD_REQUEST, "E4012", "채팅방에 초대할 수 없는 사용자입니다."),
     MINIMUM_PARTICIPANT_NOT_MET(HttpStatus.BAD_REQUEST, "E4013", "문제풀이를 시작하려면 최소 3명이 필요합니다."),
     ALREADY_JOINED(HttpStatus.BAD_REQUEST, "E4014", "이미 방에 참여한 상태입니다."),
+    INVALID_ROOM_TYPE(HttpStatus.BAD_REQUEST, "E4015", "유효하지 않은 방 타입입니다."),
+    INVALID_OPERATION(HttpStatus.BAD_REQUEST, "E4016", "허용되지 않는 작업입니다."),
+
 
     // ❌ 중복 (409)
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "E4091", "이미 존재하는 아이디입니다."),

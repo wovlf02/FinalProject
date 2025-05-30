@@ -3,9 +3,11 @@ package com.hamcam.back.dto.study.team.socket.request;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * ✅ 준비 상태 요청
+ */
 @Getter
 @Setter
-public class AnnouncementEndRequest {
+public class RoomReadyRequest {
     private Long roomId;
-    private Long presenterId; // 발표자 본인 ID (세션 기반 대체 가능)
 }

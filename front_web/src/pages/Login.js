@@ -54,7 +54,7 @@ const Login = () => {
             return;
         }
 
-        // ✅ 최신 signaling 서버 ngrok 주소 사용
+        // 3000번 포트 url 사용
         const socket = new SockJS('https://3069-121-127-165-110.ngrok-free.app/ws');
         const client = new Client({
             webSocketFactory: () => socket,
