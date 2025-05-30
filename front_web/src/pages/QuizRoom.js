@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import useWebRTC from '../hooks/useWebRTC';
-import useTeamRoomSocket from '../hooks/useTeamRoomSocket';
 import useQuizRoom from '../hooks/useQuizRoom';
 import QuizBoard from '../components/teamstudy/QuizBoard';
 import HandRaiseList from '../components/teamstudy/HandRaiseList';
