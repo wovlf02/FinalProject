@@ -26,7 +26,7 @@ public class WebSocketStompConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // ✅ WebSocket Endpoint 공통 설정
         String[] allowedOrigins = {
-                "http://localhost:3000",          // 로컬 개발용
+                "http://localhost:8080",          // 로컬 개발용
                 "https://*.ngrok-free.app"        // ngrok 환경 허용
         };
 

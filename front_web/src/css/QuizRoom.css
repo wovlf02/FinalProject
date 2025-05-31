@@ -1,5 +1,5 @@
 .quiz-room-container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 30px;
     background-color: #f8f9fb;
@@ -13,6 +13,115 @@
     margin-bottom: 25px;
     color: #333;
     text-align: center;
+}
+
+.main-layout {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 30px;
+}
+
+.video-grid {
+    flex: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.video-tile {
+    position: relative;
+    width: 280px;
+    height: 210px;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.video-tile video {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-bottom: 1px solid #444;
+}
+
+.video-tile div {
+    color: white;
+    padding: 4px 0;
+    font-size: 14px;
+    background-color: #222;
+    width: 100%;
+    text-align: center;
+}
+
+.video-tile button {
+    background-color: #444;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    margin: 2px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.video-tile button:hover {
+    background-color: #666;
+}
+
+.chat-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: white;
+}
+
+.chat-log {
+    flex: 1;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+    background-color: #f9f9f9;
+}
+
+.chat-input {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background-color: #fff;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+}
+
+.chat-input button {
+    margin-left: 8px;
+    padding: 8px 14px;
+    background-color: #1976d2;
+    border: none;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.chat-input button:hover {
+    background-color: #125ea5;
 }
 
 .problem-section {

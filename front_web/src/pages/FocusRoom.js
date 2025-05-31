@@ -4,6 +4,7 @@ import api from '../api/api';
 import '../css/FocusRoom.css';
 import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { connectToLiveKit } from '../utils/livekit';
 
 const FocusRoom = () => {
     const { roomId } = useParams();
@@ -13,24 +14,28 @@ const FocusRoom = () => {
     const [ranking, setRanking] = useState([]);
     const [winnerId, setWinnerId] = useState(null);
     const [confirmed, setConfirmed] = useState(false);
-
+    const [userId, setUserId] = useState(null);
+    const [participants, setParticipants] = useState([]);
+    const [chatList, setChatList] = useState([]);
+    const [chatMsg, setChatMsg] = useState('');
     const stompRef = useRef(null);
     const intervalRef = useRef(null);
-
     const roomName = `focus-${roomId}`;
+    const localVideoRefs = useRef({});
+    const roomRef = useRef(null);
 
     useEffect(() => {
         enterRoom();
-        connectLiveKit();
+        fetchUserInfo();
         connectWebSocket();
 
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
             if (stompRef.current) stompRef.current.disconnect();
+            if (roomRef.current) roomRef.current.disconnect();
         };
     }, []);
 
-    /** ✅ 서버에 참가자 등록 (세션 기반) */
     const enterRoom = async () => {
         try {
             await api.post('/study/team/enter', null, { params: { roomId } });
@@ -40,40 +45,34 @@ const FocusRoom = () => {
         }
     };
 
-    /** ✅ LiveKit 토큰 요청 후 캠 연결 */
-    const connectLiveKit = async () => {
+    const fetchUserInfo = async () => {
         try {
-            // 1. 세션 기반 사용자 정보 요청
-            const userRes = await api.get('/users/me');
-            const identity = userRes.data?.user_id; // 또는 nickname도 가능
-            console.log(userRes);
-
-            // 2. LiveKit 토큰 요청
-            const res = await api.post('/livekit/token', {
-                identity,
-                roomName
-            });
-
-            const token = res.data.token;
-
-            // 3. 미디어 스트리밍 시작 (로컬 대체)
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            });
-            const videoElement = document.getElementById('video');
-            if (videoElement) {
-                videoElement.srcObject = stream;
-            }
-
-        } catch (e) {
-            console.error('LiveKit 연결 실패:', e);
-            alert('LiveKit 연결 실패: 로그인 필요 또는 서버 오류');
+            const res = await api.get('/users/me');
+            const identity = res.data.user_id;
+            setUserId(identity);
+            await connectLiveKit(identity.toString());
+        } catch (err) {
+            console.error('유저 정보 조회 실패:', err);
         }
     };
 
+    const connectLiveKit = async (identity) => {
+        try {
+            const room = await connectToLiveKit(identity, roomName, (room) => {
+                roomRef.current = room;
 
-    /** ✅ WebSocket 연결 및 실시간 구독 */
+                room.localParticipant.videoTracks.forEach((pub) => {
+                    const mediaStream = new MediaStream([pub.track.mediaStreamTrack]);
+                    const el = localVideoRefs.current[identity];
+                    if (el && !el.srcObject) el.srcObject = mediaStream;
+                });
+            });
+        } catch (e) {
+            console.error('LiveKit 연결 실패:', e);
+            alert('LiveKit 연결 실패: 캠/마이크 권한 또는 서버 문제');
+        }
+    };
+
     const connectWebSocket = () => {
         const sock = new SockJS('/ws');
         const client = Stomp.over(sock);
@@ -87,56 +86,118 @@ const FocusRoom = () => {
                     navigate('/study/team');
                     return;
                 }
-
                 const parsed = JSON.parse(body);
                 setRanking(parsed.ranking || []);
+                setParticipants(parsed.participants || []);
             });
 
             client.subscribe(`/sub/focus/room/${roomId}/winner`, (message) => {
                 setWinnerId(Number(message.body));
             });
 
-            // ✅ 1분마다 집중 시간 서버로 전송
+            client.subscribe(`/sub/focus/room/${roomId}/chat`, (message) => {
+                const chat = JSON.parse(message.body);
+                setChatList(prev => [...prev, chat]);
+            });
+
             intervalRef.current = setInterval(() => {
                 const payload = {
                     roomId: Number(roomId),
-                    focusedSeconds: 60,
+                    focusedSeconds: 1,
                 };
-                stompRef.current.send('/app/focus/update-time', {}, JSON.stringify(payload));
-                setFocusedSeconds(prev => prev + 60);
-            }, 60000);
+                client.send('/app/focus/update-time', {}, JSON.stringify(payload));
+                setFocusedSeconds(prev => prev + 1);
+            }, 1000);
         });
     };
 
-    /** ✅ 목표 시간 도달 시 알림 */
     const handleGoal = () => {
-        stompRef.current.send('/app/focus/goal-achieved', {}, JSON.stringify({
-            room_id: Number(roomId)
-        }));
+        stompRef.current.send('/app/focus/goal-achieved', {}, JSON.stringify({ room_id: Number(roomId) }));
     };
 
-    /** ✅ 결과 확인 클릭 */
     const handleConfirmExit = () => {
         setConfirmed(true);
-        stompRef.current.send('/app/focus/confirm-exit', {}, JSON.stringify({
-            room_id: Number(roomId)
-        }));
+        stompRef.current.send('/app/focus/confirm-exit', {}, JSON.stringify({ room_id: Number(roomId) }));
+    };
+
+    const toggleMic = (userId) => {
+        const el = localVideoRefs.current[userId];
+        if (el?.srcObject) {
+            const track = el.srcObject.getAudioTracks()[0];
+            if (track) track.enabled = !track.enabled;
+        }
+    };
+
+    const toggleCam = (userId) => {
+        const el = localVideoRefs.current[userId];
+        if (el?.srcObject) {
+            const track = el.srcObject.getVideoTracks()[0];
+            if (track) track.enabled = !track.enabled;
+        }
+    };
+
+    const sendChat = () => {
+        if (chatMsg.trim() !== '') {
+            stompRef.current.send(`/app/focus/chat/${roomId}`, {}, JSON.stringify({
+                senderId: userId,
+                content: chatMsg
+            }));
+            setChatMsg('');
+        }
     };
 
     return (
         <div className="focus-room-container">
             <h1>📚 공부 집중방</h1>
 
-            <div className="video-section">
-                <video id="video" autoPlay muted playsInline />
+            <div className="main-content">
+                <div className="video-grid">
+                    {participants.map((user) => (
+                        <div key={user.userId} className="video-wrapper">
+                            <video
+                                ref={(el) => {
+                                    if (el && !localVideoRefs.current[user.userId]) {
+                                        localVideoRefs.current[user.userId] = el;
+                                    }
+                                }}
+                                autoPlay
+                                muted={user.userId === userId}
+                                playsInline
+                            />
+                            <p>{user.nickname}</p>
+                            {user.userId === userId && (
+                                <div className="controls">
+                                    <button onClick={() => toggleCam(user.userId)}>🎥 ON/OFF</button>
+                                    <button onClick={() => toggleMic(user.userId)}>🎤 ON/OFF</button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                <div className="chat-section">
+                    <div className="chat-log">
+                        {chatList.map((chat, index) => (
+                            <div key={index}>
+                                <strong>{chat.senderId}:</strong> {chat.content}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="chat-input">
+                        <input
+                            type="text"
+                            value={chatMsg}
+                            onChange={(e) => setChatMsg(e.target.value)}
+                            placeholder="메시지를 입력하세요..."
+                        />
+                        <button onClick={sendChat}>전송</button>
+                    </div>
+                </div>
             </div>
 
             <div className="info-section">
                 <h2>🕒 집중 시간: {Math.floor(focusedSeconds / 60)}분 {focusedSeconds % 60}초</h2>
-
-                {winnerId && (
-                    <p className="winner">🎉 승리자: 사용자 {winnerId}번!</p>
-                )}
+                {winnerId && <p className="winner">🎉 승리자: 사용자 {winnerId}번!</p>}
 
                 <div className="button-group">
                     <button onClick={handleGoal}>🎯 목표 달성</button>

@@ -20,7 +20,7 @@ public class LiveKitController {
             @RequestBody LiveKitTokenRequest request,
             HttpSession session
     ) {
-        Object userIdObj = session.getAttribute("userId");
+        Object userIdObj = session.getAttribute("user_id");
 
         if (userIdObj == null) {
             return ResponseEntity.status(401).build();  // 인증 실패
