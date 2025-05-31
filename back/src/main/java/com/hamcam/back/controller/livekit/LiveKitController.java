@@ -17,18 +17,22 @@ public class LiveKitController {
 
     @PostMapping("/token")
     public ResponseEntity<LiveKitTokenResponse> getLiveKitToken(
-            @RequestBody LiveKitTokenRequest request,
-            HttpSession session
+            @RequestBody LiveKitTokenRequest request
     ) {
-        Object userIdObj = session.getAttribute("user_id");
+        String identity = request.getUserId();
+        String roomName = request.getRoomName();
 
-        if (userIdObj == null) {
-            return ResponseEntity.status(401).build();  // 인증 실패
+        // 디버깅 로그
+        System.out.println("요청 userId: " + identity);
+        System.out.println("요청 roomName: " + roomName);
+
+        if (identity == null || roomName == null) {
+            return ResponseEntity.badRequest().build();  // 요청 누락
         }
 
-        String identity = userIdObj.toString();
-        LiveKitTokenResponse response = liveKitService.issueTokenResponse(identity, request.getRoomName());
-
+        LiveKitTokenResponse response = liveKitService.issueTokenResponse(identity, roomName);
         return ResponseEntity.ok(response);
     }
+
+
 }

@@ -8,4 +8,6 @@ import lombok.Getter;
 public class LiveKitTokenResponse {
     private String token;
     private String wsUrl;
+
+
 }

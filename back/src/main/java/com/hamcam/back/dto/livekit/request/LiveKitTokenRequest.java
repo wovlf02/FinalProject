@@ -7,4 +7,5 @@ import lombok.Setter;
 @Setter
 public class LiveKitTokenRequest {
     private String roomName;
+    private String userId;  // ✅ 추가
 }

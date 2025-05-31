@@ -48,9 +48,9 @@ const FocusRoom = () => {
     const fetchUserInfo = async () => {
         try {
             const res = await api.get('/users/me');
-            const identity = res.data.user_id;
+            const identity = res.data.data.user_id;
             setUserId(identity);
-            await connectLiveKit(identity.toString());
+            await connectLiveKit(identity);
         } catch (err) {
             console.error('유저 정보 조회 실패:', err);
         }
@@ -58,20 +58,37 @@ const FocusRoom = () => {
 
     const connectLiveKit = async (identity) => {
         try {
-            const room = await connectToLiveKit(identity, roomName, (room) => {
-                roomRef.current = room;
+            const tokenRes = await api.post('/livekit/token', {
+                user_id: identity,
+                room_name: roomName,
+            });
 
-                room.localParticipant.videoTracks.forEach((pub) => {
-                    const mediaStream = new MediaStream([pub.track.mediaStreamTrack]);
-                    const el = localVideoRefs.current[identity];
-                    if (el && !el.srcObject) el.srcObject = mediaStream;
-                });
+            const { token, ws_url } = tokenRes.data;
+
+            // ✅ 여기에서 JWT payload 디코드
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            console.log("🔐 JWT Payload:", payload);
+            console.log("👉 room:", payload.grants?.video?.room);
+            console.log("👉 identity:", payload.grants?.identity);
+
+            const room = await connectToLiveKit(identity, roomName, ws_url, token);
+            roomRef.current = room;
+
+            // 비디오 연결
+            room.localParticipant.videoTracks.forEach((pub) => {
+                const mediaStream = new MediaStream([pub.track.mediaStreamTrack]);
+                const el = localVideoRefs.current[identity];
+                if (el && !el.srcObject) {
+                    el.srcObject = mediaStream;
+                }
             });
         } catch (e) {
             console.error('LiveKit 연결 실패:', e);
             alert('LiveKit 연결 실패: 캠/마이크 권한 또는 서버 문제');
         }
     };
+
+
 
     const connectWebSocket = () => {
         const sock = new SockJS('/ws');

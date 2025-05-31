@@ -40,8 +40,8 @@ const QuizRoom = () => {
     const enterRoom = async () => {
         try {
             await api.post('/study/team/enter', null, { params: { roomId } });
-        } catch (err) {
-            alert('방 입장 실패');
+        } catch (error) {
+            alert('입장 실패: 로그인 필요 또는 존재하지 않는 방');
             navigate('/study/team');
         }
     };
@@ -51,42 +51,23 @@ const QuizRoom = () => {
             const res = await api.get('/users/me');
             const identity = res.data.user_id;
             setUserId(identity);
-            await connectLiveKit(identity);
+            await connectLiveKit(identity.toString());
         } catch (err) {
-            console.error('유저 정보 조회 실패', err);
-            alert('로그인이 필요합니다.');
-            navigate('/');
+            console.error('유저 정보 조회 실패:', err);
         }
     };
 
     const connectLiveKit = async (identity) => {
         try {
-            const res = await api.post('/livekit/token', {
-                identity,
-                room_name: roomName,
-            });
-            const { token, wsUrl } = res.data;
+            const room = await connectToLiveKit(identity, roomName, (room) => {
+                roomRef.current = room;
 
-            const room = await connectToLiveKit(identity, roomName, wsUrl, token);
-            roomRef.current = room;
-
-            const updateTracks = () => {
-                const all = Array.from(room.participants.values()).concat(room.localParticipant);
-                setParticipants(all);
-
-                all.forEach((p) => {
-                    p.videoTracks.forEach((pub) => {
-                        const mediaStream = new MediaStream([pub.track.mediaStreamTrack]);
-                        const el = localVideoRefs.current[p.identity];
-                        if (el && !el.srcObject) el.srcObject = mediaStream;
-                    });
+                room.localParticipant.videoTracks.forEach((pub) => {
+                    const mediaStream = new MediaStream([pub.track.mediaStreamTrack]);
+                    const el = localVideoRefs.current[identity];
+                    if (el && !el.srcObject) el.srcObject = mediaStream;
                 });
-            };
-
-            room.on('participantConnected', updateTracks);
-            room.on('participantDisconnected', updateTracks);
-            updateTracks();
-
+            });
         } catch (e) {
             console.error('LiveKit 연결 실패:', e);
             alert('LiveKit 연결 실패: 캠/마이크 권한 또는 서버 문제');
