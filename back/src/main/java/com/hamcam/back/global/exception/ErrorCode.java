@@ -63,6 +63,7 @@ public enum ErrorCode {
     APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "E4049", "신청 정보를 찾을 수 없습니다."),
     MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4050", "해당 메시지를 찾을 수 없습니다."),
     TODO_NOT_FOUND(HttpStatus.NOT_FOUND, "E4051", "해당 TODO 항목을 찾을 수 없습니다."),
+    STUDY_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "E4052", "해당 학습방을 찾을 수 없습니다."),
 
     // 🛠 서버 내부 오류 (500)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E5001", "서버 내부 오류가 발생했습니다."),

@@ -23,4 +23,7 @@ public interface QuizRoomRepository extends JpaRepository<QuizRoom, Long> {
             int month,
             String difficulty
     );
+
+    List<QuizRoom> findBySubjectAndGradeAndMonthAndDifficulty(String subject, Integer grade, Integer month, String difficulty);
+
 }

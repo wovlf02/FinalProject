@@ -1,7 +1,7 @@
 package com.hamcam.back.entity.community;
 
 import com.hamcam.back.entity.auth.User;
-import com.hamcam.back.entity.video.VideoRoom;
+import com.hamcam.back.entity.study.team.StudyRoom;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -53,8 +53,8 @@ public class Post {
 
     /** 질문용 팀방 연동 (선택) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "video_room_id")
-    private VideoRoom videoRoom;
+    @JoinColumn(name = "study_room_id")
+    private StudyRoom studyRoom;
 
     /** 생성일시 */
     @Column(name = "created_at", nullable = false, updatable = false)

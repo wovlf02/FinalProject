@@ -6,6 +6,7 @@ import com.hamcam.back.dto.study.team.response.inner.ParticipantInfo;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.entity.community.PostCategory;
+import com.hamcam.back.entity.study.problem.Problem;
 import com.hamcam.back.entity.study.team.*;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
@@ -18,8 +19,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -35,13 +39,19 @@ public class TeamStudyRestService {
     private final UserRepository userRepository;
     private final FileService fileService;
     private final PostRepository postRepository;
+    private final ProblemRepository problemRepository;
 
     /**
      * ✅ 팀방 생성 (문제풀이방 or 공부시간 경쟁방)
      */
     public Long createRoom(TeamRoomCreateRequest request, Long userId) {
         User user = getUser(userId);
+        if (user == null) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
         String inviteCode = generateInviteCode();
+        System.out.println("RoomType: " + request.getRoomType());
 
         StudyRoom room;
 
@@ -55,21 +65,25 @@ public class TeamStudyRestService {
                     .grade(request.getGrade())
                     .month(request.getMonth())
                     .difficulty(request.getDifficulty())
+                    .host(user) // ✅ 필수 추가
                     .build();
             quizRoomRepository.save((QuizRoom) room);
+
         } else if (request.getRoomType() == RoomType.FOCUS) {
             room = FocusRoom.builder()
                     .title(request.getTitle())
                     .password(request.getPassword())
                     .inviteCode(inviteCode)
                     .targetTime(request.getTargetTime())
+                    .host(user) // ✅ 필수 추가
                     .build();
             focusRoomRepository.save((FocusRoom) room);
+
         } else {
             throw new CustomException(ErrorCode.INVALID_ROOM_TYPE);
         }
 
-        // 생성자 참여 등록
+        // ✅ 생성자 참여 등록
         StudyRoomParticipant participant = StudyRoomParticipant.builder()
                 .user(user)
                 .studyRoom(room)
@@ -78,6 +92,52 @@ public class TeamStudyRestService {
 
         return room.getId();
     }
+
+    /**
+     * ✅ 전체 팀방 목록 조회 (isActive=true 기준)
+     */
+    public List<TeamRoomSimpleInfo> getAllRooms(Long userId) {
+        return studyRoomRepository.findAllByIsActiveTrue().stream()
+                .map(TeamRoomSimpleInfo::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * ✅ 특정 유형(QUIZ / FOCUS) 팀방 목록 조회
+     */
+    public List<TeamRoomSimpleInfo> getRoomsByType(Long userId, String roomType) {
+        RoomType type;
+        try {
+            type = RoomType.valueOf(roomType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.INVALID_ROOM_TYPE);
+        }
+
+        return studyRoomRepository.findByRoomTypeAndIsActiveTrue(type).stream()
+                .map(TeamRoomSimpleInfo::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * ✅ 내가 속한 팀방 중 특정 유형 필터링
+     */
+    public List<TeamRoomSimpleInfo> getMyRoomsByType(Long userId, String roomType) {
+        RoomType type;
+        try {
+            type = RoomType.valueOf(roomType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.INVALID_ROOM_TYPE);
+        }
+
+        return participantRepository.findByUserId(userId).stream()
+                .map(StudyRoomParticipant::getStudyRoom)
+                .filter(room -> room.getRoomType() == type)
+                .map(TeamRoomSimpleInfo::from)
+                .collect(Collectors.toList());
+    }
+
+
+
 
     /**
      * ✅ 내가 참여한 팀방 목록 조회
@@ -175,4 +235,68 @@ public class TeamStudyRestService {
     private String generateInviteCode() {
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     }
+
+    public void deleteRoom(Long roomId, Long userId) {
+        StudyRoom room = studyRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (!room.getHost().getId().equals(userId)) {
+            throw new CustomException(ErrorCode.NOT_HOST);
+        }
+
+        // 1. 참가자 먼저 삭제
+        participantRepository.deleteAllByStudyRoomId(roomId);
+
+        // 2. 하드 삭제 (상속 구조 고려)
+        if (room instanceof QuizRoom) {
+            quizRoomRepository.deleteById(roomId);
+        } else if (room instanceof FocusRoom) {
+            focusRoomRepository.deleteById(roomId);
+        } else {
+            throw new CustomException(ErrorCode.INVALID_ROOM_TYPE);
+        }
+    }
+
+
+    public void enterRoom(Long roomId, Long userId) {
+        StudyRoom room = studyRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        boolean alreadyExists = participantRepository.existsByStudyRoomIdAndUserId(roomId, userId);
+        if (!alreadyExists) {
+            User user = getUser(userId);
+            StudyRoomParticipant participant = StudyRoomParticipant.builder()
+                    .user(user)
+                    .studyRoom(room)
+                    .build();
+            participantRepository.save(participant);
+        }
+    }
+
+    public List<String> getUploadedFiles(Long roomId) {
+        // 파일 저장 경로 기준으로 roomId 폴더가 존재한다는 가정
+        return fileService.getStudyFileList(roomId);
+    }
+
+
+    public List<ProblemSummary> getFilteredProblems(String subject, Integer grade, Integer month, String difficulty) {
+        List<QuizRoom> quizRooms = quizRoomRepository.findBySubjectAndGradeAndMonthAndDifficulty(subject, grade, month, difficulty);
+
+        return quizRooms.stream()
+                .map(QuizRoom::getProblemId)
+                .distinct()
+                .map(problemId -> problemRepository.findById(problemId).orElse(null))
+                .filter(Objects::nonNull)
+                .map(problem -> new ProblemSummary(
+                        problem.getId(),
+                        problem.getPassage() != null ? problem.getPassage().getTitle() : "(제목 없음)",
+                        problem.getSubject(),
+                        difficulty // QuizRoom 기준이므로 그대로 전달
+                ))
+                .collect(Collectors.toList());
+    }
+
+
+
+
 }

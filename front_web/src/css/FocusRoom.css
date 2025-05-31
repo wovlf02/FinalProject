@@ -1,56 +1,102 @@
-/* FocusRoom.css */
-
 .focus-room-container {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-    padding: 20px;
-    box-sizing: border-box;
-    height: 100vh;
-    background-color: #f8f9fa;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.left-panel {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 30px;
+    background-color: #f5f7fa;
+    min-height: 100vh;
+    font-family: 'Pretendard', sans-serif;
 }
 
-.right-panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #333;
 }
 
-/* 🎥 Local video */
-.local-video {
-    width: 90%;
-    max-width: 480px;
-    border-radius: 8px;
-    margin-top: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+.video-section {
+    width: 640px;
+    height: 360px;
+    background-color: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    margin-bottom: 20px;
 }
 
-/* ⏱️ Study time display */
-.study-time-display {
-    margin-top: 20px;
-    font-size: 1.3rem;
-    font-weight: bold;
-    color: #343a40;
-}
-
-/* 📈 Focus ranking board */
-.focus-ranking-board {
-    border: 1px solid #ccc;
-    padding: 16px;
-    background-color: #fdfdfd;
-    margin-top: 20px;
-    border-radius: 8px;
+.video-section video {
     width: 100%;
-    max-width: 480px;
+    height: 100%;
+    object-fit: cover;
+}
+
+.info-section {
+    width: 640px;
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.info-section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.winner {
+    color: #4caf50;
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.button-group button {
+    flex: 1;
+    padding: 12px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.button-group button:first-child {
+    background-color: #1976d2;
+    color: white;
+}
+
+.button-group button:first-child:hover {
+    background-color: #155fa0;
+}
+
+.button-group button:last-child {
+    background-color: #43a047;
+    color: white;
+}
+
+.button-group button:last-child:hover {
+    background-color: #388e3c;
+}
+
+.button-group button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: #222;
 }
 
 .ranking-list {
@@ -59,67 +105,9 @@
     margin: 0;
 }
 
-.ranking-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 8px;
+.ranking-list li {
+    padding: 10px 0;
     border-bottom: 1px solid #eee;
-}
-
-.ranking-item.highlight {
-    background-color: #e3f2fd;
-    font-weight: bold;
-}
-
-.rank {
-    width: 50px;
-    font-weight: bold;
-}
-
-.nickname {
-    flex: 1;
-    text-align: left;
-}
-
-.time {
-    width: 100px;
-    text-align: right;
-}
-
-.badge {
-    margin-left: 10px;
-    color: green;
-    font-weight: bold;
-}
-
-/* 💬 채팅/업로더 영역 기본 정렬 */
-.right-panel > * {
-    margin-bottom: 20px;
-}
-
-/* 📱 반응형 */
-@media (max-width: 768px) {
-    .focus-room-container {
-        flex-direction: column;
-        height: auto;
-    }
-
-    .left-panel,
-    .right-panel {
-        width: 100%;
-        align-items: center;
-    }
-
-    .right-panel {
-        padding-top: 20px;
-    }
-
-    .local-video {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    .focus-ranking-board {
-        max-width: 100%;
-    }
+    font-size: 15px;
+    color: #444;
 }

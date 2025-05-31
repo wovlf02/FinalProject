@@ -1,10 +1,14 @@
-// src/components/teamstudy/PasswordModal.js
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import '../../css/Modal.css';
 
 const PasswordModal = ({ roomTitle, onSubmit, onCancel }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        inputRef.current?.focus();
+    }, []);
 
     const handleSubmit = () => {
         if (!password.trim()) {
@@ -15,17 +19,28 @@ const PasswordModal = ({ roomTitle, onSubmit, onCancel }) => {
         onSubmit(password);
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSubmit();
+        }
+    };
+
     return (
         <div className="modal">
             <div className="modal-content">
                 <h2>🔒 {roomTitle} 입장</h2>
                 <p>이 방은 비밀번호가 필요합니다.</p>
 
+                <label htmlFor="room-password" className="visually-hidden">비밀번호 입력</label>
                 <input
+                    id="room-password"
                     type="password"
+                    ref={inputRef}
                     placeholder="비밀번호 입력"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    aria-label="비밀번호 입력"
                 />
 
                 {error && <p className="error-message">{error}</p>}

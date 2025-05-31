@@ -16,6 +16,8 @@ public class TeamRoomSimpleInfo {
     private RoomType roomType;
     private boolean isActive;
     private String inviteCode;
+    private String password;          // 🔹 추가
+    private int maxParticipants;      // 🔹 추가
 
     public static TeamRoomSimpleInfo from(StudyRoom room) {
         return TeamRoomSimpleInfo.builder()
@@ -24,6 +26,10 @@ public class TeamRoomSimpleInfo {
                 .roomType(room.getRoomType())
                 .isActive(room.isActive())
                 .inviteCode(room.getInviteCode())
+                .password(room.getPassword())
+                .maxParticipants(room.getParticipants() != null
+                        ? room.getParticipants().size()
+                        : 0)
                 .build();
     }
 }

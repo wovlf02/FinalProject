@@ -1,5 +1,6 @@
 package com.hamcam.back.entity.study.team;
 
+import com.hamcam.back.entity.auth.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -15,18 +16,21 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@DiscriminatorValue("FOCUS") // 상위 클래스에서 구분자 지정
+@DiscriminatorValue("FOCUS")
 public class FocusRoom extends StudyRoom {
 
-    /**
-     * 목표 공부 시간 (단위: 분)
-     */
+    /** 목표 공부 시간 (단위: 분) */
     @Column(nullable = false)
     private int targetTime;
 
     @Builder
-    public FocusRoom(String title, String password, String inviteCode, int targetTime) {
-        super(title, password, inviteCode, RoomType.FOCUS);
+    public FocusRoom(String title,
+                     String password,
+                     String inviteCode,
+                     int targetTime,
+                     User host) {
+        // ✅ RoomType.FOCUS 명시적으로 전달
+        super(title, password, inviteCode, RoomType.FOCUS, host);
         this.targetTime = targetTime;
     }
 }

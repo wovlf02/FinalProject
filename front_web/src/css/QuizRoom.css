@@ -1,117 +1,137 @@
-/* 🎯 공통 스타일 */
-.card-box {
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 1rem;
-    margin-top: 1rem;
+.quiz-room-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #f8f9fb;
+    min-height: 100vh;
+    font-family: 'Pretendard', sans-serif;
 }
 
-/* ✋ 손든 사람 */
-.hand-raise-list {
-    composes: card-box;
+.quiz-room-container h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: #333;
+    text-align: center;
 }
-.hand-raise-list ul {
-    list-style: none;
+
+.problem-section {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.problem-section h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.passage {
+    background-color: #f1f3f5;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 15px;
+    white-space: pre-wrap;
+}
+
+.problem-section ul {
+    list-style-type: none;
     padding: 0;
-    margin: 0;
 }
-.hand-user {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem;
+
+.problem-section li {
+    padding: 8px 0;
     border-bottom: 1px solid #eee;
+    font-size: 15px;
 }
-.hand-user.presenter {
+
+.presenter-section {
     background-color: #e3f2fd;
-    font-weight: bold;
-}
-.me-tag {
-    color: #4caf50;
-    font-size: 0.85rem;
-    margin-left: 0.5rem;
-}
-
-/* 👥 참가자 리스트 */
-.participant-list {
-    composes: card-box;
-}
-.participant-item {
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
     display: flex;
     justify-content: space-between;
-    padding: 0.5rem;
-    border-bottom: 1px solid #eee;
-}
-.participant-item.presenter {
-    background-color: #fffbe7;
-    font-weight: bold;
-}
-.badge {
-    font-size: 0.85rem;
-    color: #ff9800;
-    margin-left: 0.5rem;
-}
-
-/* 📚 문제 보드 */
-.quiz-board {
-    composes: card-box;
-}
-.problem-title {
-    font-size: 1.3rem;
-    margin-bottom: 0.75rem;
-}
-.problem-content {
-    font-size: 1.1rem;
-    margin-bottom: 1.25rem;
-}
-.options-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.option-item {
-    display: flex;
     align-items: center;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: background 0.2s;
-}
-.option-item:hover {
-    background-color: #f1f1f1;
-}
-.option-number {
-    width: 24px;
-    font-weight: bold;
-    color: #1976d2;
-}
-.option-text {
-    flex: 1;
 }
 
-/* 💬 해설 */
-.explanation-box {
-    margin-top: 1.2rem;
-    background-color: #f9f9f9;
-    padding: 0.75rem;
-    border-radius: 4px;
-    font-size: 0.95rem;
-    line-height: 1.5;
+.vote-section {
+    background-color: #fff3cd;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
-/* 📱 반응형 대응 */
-@media (max-width: 768px) {
-    .hand-user,
-    .participant-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-    }
-    .option-item {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .problem-title, .problem-content {
-        font-size: 1rem;
-    }
+.vote-section h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.vote-section button {
+    padding: 10px 20px;
+    font-size: 15px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.vote-section button:first-child {
+    background-color: #4caf50;
+    color: white;
+}
+
+.vote-section button:first-child:hover {
+    background-color: #3e8e41;
+}
+
+.vote-section button:last-child {
+    background-color: #f44336;
+    color: white;
+}
+
+.vote-section button:last-child:hover {
+    background-color: #d32f2f;
+}
+
+.result-section {
+    background-color: #e8f5e9;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.result-section strong {
+    color: #2e7d32;
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.action-buttons button {
+    padding: 12px 18px;
+    font-size: 15px;
+    border: none;
+    border-radius: 8px;
+    background-color: #1976d2;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.action-buttons button:hover {
+    background-color: #125ea5;
 }

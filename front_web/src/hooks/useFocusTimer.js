@@ -1,9 +1,10 @@
 // src/hooks/useFocusTimer.js
 import { useEffect, useRef, useState } from 'react';
-import api from '../api/api';
+import useTeamRoomSocket from './useTeamRoomSocket';
 
 /**
- * Focus Study Room 집중 타이머 Hook
+ * Focus Study Room 집중 타이머 Hook (WebSocket 연동)
+ *
  * @param {number} roomId - 현재 방 ID
  * @param {number} targetTime - 목표 시간 (분 단위)
  * @param {function} onComplete - 목표 도달 시 콜백
@@ -12,40 +13,50 @@ const useFocusTimer = ({ roomId, targetTime, onComplete }) => {
     const [seconds, setSeconds] = useState(0);
     const [isRunning, setIsRunning] = useState(true);
     const timerRef = useRef(null);
-    const syncRef = useRef(null); // 1분마다 서버 전송용
 
-    // 1초 간격 집중 시간 측정
+    // ✅ WebSocket 전송용 Hook
+    const {
+        connectSocket,
+        disconnectSocket,
+        sendEvent,
+    } = useTeamRoomSocket(
+        roomId,
+        null,
+        (event) => {
+            if (event.type === 'RANK_UPDATE') {
+                console.log('📊 실시간 랭킹:', event.ranking);
+            }
+        }
+    );
+
+    // ✅ 타이머 1초 간격 증가
     useEffect(() => {
         if (isRunning) {
             timerRef.current = setInterval(() => {
-                setSeconds(prev => prev + 1);
+                setSeconds((prev) => prev + 1);
             }, 1000);
         }
+
         return () => clearInterval(timerRef.current);
     }, [isRunning]);
 
-    // 60초마다 서버에 집중 시간 전송
+    // ✅ 1분마다 서버에 집중 시간 전송
     useEffect(() => {
         if (!roomId || seconds === 0) return;
 
         if (seconds % 60 === 0) {
-            syncRef.current = setTimeout(() => {
-                api.post('/study-room/focus-time', {
-                    roomId,
-                    focusTime: seconds,
-                }).catch((err) => {
-                    console.error('집중 시간 동기화 실패:', err);
-                });
-            }, 0);
+            sendEvent('FOCUS_TIME_UPDATE', {
+                focusedSeconds: seconds
+            });
         }
 
+        // ✅ 목표 도달
         if (targetTime && seconds >= targetTime * 60) {
             setIsRunning(false);
-            onComplete?.(); // 목표 도달 시 콜백
+            sendEvent('FOCUS_GOAL_ACHIEVED');
+            onComplete?.();
         }
-
-        return () => clearTimeout(syncRef.current);
-    }, [seconds, roomId, targetTime, onComplete]);
+    }, [seconds]);
 
     const resetTimer = () => {
         setSeconds(0);
@@ -57,6 +68,8 @@ const useFocusTimer = ({ roomId, targetTime, onComplete }) => {
         isRunning,
         setIsRunning,
         resetTimer,
+        connectSocket,
+        disconnectSocket,
     };
 };
 

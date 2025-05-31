@@ -1,4 +1,3 @@
-// src/components/teamstudy/FocusRankingBoard.js
 import React from 'react';
 import '../../css/FocusRoom.css';
 
@@ -12,25 +11,32 @@ const FocusRankingBoard = ({ rankings, currentUserId, targetTime = null }) => {
     return (
         <div className="focus-ranking-board">
             <h3>📊 실시간 랭킹</h3>
-            <ul className="ranking-list">
-                {rankings.length === 0 ? (
-                    <p className="no-data">참가자 정보 없음</p>
-                ) : (
-                    rankings.map((user, index) => (
-                        <li
-                            key={user.userId}
-                            className={`ranking-item ${user.userId === currentUserId ? 'highlight' : ''}`}
-                        >
-                            <span className="rank">{index + 1}위</span>
-                            <span className="nickname">{user.nickname}</span>
-                            <span className="time">{formatTime(user.focusTime)}</span>
-                            {targetTime && user.focusTime >= targetTime * 60 && (
-                                <span className="badge">🎯 목표 달성</span>
-                            )}
-                        </li>
-                    ))
-                )}
-            </ul>
+
+            {rankings.length === 0 ? (
+                <p className="no-data">참가자 정보가 없습니다.</p>
+            ) : (
+                <ul className="ranking-list">
+                    {rankings.map((user, index) => {
+                        const isMe = user.userId === currentUserId;
+                        const achievedGoal = targetTime && user.focusTime >= targetTime * 60;
+
+                        return (
+                            <li
+                                key={user.userId}
+                                className={`ranking-item ${isMe ? 'highlight' : ''}`}
+                            >
+                                <span className="rank">{index + 1}위</span>
+                                <span className="nickname">
+                                    {user.nickname}
+                                    {isMe && <span className="me-tag"> 👈 나</span>}
+                                </span>
+                                <span className="time">{formatTime(user.focusTime)}</span>
+                                {achievedGoal && <span className="badge">🎯 목표 달성</span>}
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
         </div>
     );
 };

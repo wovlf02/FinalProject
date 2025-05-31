@@ -1,6 +1,9 @@
 package com.hamcam.back.controller.study.team;
 
+import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
+import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.dto.study.team.socket.request.*;
+import com.hamcam.back.dto.study.team.socket.response.FileUploadNoticeResponse;
 import com.hamcam.back.dto.study.team.socket.response.VoteResultResponse;
 import com.hamcam.back.service.study.team.socket.QuizRoomSocketService;
 import com.hamcam.back.util.SessionUtil;
@@ -102,4 +105,26 @@ public class QuizRoomSocketController {
         Long userId = SessionUtil.getUserId(request);
         quizRoomSocketService.terminateRoom(requestDto.getRoomId(), userId);
     }
+
+    /**
+     * ✅ 실시간 채팅 메시지 송신
+     */
+    @MessageMapping("/quiz/chat/send")
+    public void sendChatMessage(HttpServletRequest request, ChatMessageRequest requestDto) {
+        Long userId = SessionUtil.getUserId(request);
+        ChatMessageResponse response = quizRoomSocketService.handleChatMessage(requestDto, userId);
+        messagingTemplate.convertAndSend("/sub/quiz/room/" + requestDto.getRoomId(), response);
+    }
+
+    /**
+     * ✅ 파일 업로드 완료 후 알림 전송
+     */
+    @MessageMapping("/quiz/file/uploaded")
+    public void notifyFileUploaded(HttpServletRequest request, FileUploadNoticeRequest requestDto) {
+        Long userId = SessionUtil.getUserId(request);
+        FileUploadNoticeResponse response = quizRoomSocketService.notifyFileUploaded(requestDto, userId);
+        messagingTemplate.convertAndSend("/sub/quiz/room/" + requestDto.getRoomId(), response);
+    }
+
+
 }

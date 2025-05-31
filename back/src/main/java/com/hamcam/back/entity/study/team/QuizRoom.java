@@ -18,19 +18,19 @@ import lombok.NoArgsConstructor;
 @DiscriminatorValue("QUIZ")
 public class QuizRoom extends StudyRoom {
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Long problemId;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String subject;
 
-    @Column(nullable = false)
-    private int grade;
+    @Column(nullable = true)
+    private Integer grade;
 
-    @Column(nullable = false)
-    private int month;
+    @Column(nullable = true)
+    private Integer month;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String difficulty;
 
     @Builder
@@ -39,10 +39,11 @@ public class QuizRoom extends StudyRoom {
                     String inviteCode,
                     Long problemId,
                     String subject,
-                    int grade,
-                    int month,
+                    Integer grade,
+                    Integer month,
                     String difficulty,
                     User host) {
+        // ✅ RoomType.QUIZ 명시적으로 전달
         super(title, password, inviteCode, RoomType.QUIZ, host);
         this.problemId = problemId;
         this.subject = subject;

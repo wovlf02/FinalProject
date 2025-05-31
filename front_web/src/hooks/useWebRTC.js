@@ -1,72 +1,113 @@
 // src/hooks/useWebRTC.js
 import { useEffect, useRef, useState } from 'react';
+import {
+    Room,
+    connect,
+    createLocalVideoTrack,
+    createLocalAudioTrack,
+} from 'livekit-client';
+import api from '../api/api';
 
-const useWebRTC = () => {
-    const [localStream, setLocalStream] = useState(null);
+const useWebRTC = (roomId) => {
+    const [remoteStreams, setRemoteStreams] = useState([]);
     const [isCameraOn, setIsCameraOn] = useState(true);
     const [isMicOn, setIsMicOn] = useState(true);
-    const videoRef = useRef(null);
 
-    // ✅ 캠/마이크 스트림 요청
-    const startMedia = async () => {
+    const localVideoRef = useRef(null);
+    const roomRef = useRef(null);
+    const videoTrackRef = useRef(null);
+    const audioTrackRef = useRef(null);
+
+    // ✅ 캠+마이크 실행 및 LiveKit 연결
+    const startCamera = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true,
+            const res = await api.post('/livekit/token', { roomName: roomId });
+            const { token, wsUrl } = res.data;
+
+            const room = new Room();
+            roomRef.current = room;
+
+            // 원격 트랙 수신 시
+            room.on('trackSubscribed', (track, publication, participant) => {
+                if (track.kind === 'video') {
+                    const stream = new MediaStream([track.mediaStreamTrack]);
+
+                    setRemoteStreams((prev) => [
+                        ...prev.filter((r) => r.id !== participant.identity),
+                        {
+                            id: participant.identity,
+                            stream,
+                            isPresenter: false,
+                        },
+                    ]);
+                }
             });
 
-            setLocalStream(stream);
+            // ✅ connect는 Room 객체 메서드로 사용해야 함
+            await room.connect(wsUrl, token);
 
-            // 자동 연결
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
+            const videoTrack = await createLocalVideoTrack();
+            const audioTrack = await createLocalAudioTrack();
+
+            videoTrackRef.current = videoTrack;
+            audioTrackRef.current = audioTrack;
+
+            await room.localParticipant.publishTrack(videoTrack);
+            await room.localParticipant.publishTrack(audioTrack);
+
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = new MediaStream([videoTrack.mediaStreamTrack]);
             }
         } catch (err) {
-            console.error('미디어 스트림 접근 실패:', err);
+            console.error('LiveKit 연결 실패:', err);
         }
     };
 
-    // ✅ 캠 off/on
+
+    // ✅ 캠 on/off
     const toggleCamera = () => {
-        if (localStream) {
-            localStream.getVideoTracks().forEach((track) => {
-                track.enabled = !track.enabled;
-            });
-            setIsCameraOn((prev) => !prev);
+        if (videoTrackRef.current) {
+            const current = videoTrackRef.current.isEnabled;
+            videoTrackRef.current.setEnabled(!current);
+            setIsCameraOn(!current);
         }
     };
 
-    // ✅ 마이크 off/on
+    // ✅ 마이크 on/off
     const toggleMic = () => {
-        if (localStream) {
-            localStream.getAudioTracks().forEach((track) => {
-                track.enabled = !track.enabled;
-            });
-            setIsMicOn((prev) => !prev);
+        if (audioTrackRef.current) {
+            const current = audioTrackRef.current.isEnabled;
+            audioTrackRef.current.setEnabled(!current);
+            setIsMicOn(!current);
         }
     };
 
-    // ✅ 정리: 캠 종료
+    // ✅ 정리
     const stopMedia = () => {
-        if (localStream) {
-            localStream.getTracks().forEach((track) => track.stop());
-            setLocalStream(null);
+        if (roomRef.current) {
+            roomRef.current.disconnect();
+            roomRef.current = null;
         }
+
+        videoTrackRef.current?.stop();
+        audioTrackRef.current?.stop();
+
+        videoTrackRef.current = null;
+        audioTrackRef.current = null;
+
+        setRemoteStreams([]);
     };
 
-    // ✅ 초기 진입 시 자동 스트림 요청
     useEffect(() => {
-        startMedia();
-
         return () => {
             stopMedia();
         };
     }, []);
 
     return {
-        localStream,
-        videoRef,
-        startMedia,
+        localVideoRef,
+        remoteStreams,
+        startCamera,
         stopMedia,
         toggleCamera,
         toggleMic,

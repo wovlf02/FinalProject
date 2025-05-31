@@ -15,39 +15,39 @@ const useRoomLifecycle = ({ roomId, connectSocket, disconnectSocket, isHost = fa
     const navigate = useNavigate();
 
     useEffect(() => {
-        const handleJoin = async () => {
+        const joinRoom = async () => {
             try {
                 await api.post('/video-room/join', { roomId });
-                connectSocket(roomId); // WebSocket 연결
+                connectSocket(); // socket 연결 (roomId는 내부에서 참조)
+                console.log('✅ 방 입장 및 소켓 연결 완료');
             } catch (error) {
-                console.error('방 입장 실패:', error);
+                console.error('❌ 방 입장 실패:', error);
                 alert('입장에 실패했습니다.');
                 navigate('/team-study');
             }
         };
 
-        handleJoin();
+        joinRoom();
 
-        // 페이지 이탈 또는 새로고침 시 퇴장 처리
-        const handleBeforeUnload = async () => {
-            try {
-                await api.post('/video-room/leave', { roomId });
-                disconnectSocket();
-            } catch (err) {
+        const handleBeforeUnload = () => {
+            // unload 시 비동기 await 사용 불가
+            api.post('/video-room/leave', { roomId }).catch((err) => {
                 console.warn('퇴장 처리 실패:', err);
-            }
+            });
+            disconnectSocket();
         };
 
         window.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
-            handleBeforeUnload(); // unmount 시 퇴장
+            // 언마운트 시에도 동일하게 처리
+            handleBeforeUnload();
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, [roomId, connectSocket, disconnectSocket, navigate]);
 
     /**
-     * 방장이 방을 강제 종료하는 경우
+     * 방장이 방을 강제 종료하는 경우 호출
      */
     const closeRoom = async () => {
         if (!isHost) return;
@@ -58,7 +58,7 @@ const useRoomLifecycle = ({ roomId, connectSocket, disconnectSocket, isHost = fa
             alert('방을 종료했습니다.');
             navigate('/team-study');
         } catch (error) {
-            console.error('방 종료 실패:', error);
+            console.error('❌ 방 종료 실패:', error);
             alert('방 종료에 실패했습니다.');
         }
     };

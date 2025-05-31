@@ -2,6 +2,7 @@ package com.hamcam.back.service.study.team.socket;
 
 import com.hamcam.back.dto.study.team.socket.response.FocusRankingResponse;
 import com.hamcam.back.dto.study.team.socket.response.FocusRankingResponse.FocusRankingEntry;
+import com.hamcam.back.dto.study.team.socket.response.ParticipantInfo;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.study.team.FocusRoom;
 import com.hamcam.back.repository.auth.UserRepository;
@@ -24,26 +25,17 @@ public class FocusRoomSocketService {
     private final FocusRoomRepository focusRoomRepository;
     private final UserRepository userRepository;
 
-    // ✅ 각 방별 집중 시간 저장: roomId → userId → 누적시간
     private final Map<Long, Map<Long, Integer>> focusTimeMap = new ConcurrentHashMap<>();
-
-    // ✅ 각 방별 목표 달성 여부: roomId → userId Set
     private final Map<Long, Set<Long>> goalAchievedMap = new ConcurrentHashMap<>();
-
-    // ✅ 각 방별 종료 확인 유저: roomId → userId Set
     private final Map<Long, Set<Long>> confirmExitMap = new ConcurrentHashMap<>();
+    private final Map<Long, Set<Long>> warningsMap = new ConcurrentHashMap<>(); // 경고 기록
+    private final Map<Long, Long> winnerMap = new ConcurrentHashMap<>(); // roomId → 승리자 userId
 
-    /**
-     * ✅ 방 입장 처리 (유저 초기화)
-     */
     public void enterRoom(Long roomId, Long userId) {
         focusTimeMap.putIfAbsent(roomId, new ConcurrentHashMap<>());
         focusTimeMap.get(roomId).putIfAbsent(userId, 0);
     }
 
-    /**
-     * ✅ 집중 시간 업데이트 (1분마다 호출됨)
-     */
     public void updateFocusTime(Long roomId, Long userId, int deltaSeconds) {
         Map<Long, Integer> userTimes = focusTimeMap.get(roomId);
         if (userTimes != null) {
@@ -51,9 +43,6 @@ public class FocusRoomSocketService {
         }
     }
 
-    /**
-     * ✅ 현재 랭킹 응답 반환
-     */
     public FocusRankingResponse getCurrentRanking(Long roomId) {
         Map<Long, Integer> userTimes = focusTimeMap.getOrDefault(roomId, Collections.emptyMap());
         Set<Long> goalSet = goalAchievedMap.getOrDefault(roomId, Collections.emptySet());
@@ -81,29 +70,95 @@ public class FocusRoomSocketService {
     }
 
     /**
-     * ✅ 목표 시간 도달 시 호출됨
+     * ✅ 최초 도달자 여부를 반환 (true면 브로드캐스트 대상)
      */
-    public void markGoalAchieved(Long roomId, Long userId) {
+    public boolean markGoalAchieved(Long roomId, Long userId) {
         goalAchievedMap.putIfAbsent(roomId, new HashSet<>());
-        goalAchievedMap.get(roomId).add(userId);
+        Set<Long> achievers = goalAchievedMap.get(roomId);
+        boolean isFirst = achievers.isEmpty();
+
+        achievers.add(userId);
+
+        if (isFirst) {
+            winnerMap.put(roomId, userId);
+        }
+
+        return isFirst;
     }
 
     /**
-     * ✅ 유저가 결과 화면에서 “확인” 클릭 → 모든 유저 확인 시 방 삭제
+     * ✅ 결과 확인 → 저장만 (컨트롤러에서 확인자 수 비교)
      */
     public void confirmExit(Long roomId, Long userId) {
         confirmExitMap.putIfAbsent(roomId, new HashSet<>());
         confirmExitMap.get(roomId).add(userId);
+    }
 
-        int participantCount = focusTimeMap.getOrDefault(roomId, Collections.emptyMap()).size();
-        int confirmed = confirmExitMap.get(roomId).size();
+    /**
+     * ✅ 전체 확인 여부 판별
+     */
+    public boolean isAllConfirmed(Long roomId) {
+        int total = focusTimeMap.getOrDefault(roomId, Collections.emptyMap()).size();
+        int confirmed = confirmExitMap.getOrDefault(roomId, Collections.emptySet()).size();
+        return confirmed >= total;
+    }
 
-        if (confirmed >= participantCount) {
-            // ✅ 모든 참가자가 결과 확인 → 방 종료 처리
-            focusTimeMap.remove(roomId);
-            goalAchievedMap.remove(roomId);
-            confirmExitMap.remove(roomId);
-            focusRoomRepository.deleteById(roomId);
-        }
+    /**
+     * ✅ 모든 데이터 삭제 (방 종료)
+     */
+    public void deleteRoomData(Long roomId) {
+        focusTimeMap.remove(roomId);
+        goalAchievedMap.remove(roomId);
+        confirmExitMap.remove(roomId);
+        warningsMap.remove(roomId);
+        winnerMap.remove(roomId);
+        focusRoomRepository.deleteById(roomId);
+    }
+
+    /**
+     * ✅ 방장이 맞는지 확인
+     */
+    public boolean isHost(Long roomId, Long userId) {
+        FocusRoom room = focusRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STUDY_ROOM_NOT_FOUND));
+        return Objects.equals(room.getHostId(), userId);
+    }
+
+    /**
+     * ✅ 강제 종료 (방장에 의해)
+     */
+    public void terminateRoom(Long roomId) {
+        deleteRoomData(roomId);
+    }
+
+    /**
+     * ✅ 자리비움/졸음 감지 경고 누적
+     */
+    public void accumulateWarning(Long roomId, Long userId, String reason) {
+        warningsMap.putIfAbsent(roomId, new HashSet<>());
+        warningsMap.get(roomId).add(userId);
+    }
+
+    /**
+     * ✅ 실시간 참가자 목록 생성
+     */
+    public List<ParticipantInfo> getCurrentParticipants(Long roomId) {
+        Map<Long, Integer> userTimes = focusTimeMap.getOrDefault(roomId, Collections.emptyMap());
+        Set<Long> confirmedSet = confirmExitMap.getOrDefault(roomId, Collections.emptySet());
+
+        return userTimes.entrySet().stream()
+                .map(entry -> {
+                    Long userId = entry.getKey();
+                    int seconds = entry.getValue();
+                    User user = userRepository.findById(userId)
+                            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                    return ParticipantInfo.builder()
+                            .userId(userId)
+                            .nickname(user.getNickname())
+                            .focusedSeconds(seconds)
+                            .confirmed(confirmedSet.contains(userId))
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }

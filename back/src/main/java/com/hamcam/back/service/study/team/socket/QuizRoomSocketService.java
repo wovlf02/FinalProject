@@ -1,18 +1,27 @@
 package com.hamcam.back.service.study.team.socket;
 
+import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
+import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
+import com.hamcam.back.dto.study.team.socket.request.FileUploadNoticeRequest;
 import com.hamcam.back.dto.study.team.socket.request.VoteType;
+import com.hamcam.back.dto.study.team.socket.response.FileUploadNoticeResponse;
+import com.hamcam.back.dto.study.team.socket.response.TextNoticeResponse;
 import com.hamcam.back.dto.study.team.socket.response.VoteResultResponse;
+import com.hamcam.back.dto.study.team.socket.response.VoteUITriggerResponse;
+import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.study.team.QuizRoom;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.study.QuizRoomRepository;
 import com.hamcam.back.repository.study.StudyRoomParticipantRepository;
-import com.hamcam.back.global.exception.CustomException;
-import com.hamcam.back.global.exception.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,14 +34,15 @@ public class QuizRoomSocketService {
     private final QuizRoomRepository quizRoomRepository;
     private final StudyRoomParticipantRepository participantRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    // ✅ 발표 후보자 저장: roomId → userId 순서대로 저장
+    // 발표 후보자 저장: roomId → userId 순서대로 저장
     private final Map<Long, Queue<Long>> handRaisedQueue = new ConcurrentHashMap<>();
 
-    // ✅ 발표자 지정: roomId → 발표자 userId
+    // 발표자 지정: roomId → 발표자 userId
     private final Map<Long, Long> presenterMap = new ConcurrentHashMap<>();
 
-    // ✅ 투표 현황 저장: roomId → userId → VoteType
+    // 투표 현황 저장: roomId → userId → VoteType
     private final Map<Long, Map<Long, VoteType>> voteMap = new ConcurrentHashMap<>();
 
     /**
@@ -93,15 +103,23 @@ public class QuizRoomSocketService {
     }
 
     /**
-     * ✅ 발표 종료 → 투표 준비
+     * ✅ 발표 종료 → 투표 준비 및 투표 UI 브로드캐스트
      */
     public void endPresentation(Long roomId, Long userId) {
         log.info("발표 종료: room {}", roomId);
+
+        // 투표 맵 초기화
         voteMap.put(roomId, new HashMap<>());
+
+        // 투표 UI 띄우기 신호 전송
+        messagingTemplate.convertAndSend(
+                "/sub/quiz/room/" + roomId,
+                new VoteUITriggerResponse("SHOW_VOTE_UI")
+        );
     }
 
     /**
-     * ✅ 투표 처리
+     * ✅ 투표 처리 + 결과 브로드캐스트
      */
     public VoteResultResponse submitVote(Long roomId, Long userId, VoteType vote) {
         Map<Long, VoteType> votes = voteMap.get(roomId);
@@ -113,20 +131,30 @@ public class QuizRoomSocketService {
 
         int totalParticipants = participantRepository.countByStudyRoomId(roomId);
         if (votes.size() >= totalParticipants) {
-            // 투표 집계
             int yesVotes = (int) votes.values().stream().filter(v -> v == VoteType.SUCCESS).count();
             int noVotes = votes.size() - yesVotes;
             boolean success = yesVotes > totalParticipants / 2;
 
             voteMap.remove(roomId);
 
-            return VoteResultResponse.builder()
+            VoteResultResponse result = VoteResultResponse.builder()
                     .roomId(roomId)
                     .success(success)
                     .yesVotes(yesVotes)
                     .noVotes(noVotes)
                     .totalParticipants(totalParticipants)
                     .build();
+
+            // ✅ 결과 전송
+            messagingTemplate.convertAndSend("/sub/quiz/room/" + roomId, result);
+
+            // ✅ 안내 메시지 전송
+            String message = success
+                    ? "🎉 발표가 성공적으로 완료되었습니다!"
+                    : "❌ 발표에 실패했습니다. 다음 문제로 넘어가세요!";
+            messagingTemplate.convertAndSend("/sub/quiz/room/" + roomId, new TextNoticeResponse(message));
+
+            return result;
         }
 
         return null;
@@ -158,15 +186,57 @@ public class QuizRoomSocketService {
         QuizRoom room = quizRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
-        // 1. 참가자인지 먼저 확인
         if (!participantRepository.existsByStudyRoomIdAndUserId(roomId, userId)) {
             throw new CustomException(ErrorCode.USER_NOT_PARTICIPANT);
         }
 
-        // 2. 방장인지 확인
         if (!room.getHost().getId().equals(userId)) {
             throw new CustomException(ErrorCode.NOT_HOST);
         }
     }
+
+    /**
+     * ✅ 실시간 채팅 메시지 처리
+     */
+    public ChatMessageResponse handleChatMessage(ChatMessageRequest requestDto, Long userId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        ChatMessageResponse response = ChatMessageResponse.builder()
+                .messageId(null) // 저장 안 하므로 null
+                .roomId(requestDto.getRoomId())
+                .senderId(userId)
+                .nickname(user.getNickname())
+                .profileUrl(user.getProfileImageUrl()) // 필요 시 null 가능
+                .content(requestDto.getContent())
+                .type(ChatMessageType.TEXT)
+                .storedFileName(null)
+                .sentAt(LocalDateTime.now())
+                .unreadCount(0)
+                .build();
+
+        log.info("💬 채팅 메시지 from {}: {}", user.getNickname(), requestDto.getContent());
+        return response;
+    }
+
+
+    /**
+     * ✅ 파일 업로드 완료 알림 생성
+     */
+    public FileUploadNoticeResponse notifyFileUploaded(FileUploadNoticeRequest requestDto, Long userId) {
+        String nickname = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND))
+                .getNickname();
+
+        FileUploadNoticeResponse response = new FileUploadNoticeResponse(
+                nickname,
+                requestDto.getFileName(),
+                requestDto.getFileUrl()
+        );
+
+        log.info("파일 업로드 완료: {} by {}", requestDto.getFileName(), nickname);
+        return response;
+    }
+
 
 }

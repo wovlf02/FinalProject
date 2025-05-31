@@ -1,11 +1,6 @@
 server:
   port: 8080
   address: 0.0.0.0
-  servlet:
-    session:
-      cookie:
-        secure: true
-        same-site: None
 
 spring:
   datasource:
@@ -73,3 +68,9 @@ logging:
     root: INFO
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
+
+livekit:
+  api-key: API3ieiYicbjCKg
+  api-secret: eOa4FraHTNNif1BfbHFnSMeQjOcKdumCecfqyqeMq5SP
+  ws-url: wss://hamcam-jtb491om.livekit.cloud\
+  ttl-minutes: 60

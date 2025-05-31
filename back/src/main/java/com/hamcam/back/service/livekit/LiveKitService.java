@@ -1,12 +1,18 @@
 package com.hamcam.back.service.livekit;
 
-import io.livekit.server.sdk.AccessToken;
-import io.livekit.server.sdk.VideoGrant;
+import com.hamcam.back.dto.livekit.response.LiveKitTokenResponse;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
+import java.security.Key;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -24,40 +30,55 @@ public class LiveKitService {
     @Value("${livekit.ttl-minutes:60}")
     private long ttlMinutes;
 
-    /**
-     * LiveKit 접속용 JWT 생성
-     *
-     * @param identity 유저 고유 식별자 (ex: userId or nickname)
-     * @param roomName 입장할 방 이름
-     * @return JWT 토큰 문자열
-     */
-    public String createAccessToken(String identity, String roomName) {
-        if (identity == null || identity.isBlank() || roomName == null || roomName.isBlank()) {
-            throw new IllegalArgumentException("LiveKit 토큰 발급에 필요한 값이 부족합니다.");
+    private Key secretKey;
+
+    @PostConstruct
+    public void init() {
+        if (apiSecret.length() < 32) {
+            throw new IllegalArgumentException("LiveKit API Secret은 최소 256비트(32자 이상)여야 합니다.");
         }
-
-        VideoGrant grant = new VideoGrant()
-                .setRoom(roomName)
-                .setRoomJoin(true)
-                .setCanPublish(true)
-                .setCanSubscribe(true);
-
-        try {
-            AccessToken token = new AccessToken(apiKey, apiSecret)
-                    .setIdentity(identity)
-                    .addGrant(grant)
-                    .setTtl(Duration.ofMinutes(ttlMinutes));
-
-            return token.toJwt();
-        } catch (Exception e) {
-            throw new RuntimeException("LiveKit AccessToken 생성 실패", e);
-        }
+        this.secretKey = Keys.hmacShaKeyFor(apiSecret.getBytes());
     }
 
     /**
-     * WebSocket URL을 외부에서 쓸 수 있도록 getter 제공
+     * 토큰 + WebSocket URL 포함 응답 생성
      */
-    public String getWsUrl() {
-        return wsUrl;
+    public LiveKitTokenResponse issueTokenResponse(String identity, String roomName) {
+        String token = createAccessToken(identity, roomName);
+        return new LiveKitTokenResponse(token, wsUrl);
+    }
+
+    /**
+     * LiveKit 접속용 JWT 생성
+     */
+    public String createAccessToken(String identity, String roomName) {
+        if (identity == null || identity.isBlank() || roomName == null || roomName.isBlank()) {
+            throw new IllegalArgumentException("identity와 roomName은 필수입니다.");
+        }
+
+        long now = System.currentTimeMillis();
+        Date issuedAt = new Date(now);
+        Date expiration = new Date(now + ttlMinutes * 60 * 1000);
+
+        // ✅ video grant 구성
+        Map<String, Object> videoGrant = new HashMap<>();
+        videoGrant.put("room", roomName);
+        videoGrant.put("room_join", true);
+        videoGrant.put("can_publish", true);
+        videoGrant.put("can_subscribe", true);
+
+        // ✅ 전체 grants wrapping
+        Map<String, Object> grants = new HashMap<>();
+        grants.put("video", videoGrant);
+        grants.put("identity", identity);
+
+        return Jwts.builder()
+                .setIssuer(apiKey)
+                .setSubject(identity)
+                .setIssuedAt(issuedAt)
+                .setExpiration(expiration)
+                .claim("grants", grants)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
     }
 }

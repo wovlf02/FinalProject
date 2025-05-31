@@ -28,4 +28,7 @@ public interface StudyRoomParticipantRepository extends JpaRepository<StudyRoomP
      * ✅ 특정 방의 전체 인원 수
      */
     int countByStudyRoomId(Long roomId);
+
+    void deleteAllByStudyRoomId(Long roomId);
+
 }

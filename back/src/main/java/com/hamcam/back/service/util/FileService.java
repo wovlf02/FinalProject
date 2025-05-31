@@ -9,8 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -93,5 +96,32 @@ public class FileService {
         } catch (Exception e) {
             throw new CustomException(ErrorCode.FILE_DELETE_FAILED);
         }
+    }
+
+    // ----------------------------------
+    // ✅ 스터디룸 파일 조회
+    // ----------------------------------
+    public List<String> getStudyFileList(Long roomId) {
+        // 예: uploads/study/room-123/
+        String dirPath = STUDY_BASE_DIR + "room-" + roomId;
+        File dir = new File(dirPath);
+
+        if (!dir.exists() || !dir.isDirectory()) {
+            return List.of(); // 디렉토리가 없으면 빈 리스트 반환
+        }
+
+        File[] files = dir.listFiles();
+        if (files == null || files.length == 0) {
+            return List.of();
+        }
+
+        List<String> fileNames = new ArrayList<>();
+        for (File file : files) {
+            if (file.isFile()) {
+                fileNames.add("/" + dirPath + "/" + file.getName()); // 프론트 접근 경로 기준
+            }
+        }
+
+        return fileNames;
     }
 }

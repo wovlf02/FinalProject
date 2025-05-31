@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import api from '../api/api';
+import { API_BASE_URL_3000 } from '../api/apiUrl';
 import '../css/Login.css';
 
 let stompClientGlobal = null;
@@ -19,10 +20,9 @@ const Login = () => {
             const res = await api.post('/auth/login', { username, password });
 
             if (res.status === 200) {
-                // ✅ 로그인 후 세션 기반 사용자 정보 요청
+                // ✅ 로그인 후 사용자 정보 조회
                 const userRes = await api.get('/users/me');
                 const user = userRes.data?.data;
-                console.log('user:', user);
 
                 if (!user || !user.user_id) {
                     alert('사용자 정보를 불러올 수 없습니다.');
@@ -54,8 +54,7 @@ const Login = () => {
             return;
         }
 
-        // 3000번 포트 url 사용
-        const socket = new SockJS('https://3069-121-127-165-110.ngrok-free.app/ws');
+        const socket = new SockJS(`${API_BASE_URL_3000}/ws`);
         const client = new Client({
             webSocketFactory: () => socket,
             connectHeaders: { userId: String(userId) },
