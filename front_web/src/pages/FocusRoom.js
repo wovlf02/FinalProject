@@ -9,6 +9,7 @@ import { connectToLiveKit } from '../utils/livekit';
 const FocusRoom = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
+    const roomName = `focus-${roomId}`;
 
     const [focusedSeconds, setFocusedSeconds] = useState(0);
     const [ranking, setRanking] = useState([]);
@@ -18,11 +19,11 @@ const FocusRoom = () => {
     const [participants, setParticipants] = useState([]);
     const [chatList, setChatList] = useState([]);
     const [chatMsg, setChatMsg] = useState('');
+
     const stompRef = useRef(null);
     const intervalRef = useRef(null);
-    const roomName = `focus-${roomId}`;
-    const localVideoRefs = useRef({});
     const roomRef = useRef(null);
+    const localVideoRefs = useRef({});
 
     useEffect(() => {
         enterRoom();
@@ -31,8 +32,15 @@ const FocusRoom = () => {
 
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
-            if (stompRef.current) stompRef.current.disconnect();
-            if (roomRef.current) roomRef.current.disconnect();
+            if (stompRef.current?.connected) {
+                stompRef.current.disconnect(() => {
+                    console.log("📴 STOMP 연결 해제됨");
+                });
+            }
+            if (roomRef.current) {
+                roomRef.current.disconnect();
+                console.log("📴 LiveKit 연결 해제됨");
+            }
         };
     }, []);
 
@@ -48,47 +56,69 @@ const FocusRoom = () => {
     const fetchUserInfo = async () => {
         try {
             const res = await api.get('/users/me');
-            const identity = res.data.data.user_id;
+            const identity = res.data.data.user_id.toString();
             setUserId(identity);
-            await connectLiveKit(identity);
+            setParticipants([{ identity, nickname: `나 (${identity})` }]);
+            await connectLiveKitSession(identity);
         } catch (err) {
             console.error('유저 정보 조회 실패:', err);
         }
     };
 
-    const connectLiveKit = async (identity) => {
+    const connectLiveKitSession = async (identity) => {
         try {
-            const tokenRes = await api.post('/livekit/token', {
-                user_id: identity,
-                room_name: roomName,
-            });
-
-            const { token, ws_url } = tokenRes.data;
-
-            // ✅ 여기에서 JWT payload 디코드
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            console.log("🔐 JWT Payload:", payload);
-            console.log("👉 room:", payload.grants?.video?.room);
-            console.log("👉 identity:", payload.grants?.identity);
-
-            const room = await connectToLiveKit(identity, roomName, ws_url, token);
+            const res = await api.post('/livekit/token', { room_name: roomName });
+            const { token, ws_url } = res.data;
+            const room = await connectToLiveKit(identity, roomName, ws_url, token, 'video-container');
             roomRef.current = room;
 
-            // 비디오 연결
-            room.localParticipant.videoTracks.forEach((pub) => {
-                const mediaStream = new MediaStream([pub.track.mediaStreamTrack]);
-                const el = localVideoRefs.current[identity];
-                if (el && !el.srcObject) {
-                    el.srcObject = mediaStream;
+            room.on('participantConnected', (participant) => {
+                console.log('📡 참가자 연결됨:', participant.identity);
+                setParticipants((prev) => {
+                    const exists = prev.some(p => p.identity === participant.identity);
+                    if (!exists) {
+                        return [...prev, { identity: participant.identity, nickname: `참가자 ${participant.identity}` }];
+                    }
+                    return prev;
+                });
+
+                participant.on('trackSubscribed', (track, publication) => {
+                    console.log(`[trackSubscribed] ${participant.identity} → ${track.kind}`);
+
+                    if (track.kind === 'video') {
+                        const id = `video-${participant.identity}`;
+                        let el = document.getElementById(id);
+                        if (!el) {
+                            el = document.createElement('video');
+                            el.id = id;
+                            el.autoplay = true;
+                            el.playsInline = true;
+                            el.className = 'remote-video';
+                            document.getElementById('video-container')?.appendChild(el);
+                        }
+
+                        if (!el.srcObject) {
+                            el.srcObject = new MediaStream([track.mediaStreamTrack]);
+                        }
+                    }
+                });
+            });
+
+            room.on('participantDisconnected', (participant) => {
+                console.log('❌ 참가자 퇴장:', participant.identity);
+                setParticipants((prev) => prev.filter(p => p.identity !== participant.identity));
+                const el = document.getElementById(`video-${participant.identity}`);
+                if (el) {
+                    el.srcObject = null;
+                    el.remove();
                 }
             });
+
         } catch (e) {
             console.error('LiveKit 연결 실패:', e);
             alert('LiveKit 연결 실패: 캠/마이크 권한 또는 서버 문제');
         }
     };
-
-
 
     const connectWebSocket = () => {
         const sock = new SockJS('/ws');
@@ -97,13 +127,7 @@ const FocusRoom = () => {
 
         client.connect({}, () => {
             client.subscribe(`/sub/focus/room/${roomId}`, (message) => {
-                const body = message.body;
-                if (body === 'TERMINATED') {
-                    alert('방이 종료되었습니다.');
-                    navigate('/study/team');
-                    return;
-                }
-                const parsed = JSON.parse(body);
+                const parsed = JSON.parse(message.body);
                 setRanking(parsed.ranking || []);
                 setParticipants(parsed.participants || []);
             });
@@ -118,11 +142,10 @@ const FocusRoom = () => {
             });
 
             intervalRef.current = setInterval(() => {
-                const payload = {
-                    roomId: Number(roomId),
+                client.send('/app/focus/update-time', {}, JSON.stringify({
+                    room_id: Number(roomId),
                     focusedSeconds: 1,
-                };
-                client.send('/app/focus/update-time', {}, JSON.stringify(payload));
+                }));
                 setFocusedSeconds(prev => prev + 1);
             }, 1000);
         });
@@ -137,16 +160,16 @@ const FocusRoom = () => {
         stompRef.current.send('/app/focus/confirm-exit', {}, JSON.stringify({ room_id: Number(roomId) }));
     };
 
-    const toggleMic = (userId) => {
-        const el = localVideoRefs.current[userId];
+    const toggleMic = (id) => {
+        const el = localVideoRefs.current[id];
         if (el?.srcObject) {
             const track = el.srcObject.getAudioTracks()[0];
             if (track) track.enabled = !track.enabled;
         }
     };
 
-    const toggleCam = (userId) => {
-        const el = localVideoRefs.current[userId];
+    const toggleCam = (id) => {
+        const el = localVideoRefs.current[id];
         if (el?.srcObject) {
             const track = el.srcObject.getVideoTracks()[0];
             if (track) track.enabled = !track.enabled;
@@ -156,7 +179,7 @@ const FocusRoom = () => {
     const sendChat = () => {
         if (chatMsg.trim() !== '') {
             stompRef.current.send(`/app/focus/chat/${roomId}`, {}, JSON.stringify({
-                senderId: userId,
+                sender_id: userId,
                 content: chatMsg
             }));
             setChatMsg('');
@@ -168,24 +191,23 @@ const FocusRoom = () => {
             <h1>📚 공부 집중방</h1>
 
             <div className="main-content">
-                <div className="video-grid">
+                <div id="video-container" className="video-grid">
                     {participants.map((user) => (
-                        <div key={user.userId} className="video-wrapper">
+                        <div key={user.identity} className="video-wrapper">
                             <video
+                                id={`video-${user.identity}`}
                                 ref={(el) => {
-                                    if (el && !localVideoRefs.current[user.userId]) {
-                                        localVideoRefs.current[user.userId] = el;
-                                    }
+                                    if (el) localVideoRefs.current[user.identity] = el;
                                 }}
                                 autoPlay
-                                muted={user.userId === userId}
+                                muted={user.identity === userId}
                                 playsInline
                             />
                             <p>{user.nickname}</p>
-                            {user.userId === userId && (
+                            {user.identity === userId && (
                                 <div className="controls">
-                                    <button onClick={() => toggleCam(user.userId)}>🎥 ON/OFF</button>
-                                    <button onClick={() => toggleMic(user.userId)}>🎤 ON/OFF</button>
+                                    <button onClick={() => toggleCam(user.identity)}>🎥 ON/OFF</button>
+                                    <button onClick={() => toggleMic(user.identity)}>🎤 ON/OFF</button>
                                 </div>
                             )}
                         </div>

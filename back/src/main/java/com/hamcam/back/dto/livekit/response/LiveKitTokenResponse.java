@@ -8,6 +8,6 @@ import lombok.Getter;
 public class LiveKitTokenResponse {
     private String token;
     private String wsUrl;
-
-
+    private boolean presenter;   // ✅ 필드명 수정 (is 제거)
+    private long expiresAt;
 }

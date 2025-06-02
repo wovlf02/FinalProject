@@ -70,7 +70,7 @@ logging:
     org.hibernate.SQL: DEBUG
 
 livekit:
-  api-key: API3ieiYicbjCKg
-  api-secret: eOa4FraHTNNif1BfbHFnSMeQjOcKdumCecfqyqeMq5SP
-  ws-url: wss://hamcam-jtb491om.livekit.cloud
+  api-key: 878de0038dbed61ed7daab9872fed4e2017e1a37a0b12038a1d62573b64cb4bc
+  api-secret: 878de0038dbed61ed7daab9872fed4e2017e1a37a0b12038a1d62573b64cb4bc
+  ws-url: ws://localhost:7880
   ttl-minutes: 60

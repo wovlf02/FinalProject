@@ -22,26 +22,26 @@ public class FocusRoomSocketController {
     private final FocusRoomSocketService focusRoomSocketService;
     private final SimpMessagingTemplate messagingTemplate;
 
+    private static final String TERMINATED = "TERMINATED";
+
     /**
-     * ✅ 사용자가 방에 입장할 때 호출됨
-     * - 참가자 목록에 등록하고 상태 초기화
-     * - 참가자 리스트 브로드캐스트
+     * ✅ 방 입장
      */
     @MessageMapping("/focus/enter")
     public void enterRoom(HttpServletRequest request, Long roomId) {
-        Long userId = SessionUtil.getUserId(request);
+        Long userId = extractUserId(request);
+        log.info("🎥 [입장] userId={} roomId={}", userId, roomId);
+
         focusRoomSocketService.enterRoom(roomId, userId);
         broadcastParticipants(roomId);
     }
 
     /**
-     * ✅ 집중 시간 업데이트 (1분 간격)
-     * - 서버에서 누적 집중 시간 저장
-     * - 현재 랭킹 계산 후 전체 브로드캐스트
+     * ✅ 집중 시간 업데이트
      */
     @MessageMapping("/focus/update-time")
     public void updateFocusTime(HttpServletRequest request, FocusTimeUpdateRequest requestDto) {
-        Long userId = SessionUtil.getUserId(request);
+        Long userId = extractUserId(request);
         focusRoomSocketService.updateFocusTime(requestDto.getRoomId(), userId, requestDto.getFocusedSeconds());
 
         FocusRankingResponse ranking = focusRoomSocketService.getCurrentRanking(requestDto.getRoomId());
@@ -49,13 +49,11 @@ public class FocusRoomSocketController {
     }
 
     /**
-     * ✅ 목표 시간 도달 처리
-     * - 최초 도달자만 승리자로 등록
-     * - 전체에 승리자 알림 전송
+     * ✅ 목표 시간 도달
      */
     @MessageMapping("/focus/goal-achieved")
     public void goalAchieved(HttpServletRequest request, FocusGoalAchievedRequest requestDto) {
-        Long userId = SessionUtil.getUserId(request);
+        Long userId = extractUserId(request);
         boolean isFirst = focusRoomSocketService.markGoalAchieved(requestDto.getRoomId(), userId);
 
         if (isFirst) {
@@ -64,56 +62,54 @@ public class FocusRoomSocketController {
     }
 
     /**
-     * ✅ 결과 확인 처리
-     * - 사용자가 "결과 확인" 클릭 시 호출
-     * - 전체 확인 여부를 검사하고 방 삭제 여부 판단
+     * ✅ 결과 확인 및 방 종료
      */
     @MessageMapping("/focus/confirm-exit")
     public void confirmExit(HttpServletRequest request, FocusConfirmExitRequest requestDto) {
-        Long userId = SessionUtil.getUserId(request);
+        Long userId = extractUserId(request);
         focusRoomSocketService.confirmExit(requestDto.getRoomId(), userId);
-
         broadcastParticipants(requestDto.getRoomId());
 
         if (focusRoomSocketService.isAllConfirmed(requestDto.getRoomId())) {
             focusRoomSocketService.deleteRoomData(requestDto.getRoomId());
-            messagingTemplate.convertAndSend("/sub/focus/room/" + requestDto.getRoomId(), "TERMINATED");
+            messagingTemplate.convertAndSend("/sub/focus/room/" + requestDto.getRoomId(), TERMINATED);
         }
     }
 
     /**
-     * ✅ 방장이 방을 강제로 종료할 때 호출됨
-     * - 방장이 아닐 경우 무시됨
-     * - 전체 종료 알림 후 참가자 목록도 갱신
+     * ✅ 방 강제 종료
      */
     @MessageMapping("/focus/terminate")
     public void terminateRoom(HttpServletRequest request, Long roomId) {
-        Long userId = SessionUtil.getUserId(request);
+        Long userId = extractUserId(request);
         if (!focusRoomSocketService.isHost(roomId, userId)) return;
 
         focusRoomSocketService.terminateRoom(roomId);
-        messagingTemplate.convertAndSend("/sub/focus/room/" + roomId, "TERMINATED");
-
+        messagingTemplate.convertAndSend("/sub/focus/room/" + roomId, TERMINATED);
         broadcastParticipants(roomId);
     }
 
     /**
-     * ✅ 자리비움/졸음 감지 경고 전송
-     * - 클라이언트에서 감지 시 전송
-     * - 서버에서는 경고 횟수 누적
+     * ✅ 경고 감지
      */
     @MessageMapping("/focus/warning")
     public void warning(HttpServletRequest request, FocusWarningRequest requestDto) {
-        Long userId = SessionUtil.getUserId(request);
+        Long userId = extractUserId(request);
         focusRoomSocketService.accumulateWarning(requestDto.getRoomId(), userId, requestDto.getReason());
     }
 
     /**
-     * ✅ 참가자 목록을 브로드캐스트
-     * - 입장/퇴장/확인/종료 시 호출
+     * ✅ 참가자 목록 전송
      */
     private void broadcastParticipants(Long roomId) {
         List<ParticipantInfo> participants = focusRoomSocketService.getCurrentParticipants(roomId);
         messagingTemplate.convertAndSend("/sub/focus/room/" + roomId + "/participants", participants);
+    }
+
+    /**
+     * ✅ 세션에서 userId 추출 공통화
+     */
+    private Long extractUserId(HttpServletRequest request) {
+        return SessionUtil.getUserId(request);
     }
 }

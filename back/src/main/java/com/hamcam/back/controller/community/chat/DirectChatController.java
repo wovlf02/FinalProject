@@ -4,7 +4,6 @@ import com.hamcam.back.dto.common.MessageResponse;
 import com.hamcam.back.dto.community.chat.request.*;
 import com.hamcam.back.dto.community.chat.response.*;
 import com.hamcam.back.service.community.chat.DirectChatService;
-import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -9,6 +9,7 @@ import { connectToLiveKit } from '../utils/livekit';
 const QuizRoom = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
+    const roomName = `quiz-${roomId}`;
 
     const [problem, setProblem] = useState(null);
     const [presenterId, setPresenterId] = useState(null);
@@ -23,17 +24,22 @@ const QuizRoom = () => {
     const chatRef = useRef(null);
     const roomRef = useRef(null);
     const localVideoRefs = useRef({});
-    const roomName = `quiz-${roomId}`;
 
     useEffect(() => {
         enterRoom();
         fetchUserInfo();
         connectWebSocket();
-        connectChatSocket();
 
         return () => {
-            if (stompRef.current) stompRef.current.disconnect();
-            if (roomRef.current) roomRef.current.disconnect();
+            if (stompRef.current?.connected) {
+                stompRef.current.disconnect(() => {
+                    console.log('📴 STOMP 연결 해제됨');
+                });
+            }
+            if (roomRef.current) {
+                roomRef.current.disconnect();
+                console.log('📴 LiveKit 연결 해제됨');
+            }
         };
     }, []);
 
@@ -49,25 +55,66 @@ const QuizRoom = () => {
     const fetchUserInfo = async () => {
         try {
             const res = await api.get('/users/me');
-            const identity = res.data.user_id;
+            const identity = res.data.data.user_id.toString();
             setUserId(identity);
-            await connectLiveKit(identity.toString());
+            setParticipants([{ identity, nickname: `나 (${identity})` }]);
+            await connectLiveKitSession(identity);
         } catch (err) {
             console.error('유저 정보 조회 실패:', err);
         }
     };
 
-    const connectLiveKit = async (identity) => {
-        try {
-            const room = await connectToLiveKit(identity, roomName, (room) => {
-                roomRef.current = room;
+    useEffect(() => {
+        if (presenterId !== null) {
+            setVoteResult(null); // 발표자가 바뀌면 초기화
+        }
+    }, [presenterId]);
 
-                room.localParticipant.videoTracks.forEach((pub) => {
-                    const mediaStream = new MediaStream([pub.track.mediaStreamTrack]);
-                    const el = localVideoRefs.current[identity];
-                    if (el && !el.srcObject) el.srcObject = mediaStream;
+    const connectLiveKitSession = async (identity) => {
+        try {
+            const res = await api.post('/api/livekit/token', { roomName });
+            const { token, wsUrl } = res.data;
+
+            const room = await connectToLiveKit(identity, roomName, wsUrl, token, 'video-container');
+            roomRef.current = room;
+
+            room.on('participantConnected', (participant) => {
+                setParticipants((prev) => {
+                    const exists = prev.some(p => p.identity === participant.identity);
+                    if (!exists) {
+                        return [...prev, { identity: participant.identity, nickname: `참가자 ${participant.identity}` }];
+                    }
+                    return prev;
+                });
+
+                participant.on('trackSubscribed', (track) => {
+                    if (track.kind === 'video') {
+                        const id = `video-${participant.identity}`;
+                        let el = document.getElementById(id);
+                        if (!el) {
+                            el = document.createElement('video');
+                            el.id = id;
+                            el.autoplay = true;
+                            el.playsInline = true;
+                            el.className = 'remote-video';
+                            document.getElementById('video-container')?.appendChild(el);
+                        }
+                        if (!el.srcObject) {
+                            el.srcObject = new MediaStream([track.mediaStreamTrack]);
+                        }
+                    }
                 });
             });
+
+            room.on('participantDisconnected', (participant) => {
+                setParticipants((prev) => prev.filter(p => p.identity !== participant.identity));
+                const el = document.getElementById(`video-${participant.identity}`);
+                if (el) {
+                    el.srcObject = null;
+                    el.remove();
+                }
+            });
+
         } catch (e) {
             console.error('LiveKit 연결 실패:', e);
             alert('LiveKit 연결 실패: 캠/마이크 권한 또는 서버 문제');
@@ -91,7 +138,7 @@ const QuizRoom = () => {
             });
 
             client.subscribe(`/sub/quiz/room/${roomId}/presenter`, (msg) => {
-                setPresenterId(Number(msg.body));
+                setPresenterId(msg.body.toString());
             });
 
             client.subscribe(`/sub/quiz/room/${roomId}/vote-result`, (msg) => {
@@ -99,13 +146,7 @@ const QuizRoom = () => {
                 setVoteResult(result);
                 setVotePhase(false);
             });
-        });
-    };
 
-    const connectChatSocket = () => {
-        const sock = new SockJS('/ws');
-        const client = Stomp.over(sock);
-        client.connect({}, () => {
             client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
                 const payload = JSON.parse(msg.body);
                 setChatMessages((prev) => [...prev, payload]);
@@ -114,7 +155,6 @@ const QuizRoom = () => {
                 }, 100);
             });
         });
-        stompRef.current = client;
     };
 
     const sendMessage = (e) => {
@@ -180,19 +220,20 @@ const QuizRoom = () => {
             <h1>🧠 문제풀이방</h1>
 
             <div className="main-layout">
-                <div className="video-grid">
+                <div id="video-container" className="video-grid">
                     {participants.map((p) => (
                         <div key={p.identity} className="video-tile">
                             <video
+                                id={`video-${p.identity}`}
                                 ref={(el) => {
                                     if (el) localVideoRefs.current[p.identity] = el;
                                 }}
                                 autoPlay
-                                muted={p.identity === userId.toString()}
+                                muted={p.identity === userId}
                                 playsInline
                             />
-                            <div>{p.identity}</div>
-                            {p.identity === userId.toString() && (
+                            <div>{p.nickname || p.identity}</div>
+                            {p.identity === userId && (
                                 <>
                                     <button onClick={() => toggleCam(p.identity)}>📷 ON/OFF</button>
                                     <button onClick={() => toggleMic(p.identity)}>🎤 ON/OFF</button>
@@ -235,7 +276,7 @@ const QuizRoom = () => {
             {presenterId && (
                 <div className="presenter-section">
                     <p>🗣️ 발표자: 사용자 {presenterId}</p>
-                    {Number(presenterId) === Number(userId) && (
+                    {presenterId === userId && (
                         <button onClick={handleEndPresentation}>🎤 발표 종료</button>
                     )}
                 </div>

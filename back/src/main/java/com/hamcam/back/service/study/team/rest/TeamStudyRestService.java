@@ -6,7 +6,6 @@ import com.hamcam.back.dto.study.team.response.inner.ParticipantInfo;
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.community.Post;
 import com.hamcam.back.entity.community.PostCategory;
-import com.hamcam.back.entity.study.problem.Problem;
 import com.hamcam.back.entity.study.team.*;
 import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.community.post.PostRepository;
@@ -19,9 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;

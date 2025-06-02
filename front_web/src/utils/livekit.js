@@ -2,24 +2,21 @@ import {
     Room,
     VideoPresets,
     createLocalVideoTrack,
-    createLocalAudioTrack
+    createLocalAudioTrack,
 } from 'livekit-client';
 
 /**
- * LiveKit 서버에 연결하고 트랙을 publish 한 후 room 인스턴스를 반환
+ * ✅ LiveKit 서버에 연결하고 트랙을 publish 한 후 room 인스턴스를 반환
  *
- * @param {string} identity - 사용자 식별자
- * @param {string} roomName - 접속할 방 이름 (ex. "focus-1")
- * @param {string} wsUrl - LiveKit WebSocket 주소
+ * @param {string} identity - 사용자 ID (세션에서 가져온 고유 값)
+ * @param {string} roomName - LiveKit 방 이름
+ * @param {string} wsUrl - WebSocket 주소
  * @param {string} token - JWT 토큰
- * @returns {Promise<Room>} - 연결된 room 인스턴스
+ * @param {string} [videoContainerId] - 비디오 엘리먼트를 삽입할 DOM ID (optional)
+ * @returns {Promise<Room>} room 인스턴스
  */
-export async function connectToLiveKit(identity, roomName, wsUrl, token) {
+export async function connectToLiveKit(identity, roomName, wsUrl, token, videoContainerId) {
     try {
-        // ✅ 1. 브라우저 권한 요청 (사용자가 거부하면 에러 발생)
-        await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
-        // ✅ 2. Room 인스턴스 생성
         const room = new Room({
             videoCaptureDefaults: {
                 resolution: VideoPresets.h720.resolution,
@@ -29,32 +26,74 @@ export async function connectToLiveKit(identity, roomName, wsUrl, token) {
             },
         });
 
-        // ✅ 3. 참가/퇴장 이벤트 등록
-        room.on('participantConnected', (p) => {
-            console.log(`[LiveKit] 참가자 연결됨: ${p.identity}`);
+        // ✅ 참가자 연결 이벤트
+        room.on('participantConnected', (participant) => {
+            console.log(`[LiveKit] 참가자 연결됨: ${participant.identity}`);
+
+            participant.on('trackSubscribed', (track, publication) => {
+                if (track.kind === 'video') {
+                    const id = `video-${participant.identity}`;
+                    let videoEl = document.getElementById(id);
+                    if (!videoEl) {
+                        videoEl = document.createElement('video');
+                        videoEl.id = id;
+                        videoEl.autoplay = true;
+                        videoEl.playsInline = true;
+                        const container = videoContainerId
+                            ? document.getElementById(videoContainerId)
+                            : document.body;
+                        container?.appendChild(videoEl);
+                    }
+
+                    const mediaStream = new MediaStream([track.mediaStreamTrack]);
+                    videoEl.srcObject = mediaStream;
+                }
+            });
         });
 
-        room.on('participantDisconnected', (p) => {
-            console.log(`[LiveKit] 참가자 퇴장: ${p.identity}`);
+        // ✅ 참가자 퇴장 이벤트
+        room.on('participantDisconnected', (participant) => {
+            console.log(`[LiveKit] 참가자 퇴장: ${participant.identity}`);
+            const el = document.getElementById(`video-${participant.identity}`);
+            if (el) {
+                el.srcObject = null;
+                el.remove();
+            }
         });
 
-        // ✅ 4. LiveKit 서버 접속
+        room.on('disconnected', () => {
+            console.log('[LiveKit] 연결 종료됨');
+        });
+
+        // ✅ LiveKit 서버 연결
         await room.connect(wsUrl, token);
         console.log('[LiveKit] 서버 연결 성공');
 
-        // ✅ 5. 로컬 트랙 생성 및 publish
-        const [videoTrack, audioTrack] = await Promise.all([
-            createLocalVideoTrack(),
-            createLocalAudioTrack()
-        ]);
+        // ✅ 로컬 비디오/오디오 트랙 생성 및 publish
+        try {
+            const [videoTrack, audioTrack] = await Promise.all([
+                createLocalVideoTrack(),
+                createLocalAudioTrack(),
+            ]);
 
-        await room.localParticipant.publishTrack(videoTrack);
-        await room.localParticipant.publishTrack(audioTrack);
+            if (room.connected) {
+                if (videoTrack) await room.localParticipant.publishTrack(videoTrack);
+                if (audioTrack) await room.localParticipant.publishTrack(audioTrack);
+            }
+
+            // ✅ 로컬 비디오 엘리먼트 DOM 설정
+            const localVideo = document.getElementById(`video-${identity}`);
+            if (localVideo && videoTrack && !localVideo.srcObject) {
+                const stream = new MediaStream([videoTrack.mediaStreamTrack]);
+                localVideo.srcObject = stream;
+            }
+        } catch (pubErr) {
+            console.error('[LiveKit] 로컬 트랙 publish 중 오류:', pubErr);
+        }
 
         return room;
-
     } catch (error) {
-        console.error('[LiveKit] 연결 실패:', error.name, error.message);
+        console.error('[LiveKit] 연결 실패:', error.name, error.message, error.stack);
         throw new Error(`LiveKit 연결 실패: ${error.name} - ${error.message}`);
     }
 }
