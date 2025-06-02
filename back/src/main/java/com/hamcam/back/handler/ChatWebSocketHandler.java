@@ -9,14 +9,11 @@ import com.hamcam.back.dto.community.chat.request.ChatReadRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.service.community.chat.ChatMessageService;
 import com.hamcam.back.service.community.chat.ChatReadService;
-import com.hamcam.back.util.SessionUtil;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

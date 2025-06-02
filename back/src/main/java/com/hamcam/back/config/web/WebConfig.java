@@ -6,7 +6,6 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 
 /**
  * Web 관련 설정 (정적 자원 + CORS 정책)
- * - 보안 제거 버전 (Credentials X)
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -24,10 +23,17 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // 모든 경로 허용
-                .allowedOrigins("http://**:3000", "http://localhost:3000") // 모든 도메인 허용
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:3000")
                 .allowedMethods("*")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.setUseTrailingSlashMatch(true);
+    }
+
+
 }

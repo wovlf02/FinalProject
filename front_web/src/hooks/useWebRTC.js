@@ -1,109 +1,119 @@
 // src/hooks/useWebRTC.js
 import { useEffect, useRef, useState } from 'react';
-import io from 'socket.io-client';
+import {
+    Room,
+    connect,
+    createLocalVideoTrack,
+    createLocalAudioTrack,
+} from 'livekit-client';
+import api from '../api/api';
 
-export default function useWebRTC(roomId, localVideoRef) {
-  const [peers, setPeers] = useState({});               // { socketId: RTCPeerConnection }
-  const [remoteStreams, setRemoteStreams] = useState([]); // [{ id: socketId, stream }]
-  const socketRef = useRef();
-  const localStreamRef = useRef();
+const useWebRTC = (roomId) => {
+    const [remoteStreams, setRemoteStreams] = useState([]);
+    const [isCameraOn, setIsCameraOn] = useState(true);
+    const [isMicOn, setIsMicOn] = useState(true);
 
-  useEffect(() => {
-    socketRef.current = io('http://localhost:4000');
+    const localVideoRef = useRef(null);
+    const roomRef = useRef(null);
+    const videoTrackRef = useRef(null);
+    const audioTrackRef = useRef(null);
 
-    // 1) 로컬 카메라/마이크 가져오기
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        localStreamRef.current = stream;
-        localVideoRef.current.srcObject = stream;
+    // ✅ 캠+마이크 실행 및 LiveKit 연결
+    const startCamera = async () => {
+        try {
+            const res = await api.post('/livekit/token', { roomName: roomId });
+            const { token, wsUrl } = res.data;
 
-        // 2) 룸에 조인
-        socketRef.current.emit('join-room', roomId);
+            const room = new Room();
+            roomRef.current = room;
 
-        // 3) 다른 사람이 들어왔을 때 (offerer 역할)
-        socketRef.current.on('user-connected', remoteId => {
-          // 새로운 PeerConnection 준비
-          const pc = createPeerConnection(remoteId, socketRef.current);
-          // 내 트랙을 pc 에 추가
-          localStreamRef.current.getTracks().forEach(t => pc.addTrack(t, localStreamRef.current));
-          setPeers(prev => ({ ...prev, [remoteId]: pc }));
-          // offer 생성 및 전송
-          pc.createOffer()
-            .then(offer => pc.setLocalDescription(offer))
-            .then(() => {
-              socketRef.current.emit('signal', { roomId, data: { to: remoteId, sdp: pc.localDescription } });
-            });
-        });
+            // 원격 트랙 수신 시
+            room.on('trackSubscribed', (track, publication, participant) => {
+                if (track.kind === 'video') {
+                    const stream = new MediaStream([track.mediaStreamTrack]);
 
-        // 4) 시그널 메시지 처리: offer/answer/ICE
-        socketRef.current.on('signal', ({ data }) => {
-          const { from, sdp, candidate } = data;
-          let pc = peers[from];
-          if (!pc) {
-            // offer 받는 쪽(answerer)
-            pc = createPeerConnection(from, socketRef.current);
-            localStreamRef.current.getTracks().forEach(t => pc.addTrack(t, localStreamRef.current));
-            setPeers(prev => ({ ...prev, [from]: pc }));
-          }
-
-          if (sdp) {
-            pc.setRemoteDescription(new RTCSessionDescription(sdp))
-              .then(() => {
-                if (sdp.type === 'offer') {
-                  // answer 생성
-                  return pc.createAnswer()
-                    .then(answer => pc.setLocalDescription(answer))
-                    .then(() => {
-                      socketRef.current.emit('signal', {
-                        roomId,
-                        data: { to: from, sdp: pc.localDescription }
-                      });
-                    });
+                    setRemoteStreams((prev) => [
+                        ...prev.filter((r) => r.id !== participant.identity),
+                        {
+                            id: participant.identity,
+                            stream,
+                            isPresenter: false,
+                        },
+                    ]);
                 }
-              });
-          }
-          if (candidate) {
-            pc.addIceCandidate(new RTCIceCandidate(candidate));
-          }
-        });
-      });
+            });
 
-    return () => {
-      // cleanup
-      socketRef.current.disconnect();
-      Object.values(peers).forEach(pc => pc.close());
-    };
-  }, [roomId, peers]);
+            // ✅ connect는 Room 객체 메서드로 사용해야 함
+            await room.connect(wsUrl, token);
 
-  // helper: RTCPeerConnection 세팅
-  function createPeerConnection(socketId, socket) {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' }
-      ]
-    });
+            const videoTrack = await createLocalVideoTrack();
+            const audioTrack = await createLocalAudioTrack();
 
-    // ICE candidate 감지 시 서버로 전송
-    pc.onicecandidate = e => {
-      if (e.candidate) {
-        socket.emit('signal', {
-          roomId,
-          data: { to: socketId, candidate: e.candidate }
-        });
-      }
+            videoTrackRef.current = videoTrack;
+            audioTrackRef.current = audioTrack;
+
+            await room.localParticipant.publishTrack(videoTrack);
+            await room.localParticipant.publishTrack(audioTrack);
+
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = new MediaStream([videoTrack.mediaStreamTrack]);
+            }
+        } catch (err) {
+            console.error('LiveKit 연결 실패:', err);
+        }
     };
 
-    // remote track 수신 시
-    pc.ontrack = e => {
-      setRemoteStreams(streams => {
-        // 이미 있으면 건너뛰기
-        if (streams.find(s => s.id === socketId)) return streams;
-        return [...streams, { id: socketId, stream: e.streams[0] }];
-      });
+
+    // ✅ 캠 on/off
+    const toggleCamera = () => {
+        if (videoTrackRef.current) {
+            const current = videoTrackRef.current.isEnabled;
+            videoTrackRef.current.setEnabled(!current);
+            setIsCameraOn(!current);
+        }
     };
 
-    return pc;
-  }
+    // ✅ 마이크 on/off
+    const toggleMic = () => {
+        if (audioTrackRef.current) {
+            const current = audioTrackRef.current.isEnabled;
+            audioTrackRef.current.setEnabled(!current);
+            setIsMicOn(!current);
+        }
+    };
 
-  return remoteStreams;
-}
+    // ✅ 정리
+    const stopMedia = () => {
+        if (roomRef.current) {
+            roomRef.current.disconnect();
+            roomRef.current = null;
+        }
+
+        videoTrackRef.current?.stop();
+        audioTrackRef.current?.stop();
+
+        videoTrackRef.current = null;
+        audioTrackRef.current = null;
+
+        setRemoteStreams([]);
+    };
+
+    useEffect(() => {
+        return () => {
+            stopMedia();
+        };
+    }, []);
+
+    return {
+        localVideoRef,
+        remoteStreams,
+        startCamera,
+        stopMedia,
+        toggleCamera,
+        toggleMic,
+        isCameraOn,
+        isMicOn,
+    };
+};
+
+export default useWebRTC;

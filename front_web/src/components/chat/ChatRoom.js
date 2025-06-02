@@ -36,7 +36,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
             setRoomInfo({
                 ...room,
                 profileImageUrl: room.representative_image_url
-                    ? `http://localhost:8080${room.representative_image_url}`
+                    ? `https://4868-121-127-165-110.ngrok-free.app${room.representative_image_url}`
                     : base_profile,
                 roomName: room.room_name,
                 roomType: room.room_type,
@@ -50,7 +50,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
                     senderId,
                     isMe: String(senderId) === String(currentUser.user_id),
                     profileUrl: msg.profileUrl
-                        ? `http://localhost:8080${msg.profileUrl}`
+                        ? `https://4868-121-127-165-110.ngrok-free.app${msg.profileUrl}`
                         : base_profile,
                     nickname: msg.nickname || '알 수 없음',
                     sentAt: msg.sentAt || msg.time,
@@ -99,7 +99,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
     }, [roomId]);
 
     const connectStomp = (userData, loadedMessages) => {
-        const socket = new SockJS('http://localhost:8080/ws/chat');
+        const socket = new SockJS('https://4868-121-127-165-110.ngrok-free.app/ws/chat');
         const client = Stomp.over(socket);
         stompClient.current = client;
 

@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * [GlobalExceptionHandler]
@@ -18,73 +19,57 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * [400 Bad Request]
-     * 잘못된 요청 예외 처리 (ex. 유효성 검증 실패, 형식 오류 등)
-     */
+    /** [400 Bad Request] */
     @ExceptionHandler(BadRequestException.class)
+    @ResponseBody
     public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
         return buildErrorResponse(ex.getErrorCode());
     }
 
-    /**
-     * [401 Unauthorized]
-     * 인증되지 않은 사용자 요청 (토큰 없음, 만료, 위조 등)
-     */
+    /** [401 Unauthorized] */
     @ExceptionHandler(UnauthorizedException.class)
+    @ResponseBody
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
         return buildErrorResponse(ex.getErrorCode());
     }
 
-    /**
-     * [403 Forbidden]
-     * 인증은 되었지만 권한이 없는 요청
-     */
+    /** [403 Forbidden] */
     @ExceptionHandler(ForbiddenException.class)
+    @ResponseBody
     public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
         return buildErrorResponse(ex.getErrorCode());
     }
 
-    /**
-     * [404 Not Found]
-     * 요청한 리소스가 존재하지 않음
-     */
+    /** [404 Not Found] */
     @ExceptionHandler(NotFoundException.class)
+    @ResponseBody
     public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
         return buildErrorResponse(ex.getErrorCode());
     }
 
-    /**
-     * [409 Conflict]
-     * 중복된 요청 (이미 존재하는 아이디, 닉네임 등)
-     */
+    /** [409 Conflict] */
     @ExceptionHandler(ConflictException.class)
+    @ResponseBody
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
         return buildErrorResponse(ex.getErrorCode());
     }
 
-    /**
-     * [CustomException]
-     * 명시적인 CustomException 처리 (ErrorCode 기반)
-     */
+    /** [CustomException] */
     @ExceptionHandler(CustomException.class)
+    @ResponseBody
     public ResponseEntity<ErrorResponse> handleCustom(CustomException ex) {
         return buildErrorResponse(ex.getErrorCode());
     }
 
-    /**
-     * [500 Internal Server Error]
-     * 예외로 처리되지 않은 모든 서버 오류
-     */
+    /** [500 Internal Server Error] */
     @ExceptionHandler(Exception.class)
+    @ResponseBody
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         ex.printStackTrace(); // 디버깅용 로그
         return buildErrorResponse(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 
-    /**
-     * ErrorCode 기반 응답 빌더 (상태 코드 포함)
-     */
+    /** 응답 빌더 */
     private ResponseEntity<ErrorResponse> buildErrorResponse(ErrorCode errorCode) {
         return ResponseEntity
                 .status(errorCode.getHttpStatus())

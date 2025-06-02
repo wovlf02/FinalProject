@@ -2,7 +2,6 @@ package com.hamcam.back.repository.dashboard;
 
 import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.dashboard.StudyLog;
-import com.hamcam.back.entity.study.StudySession;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;

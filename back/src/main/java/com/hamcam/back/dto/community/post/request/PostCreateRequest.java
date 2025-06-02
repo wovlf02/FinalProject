@@ -1,20 +1,18 @@
 package com.hamcam.back.dto.community.post.request;
 
-import com.hamcam.back.entity.community.PostCategory;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 /**
- * 게시글 작성 요청 DTO
+ * 게시글 작성 요청 DTO (multipart/form-data 기반)
  */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class PostCreateRequest {
 
     @NotBlank(message = "제목은 필수입니다.")
@@ -23,9 +21,8 @@ public class PostCreateRequest {
     @NotBlank(message = "본문은 필수입니다.")
     private String content;
 
-    @NotNull(message = "카테고리는 필수입니다.")
-    private PostCategory category;
+    @NotBlank(message = "카테고리는 필수입니다.")
+    private String category;
 
-    private List<MultipartFile> files;
+    private String tag; // 예: "AI,자바,고등수학"
 }
-

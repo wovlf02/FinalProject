@@ -1,21 +1,19 @@
 package com.hamcam.back.dto.community.post.request;
 
-import com.hamcam.back.entity.community.PostCategory;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * 게시글 필터링 요청 DTO
  */
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class PostFilterRequest {
 
-    private PostCategory category;
-    private String sort;
-    private int minLikes;
-    private String keyword;
+    private String category;   // 예: "스터디", "정보공유", null은 전체
+    private String sort;       // 예: "recent", "likes"
+    private int minLikes;      // 기본값 0
+    private String keyword;    // 포함 검색
 
     public String getSortOrDefault() {
         return (sort == null || sort.isBlank()) ? "recent" : sort;
@@ -26,6 +24,6 @@ public class PostFilterRequest {
     }
 
     public boolean hasCategory() {
-        return category != null;
+        return category != null && !category.isBlank();
     }
 }

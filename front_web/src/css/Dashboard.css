@@ -1,14 +1,8 @@
-/* 기본 스타일 */
 .dashboard-container {
     margin-left: 160px;
     padding: 40px 32px 32px 32px;
     background: #f7fafd;
     min-height: 100vh;
-}
-
-.dashboard-container.mobile {
-    margin-left: 0;
-    padding: 20px;
 }
 
 .dashboard-title-row {
@@ -46,22 +40,12 @@
     gap: 24px;
 }
 
-.dashboard-board-grid.mobile-grid {
-    grid-template-columns: 1fr; /* 한 열로 변경 */
-    gap: 16px;
-}
-
 .dashboard-card {
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
     padding: 28px 32px;
     margin-bottom: 24px;
-}
-
-.dashboard-card.mobile {
-    min-height: auto;
-    padding: 20px;
 }
 
 .dashboard-calendar-card {
@@ -346,22 +330,4 @@
     background: #dbeafe !important;
     color: #2563eb !important;
     border-radius: 8px;
-}
-
-/* 반응형 스타일 */
-@media (max-width: 900px) {
-    .dashboard-container {
-        margin-left: 0;
-        padding: 20px;
-    }
-
-    .dashboard-board-grid {
-        grid-template-columns: 1fr; /* 한 열로 변경 */
-        gap: 16px;
-    }
-
-    .dashboard-card {
-        min-height: auto;
-        padding: 20px;
-    }
 }

@@ -1,7 +1,5 @@
 package com.hamcam.back.dto.community.post.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -30,12 +28,14 @@ import java.util.List;
  */
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class FavoritePostListResponse {
 
     /**
      * 즐겨찾기한 게시글들의 요약 정보 리스트
      */
     private List<PostSummaryResponse> posts;
+
+    public FavoritePostListResponse(List<PostSummaryResponse> posts) {
+        this.posts = posts;
+    }
 }

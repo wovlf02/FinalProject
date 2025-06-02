@@ -33,18 +33,7 @@ public class AuthService {
      * ✅ 회원가입 처리 (세션 기반)
      */
     public void register(RegisterRequest request, MultipartFile profileImage, HttpServletRequest httpRequest) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
-        }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        String profileImageUrl = null;
-        if (profileImage != null && !profileImage.isEmpty()) {
-            profileImageUrl = fileService.saveProfileImage(profileImage, httpRequest); // ✅ 세션 기반 저장
-        }
-
+        // 1. 우선 User 저장
         User user = User.builder()
                 .username(request.getUsername())
                 .password(request.getPassword())
@@ -54,12 +43,23 @@ public class AuthService {
                 .grade(request.getGrade())
                 .studyHabit(request.getStudyHabit())
                 .phone(request.getPhone())
-                .profileImageUrl(profileImageUrl)
                 .subjects(Optional.ofNullable(request.getSubjects()).orElseGet(ArrayList::new))
                 .build();
 
-        userRepository.save(user);
+        user = userRepository.save(user); // ✅ 먼저 DB에 저장
+
+        // 2. 이미지 업로드 → 세션 없이 userId 직접 전달
+        String profileImageUrl = null;
+        if (profileImage != null && !profileImage.isEmpty()) {
+            profileImageUrl = fileService.saveProfileImage(profileImage, user.getId()); // ✅ userId 직접 전달
+            user.setProfileImageUrl(profileImageUrl);
+            userRepository.save(user); // 다시 update
+        }
+
+        // 3. 세션에 로그인 처리 (자동 로그인)
+        httpRequest.getSession().setAttribute("userId", user.getId());
     }
+
 
     /**
      * ✅ 로그인 처리 (세션에 userId 저장)

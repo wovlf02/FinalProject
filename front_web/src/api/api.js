@@ -1,11 +1,10 @@
 import axios from 'axios';
+import {API_BASE_URL_8080} from './apiUrl'; // <- .env 대신 명시적 import
 
-// ✅ 백엔드 기본 API URL
-const BASE_URL = 'http://localhost:8080/api';
-
+// ✅ 백엔드 API 기본 URL
 // ✅ Axios 인스턴스 생성 (withCredentials 필수)
 const api = axios.create({
-    baseURL: BASE_URL,
+    baseURL: `${API_BASE_URL_8080}/api`,
     timeout: 10000,
     withCredentials: true, // ✅ 쿠키 자동 포함
     headers: {
@@ -13,7 +12,7 @@ const api = axios.create({
     },
 });
 
-// ✅ 응답 인터셉터: 인증 실패 시 리디렉션 처리만
+// ✅ 응답 인터셉터: 인증 실패 시 리디렉션 처리
 api.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -31,7 +30,7 @@ api.upload = async (url, files, extraData = {}) => {
 
     // 파일 배열로 처리 (단일 파일도 배열로 변환)
     const fileArray = Array.isArray(files) ? files : [files];
-    fileArray.forEach((file, index) => {
+    fileArray.forEach((file) => {
         formData.append('file', file);
     });
 

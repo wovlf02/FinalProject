@@ -1,129 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 
 const RoomList = () => {
-  const navigate = useNavigate();
-  const { teamId: rawTeamId } = useParams();
-  const teamId = rawTeamId ? Number(rawTeamId) : 1;
+    const [rooms, setRooms] = useState([]);
+    const [newRoomTitle, setNewRoomTitle] = useState('');
+    const [roomType, setRoomType] = useState('QUIZ');
+    const [maxParticipants, setMaxParticipants] = useState(10);
+    const navigate = useNavigate();
 
-  const [rooms, setRooms] = useState([]);
-  const [newTitle, setNewTitle] = useState('');
-  const [maxParticipants, setMaxParticipants] = useState(10);
+    useEffect(() => {
+        console.log('[📡 요청] 방 목록 요청 전송');
+        api.get('/rooms')
+            .then((response) => {
+                console.log('[📥 응답] 방 목록:', response.data);
+                response.data.forEach(room =>
+                    console.log(`[📌 roomId=${room.room_id}] roomType=${room.room_type}, title=${room.title}`)
+                );
+                setRooms(response.data);
+            })
+            .catch((error) => {
+                console.error('🚨 방 목록 가져오기 실패:', error);
+            });
+    }, []);
 
-  // 방 목록 및 참여자 수 조회
-  const fetchRooms = async () => {
-    try {
-      const res = await api.get('/api/video/rooms', { params: { teamId } });
-      console.log('RoomList 조회 응답:', res.data);
-      const list = res.data?.data ?? res.data;
-      // 각 방의 참여자 수 가져오기
-      const withCount = await Promise.all(
-        list.map(async room => {
-          try {
-            const countRes = await api.get(`/api/video/${room.id}/count`);
-            const current = countRes.data?.data ?? countRes.data;
-            return { ...room, currentParticipants: current };
-          } catch (e) {
-            console.error(`방 ${room.id} 참여자 수 조회 실패:`, e);
-            return { ...room, currentParticipants: 0 };
-          }
-        })
-      );
-      setRooms(withCount);
-    } catch (err) {
-      console.error('방 목록 조회 오류:', err);
-      alert('방 목록을 불러오지 못했습니다.');
-    }
-  };
+    const handleCreateRoom = () => {
+        const createRequest = {
+            title: newRoomTitle,
+            roomType: roomType,
+            maxParticipants: parseInt(maxParticipants)
+        };
 
-  useEffect(() => { fetchRooms(); }, [teamId]);
+        console.log('[📝 생성 요청] roomType:', roomType);
+        console.log('[📤 요청 바디]', createRequest);
 
-  // 방 생성
-  const createRoom = async () => {
-    const stored = localStorage.getItem('user');
-    if (!stored) {
-      alert('로그인이 필요합니다.');
-      return;
-    }
-    const user = JSON.parse(stored);
+        api.post('/rooms/create', createRequest)
+            .then((response) => {
+                console.log('[✅ 생성 성공] 응답:', response.data);
+                alert('방이 생성되었습니다!');
+                setRooms([...rooms, response.data]);
+                setNewRoomTitle('');
+                setRoomType('QUIZ');
+                setMaxParticipants(10);
+            })
+            .catch((error) => {
+                console.error('🚨 방 생성 실패:', error);
+                alert('방 생성에 실패했습니다.');
+            });
+    };
 
-    if (!newTitle.trim()) {
-      alert('방 제목을 입력하세요.');
-      return;
-    }
+    return (
+        <div>
+            <h1>방 목록</h1>
 
-    try {
-      const res = await api.post('/api/video/rooms', {
-        hostId: user.user_id,
-        teamId,
-        title: newTitle,
-        type: 'QUIZ',
-        maxParticipants,
-        password: null,
-        targetTime: null
-      });
-      console.log('RoomList 생성 응답:', res.data);
-      setNewTitle('');
-      setMaxParticipants(10);
-      fetchRooms();
-    } catch (err) {
-      console.error('방 생성 실패:', err);
-      alert('방 생성에 실패했습니다.');
-    }
-  };
+            <div>
+                <input
+                    type="text"
+                    placeholder="방 이름"
+                    value={newRoomTitle}
+                    onChange={(e) => {
+                        console.log('[🖊️ 입력 변경] 방 제목:', e.target.value);
+                        setNewRoomTitle(e.target.value);
+                    }}
+                />
+                <select
+                    value={roomType}
+                    onChange={(e) => {
+                        console.log('[🖊️ 선택 변경] 방 유형:', e.target.value);
+                        setRoomType(e.target.value);
+                    }}
+                >
+                    <option value="QUIZ">문제풀이방</option>
+                    <option value="FOCUS">공부방</option>
+                </select>
+                <input
+                    type="number"
+                    placeholder="최대 참여자 수"
+                    value={maxParticipants}
+                    onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        console.log('[🖊️ 입력 변경] 참여자 수:', val);
+                        setMaxParticipants(val);
+                    }}
+                />
+                <button onClick={handleCreateRoom}>방 만들기</button>
+            </div>
 
-  // 방 입장 및 목록 갱신
-  const joinRoom = async roomId => {
-    const stored = localStorage.getItem('user');
-    if (!stored) {
-      alert('로그인이 필요합니다.');
-      return;
-    }
-    const user = JSON.parse(stored);
-
-    try {
-      await api.post('/api/video/join', { roomId, userId: user.user_id });
-      // 참여 후 바로 인원수 갱신
-      await fetchRooms();
-      navigate(`/video-room/${roomId}`);
-    } catch (err) {
-      console.error('방 참여 실패:', err);
-      alert('방 참여에 실패했습니다.');
-    }
-  };
-
-  return (
-    <div className="room-list-container">
-      <h1>팀 {teamId} 학습방 목록</h1>
-
-      <div className="create-form">
-        <input
-          value={newTitle}
-          onChange={e => setNewTitle(e.target.value)}
-          placeholder="방 제목"
-        />
-        <input
-          type="number"
-          min={1}
-          value={maxParticipants}
-          onChange={e => setMaxParticipants(+e.target.value)}
-          placeholder="최대 참여자"
-        />
-        <button onClick={createRoom}>방 만들기</button>
-      </div>
-
-      <ul className="room-list">
-        {rooms.map(room => (
-          <li key={room.id} className="room-item">
-            <span>{room.title}</span>
-            <span>참여자 {room.currentParticipants} / 최대 {room.maxParticipants}</span>
-            <button onClick={() => joinRoom(room.id)}>입장</button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+            <ul>
+                {rooms.map((room) => {
+                    console.log('[🧾 렌더링 중] room:', room);
+                    return (
+                        <li key={room.room_id}>
+                            {room.title} ({room.room_type === 'FOCUS' ? '공부방' : '문제풀이방'}) - {room.max_participants}명
+                            <button
+                                onClick={() => {
+                                    console.log(`[➡️ 이동] 방 입장: /video-room/${room.room_id}`);
+                                    navigate(`/video-room/${room.room_id}`);
+                                }}
+                            >
+                                입장
+                            </button>
+                        </li>
+                    );
+                })}
+            </ul>
+        </div>
+    );
 };
 
 export default RoomList;

@@ -6,7 +6,6 @@ import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.service.community.chat.ChatReadService;
 import com.hamcam.back.service.community.chat.WebSocketChatService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
