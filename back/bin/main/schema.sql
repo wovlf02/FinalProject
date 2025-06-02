@@ -1,1 +1,0 @@
-ALTER TABLE team_room CHANGE COLUMN title room_name VARCHAR(255); 
