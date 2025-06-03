@@ -1,168 +1,105 @@
-.quiz-room-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 30px;
-    background-color: #f8f9fb;
+.quizroom-main-content {
+    margin-left: 160px;
+    padding: 32px 24px;
+    background: #f8f9fb;
     min-height: 100vh;
-    font-family: 'Pretendard', sans-serif;
-}
-
-.quiz-room-container h1 {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 25px;
-    color: #333;
-    text-align: center;
-}
-
-.main-layout {
+    width: 100%;
+    max-width: 1200px;
+    margin-right: auto;
+    margin-left: auto;
     display: flex;
+    flex-direction: row;
     gap: 24px;
-    margin-bottom: 30px;
+    box-sizing: border-box;
+    height: 100vh;
+    min-width: 0;
+    overflow-x: hidden;
 }
 
-.video-grid {
-    flex: 2;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    justify-content: center;
-    align-items: flex-start;
+@media (max-width: 1300px) {
+    .quizroom-main-content {
+        padding: 16px 4px;
+        gap: 12px;
+    }
 }
 
-.video-tile {
-    position: relative;
-    width: 280px;
-    height: 210px;
-    background: #000;
-    border-radius: 12px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+@media (max-width: 900px) {
+    .quizroom-main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 12px 2px;
+        flex-direction: column;
+        gap: 8px;
+        height: auto;
+        overflow-x: visible;
+    }
+    .quizroom-problem-section,
+    .quizroom-video-section,
+    .quizroom-chat-section {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+    }
 }
 
-.video-tile video {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    border-bottom: 1px solid #444;
-}
-
-.video-tile div {
-    color: white;
-    padding: 4px 0;
-    font-size: 14px;
-    background-color: #222;
-    width: 100%;
-    text-align: center;
-}
-
-.video-tile button {
-    background-color: #444;
-    color: white;
-    border: none;
-    padding: 4px 10px;
-    margin: 2px;
-    font-size: 12px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.video-tile button:hover {
-    background-color: #666;
-}
-
-.chat-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #ccc;
-    border-radius: 12px;
-    overflow: hidden;
-    background-color: white;
-}
-
-.chat-log {
-    flex: 1;
-    max-height: 400px;
-    overflow-y: auto;
-    padding: 15px;
-    font-size: 14px;
-    line-height: 1.6;
-    background-color: #f9f9f9;
-}
-
-.chat-input {
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-    background-color: #fff;
-}
-
-.chat-input input {
-    flex: 1;
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    outline: none;
-}
-
-.chat-input button {
-    margin-left: 8px;
-    padding: 8px 14px;
-    background-color: #1976d2;
-    border: none;
-    color: white;
-    font-size: 14px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.chat-input button:hover {
-    background-color: #125ea5;
-}
-
-.problem-section {
+.quizroom-problem-section {
+    flex: 1.5 1 0;
+    min-width: 350px;
+    max-width: 550px;
     background: #fff;
-    padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.07);
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
 }
 
-.problem-section h2 {
-    font-size: 20px;
-    margin-bottom: 10px;
+.quizroom-problem-section h2 {
+    font-size: 22px;
+    margin-bottom: 14px;
 }
 
-.passage {
+.problem-title {
+    font-weight: bold;
+    font-size: 19px;
+    margin-bottom: 12px;
+    color: #1976d2;
+}
+
+.problem-passage {
     background-color: #f1f3f5;
-    padding: 12px;
+    padding: 14px;
     border-radius: 8px;
     font-size: 15px;
     margin-bottom: 15px;
     white-space: pre-wrap;
 }
 
-.problem-section ul {
+.problem-choices {
     list-style-type: none;
     padding: 0;
+    margin-bottom: 12px;
 }
 
-.problem-section li {
-    padding: 8px 0;
+.problem-choices li {
+    padding: 9px 0;
     border-bottom: 1px solid #eee;
     font-size: 15px;
 }
 
+.problem-placeholder {
+    color: #aaa;
+    margin-bottom: 18px;
+}
+
 .presenter-section {
     background-color: #e3f2fd;
-    padding: 15px;
+    padding: 14px;
     border-radius: 10px;
-    margin-bottom: 20px;
-    font-size: 16px;
+    margin-bottom: 18px;
+    font-size: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -170,21 +107,21 @@
 
 .vote-section {
     background-color: #fff3cd;
-    padding: 20px;
+    padding: 16px;
     border-radius: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     text-align: center;
 }
 
 .vote-section h3 {
-    font-size: 18px;
-    margin-bottom: 15px;
+    font-size: 17px;
+    margin-bottom: 12px;
 }
 
 .vote-section button {
-    padding: 10px 20px;
-    font-size: 15px;
-    margin: 0 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+    margin: 0 8px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -211,10 +148,10 @@
 
 .result-section {
     background-color: #e8f5e9;
-    padding: 20px;
+    padding: 16px;
     border-radius: 10px;
-    margin-bottom: 20px;
-    font-size: 16px;
+    margin-bottom: 16px;
+    font-size: 15px;
     line-height: 1.6;
 }
 
@@ -225,7 +162,7 @@
 .action-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     justify-content: center;
     margin-top: 10px;
 }
@@ -242,5 +179,142 @@
 }
 
 .action-buttons button:hover {
+    background-color: #125ea5;
+}
+
+.quizroom-video-section {
+    flex: 1.5 1 0;
+    min-width: 300px;
+    max-width: 500px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.07);
+    padding: 32px 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 0;
+    height: 100%;
+}
+
+.quizroom-video-section h2 {
+    font-size: 22px;
+    margin-bottom: 14px;
+}
+
+.quizroom-video-grid {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 120px;
+}
+
+.video-tile {
+    position: relative;
+    width: 160px;
+    height: 120px;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.video-tile video {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-bottom: 1px solid #444;
+    background: #111;
+}
+
+.video-tile div {
+    color: white;
+    padding: 4px 0;
+    font-size: 14px;
+    background-color: #222;
+    width: 100%;
+    text-align: center;
+}
+
+.video-tile button {
+    background-color: #444;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    margin: 2px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.video-tile button:hover {
+    background-color: #666;
+}
+
+.quizroom-chat-section {
+    flex: 1.3 1 0;
+    min-width: 240px;
+    max-width: 520px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.07);
+    padding: 32px 14px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.quizroom-chat-section h2 {
+    font-size: 22px;
+    margin-bottom: 14px;
+}
+
+.chat-log {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px;
+    font-size: 15px;
+    line-height: 1.5;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.chat-input {
+    display: flex;
+    padding: 0;
+    border-top: 1px solid #ddd;
+    background-color: #fff;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+}
+
+.chat-input button {
+    margin-left: 10px;
+    padding: 10px 16px;
+    background-color: #1976d2;
+    border: none;
+    color: white;
+    font-size: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.chat-input button:hover {
     background-color: #125ea5;
 }

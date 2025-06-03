@@ -11,6 +11,17 @@ const QuizRoom = () => {
     const navigate = useNavigate();
     const roomName = `quiz-${roomId}`;
 
+    // 예시 문제 (실제 DB 연동시 이 구조에 맞게 받아오세요)
+    const problemExample = {
+        title: '수학 · 미분과 적분',
+        passage: '다음 함수 f(x) = 2x³ - 3x² + 4x - 10에 대하여 다음을 구하시오.',
+        choices: [
+            'f(x)를 구하시오.',
+            'x=2에서의 접선의 방정식을 구하시오.',
+            'f(x)의 증가구간과 감소구간을 구하시오.'
+        ]
+    };
+
     const [problem, setProblem] = useState(null);
     const [presenterId, setPresenterId] = useState(null);
     const [votePhase, setVotePhase] = useState(false);
@@ -41,6 +52,7 @@ const QuizRoom = () => {
                 console.log('📴 LiveKit 연결 해제됨');
             }
         };
+        // eslint-disable-next-line
     }, []);
 
     const enterRoom = async () => {
@@ -75,7 +87,7 @@ const QuizRoom = () => {
             const res = await api.post('/livekit/token', { roomName });
             const { token, wsUrl } = res.data;
 
-            const room = await connectToLiveKit(identity, roomName, wsUrl, token, 'video-container');
+            const room = await connectToLiveKit(identity, roomName, wsUrl, token, 'quizroom-video-grid');
             roomRef.current = room;
 
             room.on('participantConnected', (participant) => {
@@ -97,7 +109,7 @@ const QuizRoom = () => {
                             el.autoplay = true;
                             el.playsInline = true;
                             el.className = 'remote-video';
-                            document.getElementById('video-container')?.appendChild(el);
+                            document.getElementById('quizroom-video-grid')?.appendChild(el);
                         }
                         if (!el.srcObject) {
                             el.srcObject = new MediaStream([track.mediaStreamTrack]);
@@ -124,7 +136,7 @@ const QuizRoom = () => {
     const connectWebSocket = () => {
         const sock = new SockJS('/ws', null, {
             transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
-            withCredentials: true // ✅ 세션 쿠키 전달을 위해 추가
+            withCredentials: true
         });
         const client = Stomp.over(sock);
         stompRef.current = client;
@@ -187,8 +199,10 @@ const QuizRoom = () => {
         }
     };
 
+    // 문제 시작 버튼 클릭 시 예시 문제 세팅
+    // 실제 DB 연동시 setProblem(서버에서 받아온 문제 데이터)로 교체
     const handleStart = () => {
-        stompRef.current.send('/app/quiz/start', {}, JSON.stringify({ roomId }));
+        setProblem(problemExample);
     };
 
     const handleRaiseHand = () => {
@@ -219,11 +233,66 @@ const QuizRoom = () => {
     };
 
     return (
-        <div className="quiz-room-container">
-            <h1>🧠 문제풀이방</h1>
+        <div className="quizroom-main-content">
+            {/* 문제 영역 */}
+            <section className="quizroom-problem-section">
+                <h2>문제풀이</h2>
+                {problem ? (
+                    <>
+                        <div className="problem-title">{problem.title}</div>
+                        <div className="problem-passage">{problem.passage}</div>
+                        <ul className="problem-choices">
+                            {problem.choices.map((c, idx) => (
+                                <li key={idx}>{c}</li>
+                            ))}
+                        </ul>
+                    </>
+                ) : (
+                    <div className="problem-placeholder">문제가 시작되면 여기에 표시됩니다.</div>
+                )}
 
-            <div className="main-layout">
-                <div id="video-container" className="video-grid">
+                {presenterId && (
+                    <div className="presenter-section">
+                        <span>🗣️ 발표자: {presenterId === userId ? "나" : `사용자 ${presenterId}`}</span>
+                        {presenterId === userId && (
+                            <button onClick={handleEndPresentation}>🎤 발표 종료</button>
+                        )}
+                    </div>
+                )}
+
+                {votePhase && (
+                    <div className="vote-section">
+                        <h3>발표는 어땠나요?</h3>
+                        <button onClick={() => handleVote(true)}>👍 성공</button>
+                        <button onClick={() => handleVote(false)}>👎 실패</button>
+                    </div>
+                )}
+
+                {voteResult && (
+                    <div className="result-section">
+                        <h4>🗳️ 투표 결과</h4>
+                        <div>성공: {voteResult.successCount}명</div>
+                        <div>실패: {voteResult.failCount}명</div>
+                        <div>결과: <strong>{voteResult.result === 'SUCCESS' ? '정답 인정!' : '정답 미인정'}</strong></div>
+                    </div>
+                )}
+
+                <div className="action-buttons">
+                    {!problem && <button onClick={handleStart}>문제 시작</button>}
+                    {problem && !presenterId && <button onClick={handleRaiseHand}>✋ 손들기</button>}
+                    {voteResult && (
+                        <>
+                            <button onClick={handleContinue}>🔁 계속하기</button>
+                            <button onClick={handleTerminate}>⛔ 종료하기</button>
+                        </>
+                    )}
+                </div>
+            </section>
+
+            {/* 캠 영역 */}
+            <section className="quizroom-video-section">
+                <h2>캠</h2>
+                <div id="quizroom-video-grid" className="quizroom-video-grid">
                     {participants.map((p) => (
                         <div key={p.identity} className="video-tile">
                             <video
@@ -237,81 +306,34 @@ const QuizRoom = () => {
                             />
                             <div>{p.nickname || p.identity}</div>
                             {p.identity === userId && (
-                                <>
+                                <div>
                                     <button onClick={() => toggleCam(p.identity)}>📷 ON/OFF</button>
                                     <button onClick={() => toggleMic(p.identity)}>🎤 ON/OFF</button>
-                                </>
+                                </div>
                             )}
                         </div>
                     ))}
                 </div>
+            </section>
 
-                <div className="chat-section">
-                    <div className="chat-log" ref={chatRef}>
-                        {chatMessages.map((msg, idx) => (
-                            <div key={idx}><b>{msg.sender}</b>: {msg.text}</div>
-                        ))}
-                    </div>
-                    <form onSubmit={sendMessage} className="chat-input">
-                        <input
-                            type="text"
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            placeholder="메시지 입력"
-                        />
-                        <button type="submit">전송</button>
-                    </form>
+            {/* 채팅 영역 */}
+            <section className="quizroom-chat-section">
+                <h2>채팅</h2>
+                <div className="chat-log" ref={chatRef}>
+                    {chatMessages.map((msg, idx) => (
+                        <div key={idx}><b>{msg.sender}</b>: {msg.text}</div>
+                    ))}
                 </div>
-            </div>
-
-            {problem && (
-                <div className="problem-section">
-                    <h2>{problem.title}</h2>
-                    <p className="passage">{problem.passage}</p>
-                    <ul>
-                        {problem.choices.map((c, idx) => (
-                            <li key={idx}>{String.fromCharCode(65 + idx)}. {c}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {presenterId && (
-                <div className="presenter-section">
-                    <p>🗣️ 발표자: 사용자 {presenterId}</p>
-                    {presenterId === userId && (
-                        <button onClick={handleEndPresentation}>🎤 발표 종료</button>
-                    )}
-                </div>
-            )}
-
-            {votePhase && (
-                <div className="vote-section">
-                    <h3>발표는 어땠나요?</h3>
-                    <button onClick={() => handleVote(true)}>👍 성공</button>
-                    <button onClick={() => handleVote(false)}>👎 실패</button>
-                </div>
-            )}
-
-            {voteResult && (
-                <div className="result-section">
-                    <h3>🗳️ 투표 결과</h3>
-                    <p>성공: {voteResult.successCount}명</p>
-                    <p>실패: {voteResult.failCount}명</p>
-                    <p>결과: <strong>{voteResult.result === 'SUCCESS' ? '정답 인정!' : '정답 미인정'}</strong></p>
-                </div>
-            )}
-
-            <div className="action-buttons">
-                {!problem && <button onClick={handleStart}>문제 시작</button>}
-                {problem && !presenterId && <button onClick={handleRaiseHand}>✋ 손들기</button>}
-                {voteResult && (
-                    <>
-                        <button onClick={handleContinue}>🔁 계속하기</button>
-                        <button onClick={handleTerminate}>⛔ 종료하기</button>
-                    </>
-                )}
-            </div>
+                <form onSubmit={sendMessage} className="chat-input">
+                    <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="메시지 입력"
+                    />
+                    <button type="submit">전송</button>
+                </form>
+            </section>
         </div>
     );
 };
