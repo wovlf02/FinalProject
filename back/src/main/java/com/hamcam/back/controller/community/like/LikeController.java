@@ -5,7 +5,6 @@ import com.hamcam.back.dto.community.like.request.*;
 import com.hamcam.back.dto.community.like.response.LikeCountResponse;
 import com.hamcam.back.dto.community.like.response.LikeStatusResponse;
 import com.hamcam.back.service.community.like.LikeService;
-import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

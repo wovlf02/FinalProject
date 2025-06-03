@@ -19,22 +19,62 @@ const getProfileUrl = (url) => {
 };
 
 const ChatRoom = ({ roomId, onReadAllMessages }) => {
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [user, setUser] = useState(null);
-  const [roomInfo, setRoomInfo] = useState(null);
-  const [participants, setParticipants] = useState([]);
-  const scrollRef = useRef(null);
-  const stompClient = useRef(null);
-  const userRef = useRef(null);
-  const hasEnteredRef = useRef(false);
+    const [message, setMessage] = useState('');
+    const [messages, setMessages] = useState([]);
+    const [user, setUser] = useState(null);
+    const [roomInfo, setRoomInfo] = useState(null);
+    const scrollRef = useRef(null);
+    const stompClient = useRef(null);
+    const userRef = useRef(null);
+    const hasEnteredRef = useRef(false); // ✅ 최초 입장 여부 추적
 
-  useEffect(() => {
-    api.get('/users/me', { withCredentials: true }).then(res => {
-      setUser(res.data?.data);
-      userRef.current = res.data?.data;
-    });
-  }, []);
+    const scrollToBottom = () => {
+        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const fetchInitialData = async () => {
+        try {
+            const userRes = await api.get('/users/me', { withCredentials: true });
+            const currentUser = userRes.data?.data;
+            setUser(currentUser);
+            userRef.current = currentUser;
+
+            const detailRes = await api.post('/chat/rooms/detail', { room_id: roomId }, { withCredentials: true });
+            const data = detailRes.data?.data;
+            const room = data.room_info;
+            const msgs = data.messages;
+
+            setRoomInfo({
+                ...room,
+                profileImageUrl: room.representative_image_url
+                    ? `https://4868-121-127-165-110.ngrok-free.app${room.representative_image_url}`
+                    : base_profile,
+                roomName: room.room_name,
+                roomType: room.room_type,
+                participantCount: room.participant_count
+            });
+
+            const normalizedMessages = (msgs || []).map(msg => {
+                const senderId = msg.senderId ?? msg.sender_id;
+                return {
+                    ...msg,
+                    senderId,
+                    isMe: String(senderId) === String(currentUser.user_id),
+                    profileUrl: msg.profileUrl
+                        ? `https://4868-121-127-165-110.ngrok-free.app${msg.profileUrl}`
+                        : base_profile,
+                    nickname: msg.nickname || '알 수 없음',
+                    sentAt: msg.sentAt || msg.time,
+                    unreadCount: msg.unreadCount ?? msg.unread_count ?? 0,
+                };
+            });
+
+            setMessages(normalizedMessages);
+            connectStomp(currentUser, normalizedMessages);
+        } catch (err) {
+            console.error('❌ 초기 데이터 로딩 실패:', err.response?.data || err);
+        }
+    };
 
   useEffect(() => {
     if (!roomId) return;
@@ -94,85 +134,88 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
     }
   };
 
-  const connectStomp = (userData, loadedMessages) => {
-    const socket = new SockJS('http://localhost:8080/ws/chat');
-    const client = Stomp.over(socket);
-    stompClient.current = client;
-    client.connect({}, () => {
-      if (!hasEnteredRef.current) {
-        client.send('/pub/chat/send', {}, JSON.stringify({
-          room_id: roomId,
-          sender_id: userData.user_id,
-          type: 'ENTER',
-          content: `${userData.nickname}님이 입장하셨습니다.`,
-          time: new Date().toISOString()
-        }));
-        hasEnteredRef.current = true;
-      }
-      client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
-        const message = JSON.parse(msg.body);
-        const senderId = message.sender_id;
-        const isMe = userRef.current && String(senderId) === String(userRef.current.user_id);
-        let profileUrl = message.profile_url || '';
-        profileUrl = getProfileUrl(profileUrl);
-        const normalizedMsg = {
-          messageId: message.message_id,
-          roomId: message.room_id,
-          senderId,
-          isMe,
-          profileUrl,
-          nickname: message.nickname || '알 수 없음',
-          content: message.content,
-          type: message.type,
-          storedFileName: message.stored_file_name ?? null,
-          sentAt: message.sent_at || message.time || new Date(),
-          unreadCount: message.unread_count ?? 0,
-        };
-        if (message.type === 'READ_ACK') {
-          setMessages(prev =>
-            prev.map(m =>
-              m.messageId === normalizedMsg.messageId
-                ? { ...m, unreadCount: normalizedMsg.unreadCount }
-                : m
-            )
-          );
-        } else {
-          setMessages(prev => {
-            const exists = normalizedMsg.messageId && prev.some(m => m.messageId === normalizedMsg.messageId);
-            return exists ? prev : [...prev, normalizedMsg];
-          });
-          if (!isMe && normalizedMsg.messageId) {
-            const readPayload = {
-              type: 'READ',
-              roomId,
-              messageId: normalizedMsg.messageId,
-            };
-            client.send('/pub/chat/read', {}, JSON.stringify(readPayload));
-          }
-        }
-        setTimeout(scrollToBottom, 50);
-      });
-      loadedMessages.forEach(msg => {
-        const messageId = msg.message_id;
-        if (userRef.current && String(msg.sender_id) !== String(userRef.current.user_id) && messageId) {
-          const initReadPayload = {
-            type: 'READ',
-            room_id: roomId,
-            message_id: messageId,
-          };
-          client.send('/pub/chat/read', {}, JSON.stringify(initReadPayload));
-        }
-      });
-    });
-  };
+    const connectStomp = (userData, loadedMessages) => {
+        const socket = new SockJS('https://4868-121-127-165-110.ngrok-free.app/ws/chat');
+        const client = Stomp.over(socket);
+        stompClient.current = client;
 
-  const scrollToBottom = () => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+        client.connect({}, () => {
+            console.log('🔗 WebSocket 연결 완료');
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+            // ✅ 최초 입장 시에만 ENTER 메시지 전송
+            if (!hasEnteredRef.current) {
+                client.send('/pub/chat/send', {}, JSON.stringify({
+                    room_id: roomId,
+                    sender_id: userData.user_id,
+                    type: 'ENTER',
+                    content: `${userData.nickname}님이 입장하셨습니다.`,
+                    time: new Date().toISOString()
+                }));
+                hasEnteredRef.current = true;
+            }
+
+            client.subscribe(`/sub/chat/room/${roomId}`, (msg) => {
+                const message = JSON.parse(msg.body);
+                const senderId = message.senderId ?? message.sender_id;
+                const isMe = String(senderId) === String(userRef.current?.user_id);
+
+                const normalizedMsg = {
+                    messageId: message.messageId ?? message.message_id,
+                    roomId: message.roomId ?? message.room_id,
+                    senderId,
+                    isMe,
+                    profileUrl: message.profileUrl
+                        ? `http://localhost:8080${message.profileUrl}`
+                        : base_profile,
+                    nickname: message.nickname || '알 수 없음',
+                    content: message.content,
+                    type: message.type,
+                    storedFileName: message.storedFileName ?? message.stored_file_name ?? null,
+                    sentAt: message.sentAt || message.time || new Date(),
+                    unreadCount: message.unreadCount ?? message.unread_count ?? 0,
+                };
+
+                if (message.type === 'READ_ACK') {
+                    setMessages(prev =>
+                        prev.map(m =>
+                            m.messageId === normalizedMsg.messageId
+                                ? { ...m, unreadCount: normalizedMsg.unreadCount }
+                                : m
+                        )
+                    );
+                } else {
+                    setMessages(prev => {
+                        const exists = normalizedMsg.messageId && prev.some(m => m.messageId === normalizedMsg.messageId);
+                        return exists ? prev : [...prev, normalizedMsg];
+                    });
+
+                    if (!isMe && normalizedMsg.messageId) {
+                        const readPayload = {
+                            type: 'READ',
+                            roomId,
+                            messageId: normalizedMsg.messageId,
+                        };
+                        client.send('/pub/chat/read', {}, JSON.stringify(readPayload));
+                    }
+                }
+
+                setTimeout(scrollToBottom, 50);
+            });
+
+            loadedMessages.forEach(msg => {
+                const messageId = msg.messageId ?? msg.message_id;
+                if (String(msg.senderId) !== String(userRef.current?.user_id) && messageId) {
+                    const initReadPayload = {
+                        type: 'READ',
+                        room_id: roomId,
+                        message_id: messageId,
+                    };
+                    client.send('/pub/chat/read', {}, JSON.stringify(initReadPayload));
+                }
+            });
+            onReadAllMessages(roomId);
+        });
+    };
 
   const handleSend = () => {
     const currentUser = userRef.current;

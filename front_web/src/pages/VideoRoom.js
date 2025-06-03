@@ -1,140 +1,225 @@
-import React, {useEffect, useRef, useState} from "react";
-import {useParams} from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import io from "socket.io-client";
-import axios from "axios";
 import "../css/VideoRoom.css";
+import api from "../api/api";
 
 const VideoRoom = () => {
-    const {roomId} = useParams();
-
+    const { roomId } = useParams();
     const myVideoRef = useRef();
-    const remoteVideoRef = useRef();
     const socket = useRef();
-    const peerConnection = useRef(null);
     const localStream = useRef();
-
-    const [user, setUser] = useState({name: ""});
+    const peerConnections = useRef(new Map()); // socketId -> { pc, polite }
+    const pendingCandidates = useRef(new Map()); // socketId -> ICE 큐
+    const [remoteStreams, setRemoteStreams] = useState([]);
+    const [user, setUser] = useState({ name: "" });
+    const mySocketId = useRef("");
 
     const servers = {
-        iceServers: [{urls: "stun:stun.l.google.com:19302"}]
+        iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            {
+                urls: "turn:openrelay.metered.ca:80",
+                username: "openrelayproject",
+                credential: "openrelayproject"
+            }
+        ]
     };
 
     useEffect(() => {
-        // 사용자 이름 가져오기
-        axios.get("/api/user/me", {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-        }).then((res) => {
-            setUser(res.data);
-        }).catch((err) => {
-            console.error("사용자 정보 가져오기 실패:", err);
+        api.get("/users/me", { withCredentials: true })
+            .then((res) => {
+                setUser(res.data?.data || {});
+            })
+            .catch((err) => {
+                console.error("❌ 사용자 정보 가져오기 실패:", err);
+            });
+
+        // 4000번 포트 url
+        socket.current = io("https://e212-121-127-165-110.ngrok-free.app", {
+            withCredentials: true,
+            transports: ["websocket"]
         });
 
-        // 소켓 연결
-        socket.current = io("http://localhost:4000");
+        socket.current.on("connect", () => {
+            mySocketId.current = socket.current.id;
+            console.log("✅ Socket 연결됨:", mySocketId.current);
+        });
 
-        // 미디어 권한 요청
-        navigator.mediaDevices.getUserMedia({video: true, audio: true})
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             .then((stream) => {
                 localStream.current = stream;
-                myVideoRef.current.srcObject = stream;
-
+                if (myVideoRef.current) {
+                    myVideoRef.current.srcObject = stream;
+                }
                 socket.current.emit("join-room", roomId);
             })
             .catch((err) => {
-                console.error("🎤🎥 권한 오류:", err);
+                console.error("❌ 미디어 권한 오류:", err);
                 alert("카메라 또는 마이크 권한이 거부되었습니다.");
             });
 
         socket.current.on("user-connected", async (userId) => {
-            console.log("상대 입장:", userId);
-            await createOffer();
+            if (userId === mySocketId.current) return;
+            const polite = mySocketId.current > userId;
+            const { pc } = createPeerConnection(userId, polite);
+            try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                socket.current.emit("signal", {
+                    roomId,
+                    data: {
+                        type: "offer",
+                        offer,
+                        targetId: userId,
+                        senderId: mySocketId.current
+                    }
+                });
+            } catch (err) {
+                console.warn("❗ Offer 생성 오류:", err);
+            }
         });
 
-        socket.current.on("signal", async (data) => {
-            if (!peerConnection.current) {
-                await createPeerConnection();
+        socket.current.on("signal", async ({ type, offer, answer, candidate, senderId }) => {
+            if (senderId === mySocketId.current) return;
+
+            let entry = peerConnections.current.get(senderId);
+            const polite = mySocketId.current > senderId;
+            let pc = entry?.pc;
+
+            if (!pc) {
+                const created = createPeerConnection(senderId, polite);
+                pc = created.pc;
             }
 
-            if (data.type === "offer") {
-                try {
-                    await peerConnection.current.setRemoteDescription(
-                        new RTCSessionDescription(data.offer)
-                    );
-                    const answer = await peerConnection.current.createAnswer();
-                    await peerConnection.current.setLocalDescription(answer);
-                    socket.current.emit("signal", {roomId, data: {type: "answer", answer}});
-                } catch (err) {
-                    console.error("🚨 Offer 처리 중 오류:", err);
+            try {
+                if (type === "offer") {
+                    const offerCollision = pc.signalingState !== "stable";
+
+                    if (offerCollision && !polite) {
+                        console.warn("❌ Offer 충돌 무시 (impolite):", senderId);
+                        return;
+                    }
+
+                    if (offerCollision) {
+                        console.warn("⚠️ Offer 충돌 → 롤백 실행:", senderId);
+                        await pc.setRemoteDescription({ type: "rollback" });
+                    }
+
+                    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+
+                    socket.current.emit("signal", {
+                        roomId,
+                        data: {
+                            type: "answer",
+                            answer,
+                            targetId: senderId,
+                            senderId: mySocketId.current
+                        }
+                    });
+
+                    const queued = pendingCandidates.current.get(senderId) || [];
+                    for (const c of queued) await pc.addIceCandidate(c);
+                    pendingCandidates.current.delete(senderId);
+
+                } else if (type === "answer") {
+                    await pc.setRemoteDescription(new RTCSessionDescription(answer));
+
+                    const queued = pendingCandidates.current.get(senderId) || [];
+                    for (const c of queued) await pc.addIceCandidate(c);
+                    pendingCandidates.current.delete(senderId);
+
+                } else if (type === "ice-candidate") {
+                    const ice = new RTCIceCandidate(candidate);
+                    if (pc.remoteDescription) {
+                        await pc.addIceCandidate(ice);
+                    } else {
+                        if (!pendingCandidates.current.has(senderId)) {
+                            pendingCandidates.current.set(senderId, []);
+                        }
+                        pendingCandidates.current.get(senderId).push(ice);
+                    }
                 }
-            } else if (data.type === "answer") {
-                try {
-                    await peerConnection.current.setRemoteDescription(
-                        new RTCSessionDescription(data.answer)
-                    );
-                } catch (err) {
-                    console.error("🚨 Answer 처리 중 오류:", err);
-                }
-            } else if (data.type === "ice-candidate") {
-                try {
-                    await peerConnection.current.addIceCandidate(
-                        new RTCIceCandidate(data.candidate)
-                    );
-                } catch (err) {
-                    console.error("🚨 ICE Candidate 추가 중 오류:", err);
-                }
+            } catch (err) {
+                console.error("🚨 시그널 처리 중 오류:", err);
             }
         });
 
         return () => {
             socket.current.disconnect();
             localStream.current?.getTracks().forEach(track => track.stop());
+            peerConnections.current.forEach(({ pc }) => pc.close());
+            peerConnections.current.clear();
         };
     }, [roomId]);
 
-    const createPeerConnection = async () => {
-        peerConnection.current = new RTCPeerConnection(servers);
+    const createPeerConnection = (targetId, polite) => {
+        const pc = new RTCPeerConnection(servers);
 
         localStream.current.getTracks().forEach((track) => {
-            peerConnection.current.addTrack(track, localStream.current);
+            pc.addTrack(track, localStream.current);
         });
 
-        peerConnection.current.ontrack = (event) => {
-            remoteVideoRef.current.srcObject = event.streams[0];
+        pc.ontrack = (event) => {
+            const stream = event.streams[0];
+            setRemoteStreams((prev) => {
+                if (prev.some(r => r.id === targetId)) return prev;
+                return [...prev, { id: targetId, stream }];
+            });
         };
 
-        peerConnection.current.onicecandidate = (event) => {
+        pc.onicecandidate = (event) => {
             if (event.candidate) {
                 socket.current.emit("signal", {
                     roomId,
-                    data: {type: "ice-candidate", candidate: event.candidate}
+                    data: {
+                        type: "ice-candidate",
+                        candidate: event.candidate,
+                        targetId: targetId,
+                        senderId: mySocketId.current
+                    }
                 });
             }
         };
-    };
 
-    const createOffer = async () => {
-        await createPeerConnection();
-        try {
-            const offer = await peerConnection.current.createOffer();
-            await peerConnection.current.setLocalDescription(offer);
-            socket.current.emit("signal", {roomId, data: {type: "offer", offer}});
-        } catch (err) {
-            console.error("🚨 Offer 생성 중 오류:", err);
-        }
+        pc.onconnectionstatechange = () => {
+            console.log(`[${targetId}] 연결 상태:`, pc.connectionState);
+            if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+                pc.close();
+                peerConnections.current.delete(targetId);
+                setRemoteStreams((prev) => prev.filter(r => r.id !== targetId));
+            }
+        };
+
+        peerConnections.current.set(targetId, { pc, polite });
+        return { pc };
     };
 
     return (
-        <div style={{display: "flex", gap: "10px"}}>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <div className="video-box">
-                <video ref={myVideoRef} autoPlay muted playsInline className="video"/>
+                <video ref={myVideoRef} autoPlay muted playsInline className="video" />
                 <div className="name-tag">{user.name}</div>
             </div>
-            <div className="video-box">
-                <video ref={remoteVideoRef} autoPlay playsInline className="video"/>
-                <div className="name-tag">상대방</div>
-            </div>
+
+            {remoteStreams.map(({ id, stream }) => (
+                <RemoteVideo key={id} id={id} stream={stream} />
+            ))}
+        </div>
+    );
+};
+
+const RemoteVideo = ({ id, stream }) => {
+    const ref = useRef();
+    useEffect(() => {
+        if (ref.current) ref.current.srcObject = stream;
+    }, [stream]);
+    return (
+        <div className="video-box">
+            <video ref={ref} autoPlay playsInline className="video" />
+            <div className="name-tag">상대방 ({id.slice(0, 5)})</div>
         </div>
     );
 };

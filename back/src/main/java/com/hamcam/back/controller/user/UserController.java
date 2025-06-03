@@ -5,7 +5,6 @@ import com.hamcam.back.dto.user.response.UserProfileResponse;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

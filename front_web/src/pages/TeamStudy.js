@@ -1,92 +1,158 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/api'; // ✅ 공통 axios 인스턴스
+import api from '../api/api';
 import '../css/TeamStudy.css';
 
 const TeamStudy = () => {
+    const [tab, setTab] = useState('ALL');
+    const [filterType, setFilterType] = useState('ALL');
     const [searchTerm, setSearchTerm] = useState('');
     const [studyRooms, setStudyRooms] = useState([]);
+    const [filteredRooms, setFilteredRooms] = useState([]);
     const [showModal, setShowModal] = useState(false);
+
     const [newRoomTitle, setNewRoomTitle] = useState('');
     const [roomType, setRoomType] = useState('QUIZ');
     const [maxParticipants, setMaxParticipants] = useState(10);
     const [password, setPassword] = useState('');
-    const [targetTime, setTargetTime] = useState(60); // ✅ FOCUS 전용
-    const [filteredRooms, setFilteredRooms] = useState([]);
+    const [targetTime, setTargetTime] = useState(60);
+
     const navigate = useNavigate();
 
-    // ✅ 학습방 목록 불러오기 (세션 기반)
     useEffect(() => {
-        const fetchRooms = async () => {
-            try {
-                const res = await api.post('/team-rooms/list', {}); // ✅ 빈 DTO로 요청
-                setStudyRooms(res.data);
-                setFilteredRooms(res.data);
-            } catch (error) {
-                console.error('학습방 목록 불러오기 실패:', error);
-            }
-        };
-
         fetchRooms();
-    }, []);
+    }, [tab, filterType]);
 
-    // ✅ 학습방 검색
-    const handleSearch = () => {
-        const filtered = studyRooms.filter((room) =>
-            room.roomName.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setFilteredRooms(filtered);
-    };
+    useEffect(() => {
+        handleSearch();
+    }, [searchTerm]);
 
-    // ✅ 학습방 참여
-    const handleJoinRoom = (roomId) => {
-        navigate(`/video-room/${roomId}`);
-    };
-
-    // ✅ 학습방 생성
-    const handleCreateRoom = async () => {
+    const fetchRooms = async () => {
         try {
-            let requestBody;
+            let res;
 
-            if (roomType === 'FOCUS') {
-                requestBody = {
-                    room_name: newRoomTitle,
-                    password,
-                    targetTime,
-                    mode: 'FOCUS',
-                };
-            } else {
-                requestBody = {
-                    room_name: newRoomTitle,
-                    password,
-                    mode: 'QUIZ',
-                };
+            if (tab === 'ALL') {
+                if (filterType === 'ALL') {
+                    res = await api.get('/study/team/all');
+                } else {
+                    res = await api.get(`/study/team/type?roomType=${filterType}`);
+                }
+            } else if (tab === 'MY') {
+                if (filterType === 'ALL') {
+                    res = await api.post('/study/team/my');
+                } else {
+                    res = await api.get(`/study/team/my/type?roomType=${filterType}`);
+                }
             }
 
-            const res = await api.post(
-                roomType === 'FOCUS' ? '/team-rooms/focus/create' : '/team-rooms/quiz/create',
-                requestBody
-            );
+            const roomList = res?.data || [];
+            console.log('[응답 목록] roomList:', roomList);
+            roomList.forEach(room => console.log(`[응답 roomId=${room.room_id}] roomType:`, room.room_type));
 
-            alert('학습방이 생성되었습니다!');
-            setStudyRooms((prev) => [...prev, res.data]);
-            setFilteredRooms((prev) => [...prev, res.data]);
-            setShowModal(false);
-            setNewRoomTitle('');
-            setRoomType('QUIZ');
-            setMaxParticipants(10);
-            setPassword('');
-            setTargetTime(60);
+            setStudyRooms(roomList);
+            filterRooms(roomList, searchTerm, 'ALL');
         } catch (error) {
-            console.error('학습방 생성 실패:', error);
-            alert('학습방 생성에 실패했습니다.');
+            console.error('팀방 목록 불러오기 실패:', error);
         }
     };
 
 
+    const filterRooms = (rooms, search, _) => {
+        let filtered = rooms;
+
+        if (search.trim()) {
+            filtered = filtered.filter(room =>
+                room.title.toLowerCase().includes(search.toLowerCase())
+            );
+        }
+
+        console.log('[렌더링] 필터링된 room 리스트:', filtered);
+        setFilteredRooms(filtered);
+    };
+
+    const handleSearch = () => {
+        filterRooms(studyRooms, searchTerm, 'ALL');
+    };
+
+    const handleJoinRoom = async (roomId) => {
+        const room = studyRooms.find(r => r.room_id === roomId);
+        if (!room) return;
+
+        console.log(`[참여 시도] roomId=${roomId}, roomType=${room.roomType}`);
+
+        if (room.password) {
+            const inputPassword = prompt('비밀번호를 입력하세요:');
+            if (!inputPassword || inputPassword !== room.password) {
+                alert('비밀번호가 일치하지 않습니다.');
+                return;
+            }
+        }
+
+        const route = room.room_type === 'FOCUS'
+            ? `/team-study/focus/${roomId}`    // ✅ 수정
+            : `/team-study/quiz/${roomId}`;    // ✅ 수정
+
+        navigate(route);
+    };
+
+    const handleCreateRoom = async () => {
+        if (!newRoomTitle.trim()) {
+            alert('방 제목을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const createRequest = {
+                title: newRoomTitle,
+                room_type: roomType,
+                password: password || null,
+                target_time: roomType === 'FOCUS' ? targetTime : 0,
+                problem_id: null,
+                subject: null,
+                grade: 0,
+                month: 0,
+                difficulty: null
+            };
+
+            console.log('[생성 요청] roomType:', roomType);
+            console.log('[생성 요청] createRequest:', createRequest);
+
+            const res = await api.post('/study/team/create', createRequest);
+            const newRoomId = res.data;
+
+            alert('학습방이 생성되었습니다!');
+            setShowModal(false);
+            resetForm();
+            fetchRooms();
+        } catch (error) {
+            console.error('팀방 생성 실패:', error);
+            alert('학습방 생성에 실패했습니다.');
+        }
+    };
+
+    const resetForm = () => {
+        setNewRoomTitle('');
+        setRoomType('QUIZ');
+        setPassword('');
+        setMaxParticipants(10);
+        setTargetTime(60);
+    };
+
     return (
         <div className="team-study-container">
             <h1>팀 학습 참여하기</h1>
+
+            <div className="tab-buttons">
+                <button className={tab === 'ALL' ? 'active' : ''} onClick={() => setTab('ALL')}>전체 팀방</button>
+                <button className={tab === 'MY' ? 'active' : ''} onClick={() => setTab('MY')}>참여 중인 팀</button>
+            </div>
+
+            <div className="filter-buttons">
+                <button className={filterType === 'ALL' ? 'active' : ''} onClick={() => setFilterType('ALL')}>전체</button>
+                <button className={filterType === 'QUIZ' ? 'active' : ''} onClick={() => setFilterType('QUIZ')}>문제풀이방</button>
+                <button className={filterType === 'FOCUS' ? 'active' : ''} onClick={() => setFilterType('FOCUS')}>공부방</button>
+            </div>
+
             <div className="search-bar">
                 <input
                     type="text"
@@ -97,17 +163,26 @@ const TeamStudy = () => {
                 <button className="search" onClick={handleSearch}>검색</button>
                 <button onClick={() => setShowModal(true)}>+ 새 학습방 만들기</button>
             </div>
+
             <ul className="study-room-list">
-                {filteredRooms.map((room) => (
-                    <li key={room.roomId} className="study-room-item">
-                        <div className="room-info">
-                            <h2>{room.roomName}</h2>
-                            <p>참여자 수: {room.maxParticipants}</p>
-                            <p>유형: {room.type === 'FOCUS' ? '공부방' : '문제풀이방'}</p>
-                        </div>
-                        <button className="join-button" onClick={() => handleJoinRoom(room.roomId)}>참여하기</button>
+                {filteredRooms.length === 0 ? (
+                    <li className="empty-state">
+                        <p className="empty-icon">📭</p>
+                        <p className="empty-message">조건에 맞는 학습방이 없습니다.</p>
                     </li>
-                ))}
+                ) : (
+                    filteredRooms.map((room) => (
+                        <li key={room.room_id} className="study-room-item">
+                            <div className="room-info">
+                                <h2>{room.title}</h2>
+                                <p>참여자 수: {room.max_participants ?? '-'}</p>
+                                <p>유형: {room.room_type === 'FOCUS' ? '공부방' : '문제풀이방'}</p>
+                                {room.password && <p>🔒 비밀번호 설정됨</p>}
+                            </div>
+                            <button className="join-button" onClick={() => handleJoinRoom(room.room_id)}>참여하기</button>
+                        </li>
+                    ))
+                )}
             </ul>
 
             {showModal && (

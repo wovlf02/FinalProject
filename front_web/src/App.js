@@ -23,10 +23,10 @@ import UnitEvaluationPlan from './pages/UnitEvaluationPlan';
 import UnitEvaluationFeedback from './pages/UnitEvaluationFeedback';
 import UnitEvaluationSchedule from './pages/UnitEvaluationSchedule';
 import './css/style.css';
-import Post from "./pages/Community/Post";
-import Notice from "./pages/Community/Notice";
-import Chat from "./pages/Community/Chat";
-import Friend from "./pages/Community/Friend";
+import Post from './pages/Community/Post';
+import Notice from './pages/Community/Notice';
+import Chat from './pages/Community/Chat';
+import Friend from './pages/Community/Friend';
 import PostWritePage from './pages/Community/components/PostWritePage';
 import PostDetail from './pages/Community/components/PostDetail';
 import StudyListPage from './pages/Community/components/StudyListPage';
@@ -34,6 +34,10 @@ import StudyDetail from './pages/Community/components/StudyDetail';
 import StudyCreatePage from './pages/Community/components/StudyCreatePage';
 import UnitEvaluationPlanList from './pages/UnitEvaluationPlanList';
 import PlanMenu from './pages/PlanMenu';
+
+// ✅ 새로 추가된 팀 학습 관련 페이지
+import QuizRoom from './pages/QuizRoom';
+import FocusRoom from './pages/FocusRoom';
 
 // 초기 스터디 목록
 const initialStudyList = [];
@@ -93,6 +97,11 @@ function App() {
                     <Route path="/unit-evaluation/plan" element={<UnitEvaluationPlan />} />
                     <Route path="/unit-evaluation/feedback" element={<UnitEvaluationFeedback />} />
                     <Route path="/unit-evaluation/schedule" element={<UnitEvaluationSchedule />} />
+
+                    {/* ✅ 팀 학습 방 진입 URL 통일 */}
+                    <Route path="/team-study/quiz/:roomId" element={<QuizRoom />} />
+                    <Route path="/team-study/focus/:roomId" element={<FocusRoom />} />
+
                     <Route path="*" element={<Navigate to="/dashboard" />} />
                 </Route>
             </Routes>

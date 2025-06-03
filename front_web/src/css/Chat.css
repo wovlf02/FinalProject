@@ -227,3 +227,64 @@
     font-weight: 600;
     cursor: pointer;
 }
+
+.chat-box {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    height: 300px;
+    background-color: #fff;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.chat-message {
+    margin-bottom: 6px;
+}
+
+.chat-user {
+    font-weight: bold;
+    margin-right: 6px;
+}
+
+.chat-input-area {
+    display: flex;
+    border-top: 1px solid #ddd;
+}
+
+.chat-input-area input {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-right: 1px solid #ccc;
+}
+
+.chat-input-area button {
+    width: 80px;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+}
+
+.file-uploader {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.file-uploader input[type="file"] {
+    flex: 1;
+}
+
+.file-uploader button {
+    padding: 6px 12px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    cursor: pointer;
+}

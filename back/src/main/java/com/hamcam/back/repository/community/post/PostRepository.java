@@ -9,81 +9,68 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-/**
- * [PostRepository]
- *
- * 커뮤니티 게시글(Post) 관련 JPA Repository입니다.
- * - 게시글 조회, 검색, 정렬, 인기글, 활동 랭킹 등을 제공합니다.
- * - 즐겨찾기는 PostFavoriteRepository에서 별도로 관리합니다.
- */
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    /**
-     * [게시글 단건 조회]
-     * 게시글 ID를 기준으로 단일 게시글을 조회합니다.
-     *
-     * @param postId 게시글 ID
-     * @return 게시글(Optional)
-     */
+    /** ✅ 게시글 단건 조회 */
     Optional<Post> findById(Long postId);
 
-    /**
-     * [제목 또는 본문 내 키워드 포함 게시글 검색]
-     * 대소문자 구분 없이 제목 또는 본문에 특정 키워드가 포함된 게시글을 페이징하여 조회합니다.
-     *
-     * @param title 키워드 (제목 기준)
-     * @param content 키워드 (본문 기준)
-     * @param pageable 페이징 정보
-     * @return 검색된 게시글 페이지
-     */
+    /** ✅ 전체 페이징 조회 */
+    Page<Post> findAll(Pageable pageable);
+
+    /** ✅ 카테고리별 페이징 조회 */
+    Page<Post> findAllByCategory(PostCategory category, Pageable pageable);
+
+    /** ✅ 제목 검색 */
+    Page<Post> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+
+    /** ✅ 본문 검색 */
+    Page<Post> findByContentContainingIgnoreCase(String content, Pageable pageable);
+
+    /** ✅ 작성자 닉네임 검색 */
+    Page<Post> findByWriter_NicknameContainingIgnoreCase(String nickname, Pageable pageable);
+
+    /** ✅ 제목+본문 검색 */
     Page<Post> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(
-            String title,
-            String content,
+            String title, String content, Pageable pageable);
+
+    /** ✅ 카테고리 + 제목 검색 */
+    Page<Post> findByCategoryAndTitleContainingIgnoreCase(
+            PostCategory category, String title, Pageable pageable);
+
+    /** ✅ 카테고리 + 본문 검색 */
+    Page<Post> findByCategoryAndContentContainingIgnoreCase(
+            PostCategory category, String content, Pageable pageable);
+
+    /** ✅ 카테고리 + 작성자 검색 */
+    Page<Post> findByCategoryAndWriter_NicknameContainingIgnoreCase(
+            PostCategory category, String nickname, Pageable pageable);
+
+    /** ✅ 카테고리 + 제목+본문 복합 검색 (LOWER 제거 → 오류 방지) */
+    @Query("""
+        SELECT p FROM Post p
+        WHERE 
+            p.category = :category
+            AND (
+                p.title LIKE CONCAT('%', :keyword, '%') 
+                OR p.content LIKE CONCAT('%', :keyword, '%')
+            )
+        ORDER BY p.createdAt DESC
+    """)
+    Page<Post> searchByCategoryAndKeyword(
+            @Param("category") PostCategory category,
+            @Param("keyword") String keyword,
             Pageable pageable
     );
 
-    /**
-     * [전체 게시글 페이징 조회]
-     *
-     * @param pageable 페이징 정보
-     * @return 게시글 페이지
-     */
-    Page<Post> findAll(Pageable pageable);
-
-    /**
-     * [인기 게시글 조회]
-     * 좋아요 수 + 조회수를 기준으로 내림차순 정렬된 인기 게시글을 반환합니다.
-     *
-     * @param pageable 페이징 정보
-     * @return 인기 게시글 페이지
-     */
-    @Query("SELECT p FROM Post p ORDER BY (p.likeCount + p.viewCount) DESC")
+    /** ✅ 인기 게시글 (likeCount ≥ 20) */
+    @Query("""
+        SELECT p FROM Post p
+        WHERE p.likeCount >= 20
+        ORDER BY (p.likeCount + p.viewCount) DESC
+    """)
     Page<Post> findPopularPosts(Pageable pageable);
 
-    /**
-     * [사용자 활동 랭킹]
-     * 작성자 기준으로 게시글 수와 총 좋아요 수를 집계하여 활동 랭킹을 반환합니다.
-     *
-     * @param pageable 페이징 정보
-     * @return Object[] 배열: [userId, nickname, profileImageUrl, postCount, totalLikeCount]
-     */
-    @Query("""
-        SELECT p.writer.id, p.writer.nickname, p.writer.profileImageUrl, COUNT(p), SUM(p.likeCount)
-        FROM Post p
-        GROUP BY p.writer
-        ORDER BY SUM(p.likeCount) DESC
-    """)
-    Page<Object[]> getUserPostRanking(Pageable pageable);
-
-    /**
-     * [카테고리 없이 키워드 및 좋아요 수로 필터링된 게시글 검색]
-     * Oracle 호환성을 고려한 LIKE + 조건 검색 쿼리입니다.
-     *
-     * @param keyword 제목 또는 본문 키워드 (nullable)
-     * @param minLikes 최소 좋아요 수
-     * @param pageable 페이징 정보
-     * @return 필터링된 게시글 페이지
-     */
+    /** ✅ 필터링: 카테고리 없이 */
     @Query("""
         SELECT p FROM Post p
         WHERE 
@@ -98,13 +85,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable
     );
 
-    // ✅ 카테고리 포함 필터링 쿼리 추가
+    /** ✅ 필터링: 카테고리 포함 */
     @Query("""
         SELECT p FROM Post p
         WHERE 
             p.category = :category
-            AND (:keyword IS NULL OR p.title LIKE CONCAT('%', :keyword, '%') 
-                 OR p.content LIKE CONCAT('%', :keyword, '%'))
+            AND (
+                :keyword IS NULL OR p.title LIKE CONCAT('%', :keyword, '%') 
+                OR p.content LIKE CONCAT('%', :keyword, '%')
+            )
             AND p.likeCount >= :minLikes
         ORDER BY p.createdAt DESC
     """)
