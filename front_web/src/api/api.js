@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {API_BASE_URL_8080} from './apiUrl'; // <- .env 대신 명시적 import
+import { API_BASE_URL_8080} from './apiUrl'; // <- .env 대신 명시적 import
 
 // ✅ 백엔드 API 기본 URL
 // ✅ Axios 인스턴스 생성 (withCredentials 필수)

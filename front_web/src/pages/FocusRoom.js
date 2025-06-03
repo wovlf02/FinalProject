@@ -42,6 +42,7 @@ const FocusRoom = () => {
                 console.log("📴 LiveKit 연결 해제됨");
             }
         };
+        // eslint-disable-next-line
     }, []);
 
     const enterRoom = async () => {
@@ -73,7 +74,6 @@ const FocusRoom = () => {
             roomRef.current = room;
 
             room.on('participantConnected', (participant) => {
-                console.log('📡 참가자 연결됨:', participant.identity);
                 setParticipants((prev) => {
                     const exists = prev.some(p => p.identity === participant.identity);
                     if (!exists) {
@@ -83,8 +83,6 @@ const FocusRoom = () => {
                 });
 
                 participant.on('trackSubscribed', (track, publication) => {
-                    console.log(`[trackSubscribed] ${participant.identity} → ${track.kind}`);
-
                     if (track.kind === 'video') {
                         const id = `video-${participant.identity}`;
                         let el = document.getElementById(id);
@@ -96,7 +94,6 @@ const FocusRoom = () => {
                             el.className = 'remote-video';
                             document.getElementById('video-container')?.appendChild(el);
                         }
-
                         if (!el.srcObject) {
                             el.srcObject = new MediaStream([track.mediaStreamTrack]);
                         }
@@ -105,7 +102,6 @@ const FocusRoom = () => {
             });
 
             room.on('participantDisconnected', (participant) => {
-                console.log('❌ 참가자 퇴장:', participant.identity);
                 setParticipants((prev) => prev.filter(p => p.identity !== participant.identity));
                 const el = document.getElementById(`video-${participant.identity}`);
                 if (el) {
@@ -176,10 +172,11 @@ const FocusRoom = () => {
         }
     };
 
-    const sendChat = () => {
+    const sendChat = (e) => {
+        e.preventDefault();
         if (chatMsg.trim() !== '') {
             stompRef.current.send(`/app/focus/chat/${roomId}`, {}, JSON.stringify({
-                sender_id: userId,
+                senderId: userId,
                 content: chatMsg
             }));
             setChatMsg('');
@@ -191,6 +188,7 @@ const FocusRoom = () => {
             <h1>📚 공부 집중방</h1>
 
             <div className="main-content">
+                {/* 캠 그리드 */}
                 <div id="video-container" className="video-grid">
                     {participants.map((user) => (
                         <div key={user.identity} className="video-wrapper">
@@ -214,47 +212,42 @@ const FocusRoom = () => {
                     ))}
                 </div>
 
-                <div className="chat-section">
-                    <div className="chat-log">
-                        {chatList.map((chat, index) => (
-                            <div key={index}>
-                                <strong>{chat.senderId}:</strong> {chat.content}
-                            </div>
-                        ))}
+                {/* 오른쪽: 랭킹과 채팅 세로 분리 */}
+                <div className="side-section">
+                    <div className="ranking-section">
+                        <h3>📊 실시간 랭킹</h3>
+                        <ul className="ranking-list">
+                            {ranking.length === 0 ? (
+                                <p>랭킹 정보를 불러오는 중...</p>
+                            ) : (
+                                ranking.map((user, index) => (
+                                    <li key={user.userId}>
+                                        {index + 1}. {user.nickname} - {user.focusedSeconds}초
+                                    </li>
+                                ))
+                            )}
+                        </ul>
                     </div>
-                    <div className="chat-input">
-                        <input
-                            type="text"
-                            value={chatMsg}
-                            onChange={(e) => setChatMsg(e.target.value)}
-                            placeholder="메시지를 입력하세요..."
-                        />
-                        <button onClick={sendChat}>전송</button>
+
+                    <div className="chat-section">
+                        <div className="chat-log">
+                            {chatList.map((chat, index) => (
+                                <div key={index}>
+                                    <strong>{chat.senderId}:</strong> {chat.content}
+                                </div>
+                            ))}
+                        </div>
+                        <form className="chat-input" onSubmit={sendChat}>
+                            <input
+                                type="text"
+                                value={chatMsg}
+                                onChange={(e) => setChatMsg(e.target.value)}
+                                placeholder="메시지를 입력하세요..."
+                            />
+                            <button type="submit">전송</button>
+                        </form>
                     </div>
                 </div>
-            </div>
-
-            <div className="info-section">
-                <h2>🕒 집중 시간: {Math.floor(focusedSeconds / 60)}분 {focusedSeconds % 60}초</h2>
-                {winnerId && <p className="winner">🎉 승리자: 사용자 {winnerId}번!</p>}
-
-                <div className="button-group">
-                    <button onClick={handleGoal}>🎯 목표 달성</button>
-                    <button onClick={handleConfirmExit} disabled={confirmed}>✅ 결과 확인</button>
-                </div>
-
-                <h3>📊 실시간 랭킹</h3>
-                <ul className="ranking-list">
-                    {ranking.length === 0 ? (
-                        <p>랭킹 정보를 불러오는 중...</p>
-                    ) : (
-                        ranking.map((user, index) => (
-                            <li key={user.userId}>
-                                {index + 1}. {user.nickname} - {user.focusedSeconds}초
-                            </li>
-                        ))
-                    )}
-                </ul>
             </div>
         </div>
     );

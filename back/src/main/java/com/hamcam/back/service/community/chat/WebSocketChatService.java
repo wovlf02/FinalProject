@@ -16,10 +16,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * [WebSocketChatService]
- * WebSocket 기반 채팅 메시지 처리 서비스
+ * WebSocket 기반 실시간 채팅 메시지 저장 및 응답 서비스
  */
 @Service
 @RequiredArgsConstructor
@@ -32,17 +33,21 @@ public class WebSocketChatService {
     private final ChatReadService chatReadService;
 
     /**
-     * WebSocket을 통해 수신된 채팅 메시지를 저장하고 응답으로 반환
-     * - TEXT, FILE, IMAGE, ENTER 타입만 저장
+     * ✅ 채팅 메시지 저장 및 응답 생성
+     * - TEXT, IMAGE, FILE, ENTER 타입만 저장
+     * - READ_ACK는 저장되지 않음
+     *
+     * @param request 클라이언트로부터 받은 메시지
+     * @param userId  세션에서 추출한 전송자 ID
+     * @return ChatMessageResponse
      */
     public ChatMessageResponse saveMessage(ChatMessageRequest request, Long userId) {
         if (request.getType() == null) {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         }
 
-        // READ_ACK는 저장 대상 아님 (예외 던지지 않고 무시 처리)
         if (request.getType() == ChatMessageType.READ_ACK) {
-            return null;
+            return null; // 저장 안함
         }
 
         ChatRoom room = chatRoomRepository.findById(request.getRoomId())
@@ -51,7 +56,7 @@ public class WebSocketChatService {
         User sender = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 메시지 저장
+        // ✅ 메시지 엔티티 생성 및 저장
         ChatMessage message = ChatMessage.builder()
                 .chatRoom(room)
                 .sender(sender)
@@ -63,14 +68,14 @@ public class WebSocketChatService {
 
         chatMessageRepository.save(message);
 
-        // 마지막 메시지 갱신 (TEXT, FILE, IMAGE만)
+        // ✅ 미리보기 메시지 및 최종 메시지 갱신
         if (request.getType().isPreviewType()) {
             room.setLastMessage(generatePreview(message));
             room.setLastMessageAt(message.getSentAt());
             chatRoomRepository.save(room);
         }
 
-        // 미읽음 인원 수 계산
+        // ✅ 미읽음 인원 수 계산
         int unreadCount = chatReadService.getUnreadCountForMessage(message.getId());
 
         return ChatMessageResponse.builder()
@@ -78,7 +83,7 @@ public class WebSocketChatService {
                 .roomId(room.getId())
                 .senderId(sender.getId())
                 .nickname(sender.getNickname())
-                .profileUrl(sender.getProfileImageUrl() != null ? sender.getProfileImageUrl() : "")
+                .profileUrl(Optional.ofNullable(sender.getProfileImageUrl()).orElse(""))
                 .content(message.getContent())
                 .type(message.getType())
                 .storedFileName(message.getStoredFileName())
@@ -88,13 +93,17 @@ public class WebSocketChatService {
     }
 
     /**
-     * 메시지 유형에 따른 미리보기 텍스트 생성
+     * ✅ 미리보기 텍스트 생성
+     *
+     * @param message 메시지 객체
+     * @return 미리보기 문자열
      */
     private String generatePreview(ChatMessage message) {
+        if (message == null || message.getType() == null) return "";
+
         return switch (message.getType()) {
             case FILE, IMAGE -> "[파일]";
-            case TEXT -> message.getContent();
-            case ENTER -> message.getContent();
+            case TEXT, ENTER -> message.getContent();
             default -> "";
         };
     }

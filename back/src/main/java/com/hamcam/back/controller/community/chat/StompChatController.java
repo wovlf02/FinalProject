@@ -3,11 +3,15 @@ package com.hamcam.back.controller.community.chat;
 import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.request.ChatReadRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
+import com.hamcam.back.dto.study.team.socket.request.FocusChatMessageRequest;
+import com.hamcam.back.dto.study.team.socket.response.FocusChatMessageResponse;
 import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.service.community.chat.ChatReadService;
 import com.hamcam.back.service.community.chat.WebSocketChatService;
+import com.hamcam.back.service.study.team.chat.FocusChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -26,11 +30,13 @@ public class StompChatController {
     private final WebSocketChatService webSocketChatService;
     private final ChatReadService chatReadService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final FocusChatService focusChatService;
 
     private static final String CHAT_DEST_PREFIX = "/sub/chat/room/";
+    private static final String FOCUS_CHAT_DEST_PREFIX = "/sub/focus/room/";
 
     /**
-     * ✅ 채팅 메시지 수신 및 전송 (TEXT, IMAGE, FILE, ENTER)
+     * ✅ 커뮤니티 일반 채팅 메시지 수신 및 전송
      */
     @MessageMapping("/chat/send")
     public void handleChatMessage(@Payload ChatMessageRequest messageRequest,
@@ -39,24 +45,19 @@ public class StompChatController {
         log.info("📥 [채팅 수신] roomId={}, userId={}, type={}, content={}",
                 messageRequest.getRoomId(), userId, messageRequest.getType(), messageRequest.getContent());
 
-        // type READ_ACK는 방어
         if (messageRequest.getType() == ChatMessageType.READ_ACK) {
             log.warn("🚫 READ_ACK는 /chat/send 경로로 보낼 수 없습니다.");
             return;
         }
 
-        // 메시지 저장 및 응답 생성
         ChatMessageResponse response = webSocketChatService.saveMessage(messageRequest, userId);
-
-        // 본인 메시지는 바로 읽음 처리
         chatReadService.markReadAsUserId(response.getRoomId(), response.getMessageId(), userId);
 
-        // 구독자에게 브로드캐스트
         messagingTemplate.convertAndSend(CHAT_DEST_PREFIX + response.getRoomId(), response);
     }
 
     /**
-     * ✅ 메시지 읽음 처리 요청
+     * ✅ 커뮤니티 채팅 읽음 처리
      */
     @MessageMapping("/chat/read")
     public void handleReadMessage(@Payload ChatReadRequest request,
@@ -78,6 +79,21 @@ public class StompChatController {
 
         messagingTemplate.convertAndSend(CHAT_DEST_PREFIX + roomId, ack);
         log.info("✅ [READ_ACK 전송] messageId={}, unreadCount={}", messageId, unreadCount);
+    }
+
+    /**
+     * ✅ FocusRoom 채팅 수신 및 브로드캐스트
+     */
+    @MessageMapping("/focus/chat/{roomId}")
+    public void handleFocusChat(@DestinationVariable Long roomId,
+                                @Payload FocusChatMessageRequest message,
+                                SimpMessageHeaderAccessor accessor) {
+        Long senderId = extractUserIdFromSession(accessor);
+        log.info("📥 [FocusChat] roomId={}, senderId={}, content={}", roomId, senderId, message.getContent());
+
+        FocusChatMessageResponse response = focusChatService.saveAndBuild(roomId, senderId, message.getContent());
+
+        messagingTemplate.convertAndSend(FOCUS_CHAT_DEST_PREFIX + roomId + "/chat", response);
     }
 
     /**

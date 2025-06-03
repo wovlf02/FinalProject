@@ -17,7 +17,7 @@ const PersonalStudy = () => {
 
     const handleStart = () => {
         // 단원명, 공부시간(초)을 함께 전달
-        navigate('/study', {state: {initialTime: minutes * 60 + seconds, unitName}});
+        navigate('/camstudy', {state: {initialTime: minutes * 60 + seconds, unitName}});
     };
 
     // 집중 메시지 토글

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "proxy": "http://localhost:8080",
   "private": true,
+  "homepage": "http://hamcam.site",
   "dependencies": {
     "@livekit/components-react": "^2.9.9",
     "@livekit/components-styles": "^1.1.6",
@@ -33,6 +34,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:raw": "react-scripts build --no-minify",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

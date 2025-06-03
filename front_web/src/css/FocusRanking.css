@@ -1,0 +1,53 @@
+.ranking-section {
+    flex: 1;
+    min-height: 100vh;
+    overflow-y: auto;
+    padding: 2vh 1vw;
+    background-color: #ffffff;
+    box-sizing: border-box;
+    border-right: 2px solid #ccc;
+}
+
+.ranking-box {
+    width: 100%;
+    height: 100%;
+}
+
+.ranking-title {
+    font-size: 1.2vw;
+    font-weight: bold;
+    margin-bottom: 2vh;
+    color: #1c78dd;
+}
+
+/* 랭킹 리스트 */
+.ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ranking-item {
+    border: 2px solid #c8dfff;
+    border-radius: 10px;
+    padding: 1.2vh 1vw;
+    margin-bottom: 2vh;
+    background-color: #f3f8ff;
+    font-size: 1vw;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+}
+
+.rank-num {
+    align-self: flex-end;
+    font-weight: bold;
+    font-size: 0.9vw;
+    color: #1976d2;
+}
+
+.rank-time {
+    font-size: 0.9vw;
+    color: #555;
+    margin-top: 0.5vh;
+}

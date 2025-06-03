@@ -1,10 +1,19 @@
+/* 사이드 메뉴 전체 (좌측 15% 고정 비율) */
 .side-menu {
-    width: 200px;
+    width: 15vw;                /* ✅ 고정 px → 비율 기반 */
+    min-width: 180px;           /* ✅ 너무 작아지지 않도록 최소 보장 */
     background-color: #f9f9f9;
     height: 100vh;
     padding: 20px;
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    overflow-y: auto;
 }
 
+/* 로고 또는 상단 타이틀 */
 .side-menu-logo {
     font-size: 20px;
     font-weight: bold;
@@ -12,15 +21,18 @@
     padding-left: 12px;
 }
 
+/* 메뉴 리스트 */
 .side-menu-list {
     list-style: none;
     padding-left: 10px;
 }
 
+/* 각 메뉴 항목 */
 .side-menu-list-item {
     margin-bottom: 14px;
 }
 
+/* 메뉴 버튼 */
 .side-menu-button {
     background: none;
     border: none;
@@ -32,17 +44,18 @@
     text-align: left;
     width: 100%;
     padding-left: 12px;
+    border-radius: 6px;
 }
 
 .side-menu-button.active {
     color: #1c78dd;
     background-color: #e6f0ff;
-    border-radius: 6px;
 }
 
+/* 서브메뉴 */
 .side-submenu-list {
     list-style: none;
-    padding-left: 28px; /* 좀 더 들여쓰기 */
+    padding-left: 28px;
     margin-top: 12px;
 }
 
@@ -68,7 +81,7 @@
     font-weight: bold;
 }
 
-/* ✅ hover 효과는 최소한으로 */
+/* ✅ 최소한의 hover 효과 */
 .side-menu-button:hover {
     color: #1c78dd !important;
     background-color: #ececec !important;
@@ -78,6 +91,29 @@
     background-color: #ececec;
 }
 
+/* 사용자 프로필 (사이드 하단 등) */
+.side-user-profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.side-user-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 8px;
+}
+
+.side-user-nickname {
+    font-weight: bold;
+    font-size: 14px;
+    color: #111;
+}
+
+/* 커뮤니티 글 카드 */
 .community-post-card {
     background-color: #f9fafc;
     border-radius: 10px;
@@ -90,7 +126,7 @@
     position: relative;
 }
 
-/* 상단 영역: 좌측 제목 + 우측 날짜+메뉴 */
+/* 글 카드 상단 영역 */
 .post-card-top {
     display: flex;
     justify-content: space-between;
@@ -98,6 +134,7 @@
     margin-bottom: 6px;
 }
 
+/* 글 제목 */
 .post-title {
     font-size: 16px;
     font-weight: bold;
@@ -105,7 +142,7 @@
     flex: 1;
 }
 
-/* 날짜 + 점 3개 버튼 */
+/* 작성일 + 메뉴 버튼 */
 .post-top-meta {
     display: flex;
     align-items: center;
@@ -128,25 +165,4 @@
 
 .post-menu:hover {
     color: #555;
-}
-
-.side-user-profile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 20px 0;
-}
-
-.side-user-image {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-bottom: 8px;
-}
-
-.side-user-nickname {
-    font-weight: bold;
-    font-size: 14px;
-    color: #111;
 }
