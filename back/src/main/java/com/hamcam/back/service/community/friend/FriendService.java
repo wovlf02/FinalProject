@@ -31,14 +31,14 @@ public class FriendService {
     private final UserRepository userRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
-    // 생성자에서 @Qualifier 적용!
+    // @Qualifier를 "stringRedisTemplateCustom"으로 변경!
     public FriendService(
             FriendRepository friendRepository,
             FriendRequestRepository friendRequestRepository,
             FriendBlockRepository friendBlockRepository,
             FriendReportRepository friendReportRepository,
             UserRepository userRepository,
-            @Qualifier("redisTemplate") RedisTemplate<String, String> redisTemplate
+            @Qualifier("stringRedisTemplateCustom") RedisTemplate<String, String> redisTemplate
     ) {
         this.friendRepository = friendRepository;
         this.friendRequestRepository = friendRequestRepository;

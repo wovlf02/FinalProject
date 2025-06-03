@@ -72,7 +72,7 @@ const QuizRoom = () => {
 
     const connectLiveKitSession = async (identity) => {
         try {
-            const res = await api.post('/api/livekit/token', { roomName });
+            const res = await api.post('/livekit/token', { roomName });
             const { token, wsUrl } = res.data;
 
             const room = await connectToLiveKit(identity, roomName, wsUrl, token, 'video-container');
@@ -122,7 +122,10 @@ const QuizRoom = () => {
     };
 
     const connectWebSocket = () => {
-        const sock = new SockJS('/ws');
+        const sock = new SockJS('/ws', null, {
+            transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
+            withCredentials: true // ✅ 세션 쿠키 전달을 위해 추가
+        });
         const client = Stomp.over(sock);
         stompRef.current = client;
 

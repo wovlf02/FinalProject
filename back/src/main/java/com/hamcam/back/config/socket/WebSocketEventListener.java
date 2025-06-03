@@ -30,11 +30,15 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-
         String sessionId = accessor.getSessionId();
-        String userId = accessor.getFirstNativeHeader("userId"); // ✅ 헤더에서 userId 직접 추출
 
-        if (userId != null) {
+        // 세션 속성에서 userId 추출 (핸드셰이크 인터셉터에서 넣어준 값)
+        Object userIdObj = accessor.getSessionAttributes() != null
+                ? accessor.getSessionAttributes().get("userId")
+                : null;
+
+        if (userIdObj != null) {
+            String userId = userIdObj.toString();
             redisTemplate.opsForValue().set(ONLINE_KEY_PREFIX + userId, "1", Duration.ofMinutes(30));
             log.info("✅ 온라인 등록 완료: userId = {}, sessionId = {}", userId, sessionId);
         } else {

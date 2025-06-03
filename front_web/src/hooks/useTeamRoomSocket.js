@@ -12,7 +12,10 @@ const useTeamRoomSocket = (roomId, onChatReceived, onEventReceived) => {
     const connectSocket = () => {
         if (stompClientRef.current?.connected) return;
 
-        const socket = new SockJS(SOCKET_URL);
+        const socket = new SockJS(SOCKET_URL, null, {
+            transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
+            withCredentials: true // ✅ 세션 쿠키 전달
+        });
         const stompClient = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: 5000,

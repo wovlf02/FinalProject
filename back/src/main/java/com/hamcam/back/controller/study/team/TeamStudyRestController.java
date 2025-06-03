@@ -34,7 +34,7 @@ public class TeamStudyRestController {
 
     /** ✅ 팀방 입장 */
     @PostMapping("/enter")
-    public ResponseEntity<Void> enterRoom(@RequestParam Long roomId, HttpServletRequest request) {
+    public ResponseEntity<Void> enterRoom(@RequestParam("roomId") Long roomId, HttpServletRequest request) {
         Long userId = extractUserId(request);
         teamStudyRestService.enterRoom(roomId, userId);
         return ResponseEntity.ok().build();
@@ -42,7 +42,7 @@ public class TeamStudyRestController {
 
     /** ✅ 팀방 삭제 (방장만 가능) */
     @DeleteMapping("/delete/{roomId}")
-    public ResponseEntity<Void> deleteRoom(@PathVariable Long roomId, HttpServletRequest request) {
+    public ResponseEntity<Void> deleteRoom(@PathVariable("roomId") Long roomId, HttpServletRequest request) {
         Long userId = extractUserId(request);
         teamStudyRestService.deleteRoom(roomId, userId);
         return ResponseEntity.ok().build();
@@ -64,14 +64,14 @@ public class TeamStudyRestController {
 
     /** ✅ 유형별 팀방 목록 */
     @GetMapping("/type")
-    public ResponseEntity<List<TeamRoomSimpleInfo>> getRoomsByType(@RequestParam String roomType, HttpServletRequest httpRequest) {
+    public ResponseEntity<List<TeamRoomSimpleInfo>> getRoomsByType(@RequestParam("roomType") String roomType, HttpServletRequest httpRequest) {
         Long userId = extractUserId(httpRequest);
         return ResponseEntity.ok(teamStudyRestService.getRoomsByType(userId, roomType));
     }
 
     /** ✅ 내가 속한 팀방 중 유형 필터링 */
     @GetMapping("/my/type")
-    public ResponseEntity<List<TeamRoomSimpleInfo>> getMyRoomsByType(@RequestParam String roomType, HttpServletRequest httpRequest) {
+    public ResponseEntity<List<TeamRoomSimpleInfo>> getMyRoomsByType(@RequestParam("roomType") String roomType, HttpServletRequest httpRequest) {
         Long userId = extractUserId(httpRequest);
         return ResponseEntity.ok(teamStudyRestService.getMyRoomsByType(userId, roomType));
     }
@@ -92,7 +92,7 @@ public class TeamStudyRestController {
 
     /** ✅ 업로드된 파일 목록 조회 */
     @GetMapping("/files")
-    public ResponseEntity<List<String>> getUploadedFiles(@RequestParam Long roomId) {
+    public ResponseEntity<List<String>> getUploadedFiles(@RequestParam("roomId") Long roomId) {
         return ResponseEntity.ok(teamStudyRestService.getUploadedFiles(roomId));
     }
 
@@ -107,10 +107,10 @@ public class TeamStudyRestController {
     /** ✅ 문제 필터링 조회 (QUIZ용) */
     @GetMapping("/problems")
     public ResponseEntity<List<ProblemSummary>> getProblems(
-            @RequestParam String subject,
-            @RequestParam Integer grade,
-            @RequestParam Integer month,
-            @RequestParam String difficulty
+            @RequestParam("subject") String subject,
+            @RequestParam("grade") Integer grade,
+            @RequestParam("month") Integer month,
+            @RequestParam("difficulty") String difficulty
     ) {
         return ResponseEntity.ok(teamStudyRestService.getFilteredProblems(subject, grade, month, difficulty));
     }
@@ -122,7 +122,7 @@ public class TeamStudyRestController {
      */
     @GetMapping("/livekit-token")
     public ResponseEntity<LiveKitTokenResponse> getLivekitToken(
-            @RequestParam String roomName,
+            @RequestParam("roomName") String roomName,
             HttpServletRequest httpRequest
     ) {
         Long userId = extractUserId(httpRequest);

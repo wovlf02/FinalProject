@@ -14,7 +14,6 @@ const api = axios.create({
 });
 
 // 요청 인터셉터: 모든 요청에 Authorization 헤더 추가
-// api.js 수정 (선택적)
 api.interceptors.request.use(
     async (config) => {
         if (!config.url.includes('/auth')) {
@@ -28,7 +27,7 @@ api.interceptors.request.use(
     error => Promise.reject(error)
 );
 
-
+// 파일 업로드 함수 (경로에 /api를 붙이지 않음)
 api.upload = async (url, file, params = {}) => {
     const token = await EncryptedStorage.getItem('accessToken');
 
@@ -47,6 +46,5 @@ api.upload = async (url, file, params = {}) => {
         params,
     });
 };
-
 
 export default api;

@@ -2,7 +2,6 @@ package com.hamcam.back.config.web;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,11 +19,10 @@ public class RedisConfig {
     }
 
     /**
-     * ✅ 문자열 전용 RedisTemplate (기본값으로 지정)
+     * 문자열 전용 RedisTemplate (커스텀 이름 부여)
      */
-    @Bean
-    @Primary
-    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory cf) {
+    @Bean(name = "stringRedisTemplateCustom")
+    public RedisTemplate<String, String> stringRedisTemplateCustom(RedisConnectionFactory cf) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(cf);
         template.setKeySerializer(new StringRedisSerializer());
@@ -35,10 +33,10 @@ public class RedisConfig {
     }
 
     /**
-     * ✅ 오브젝트 저장용 RedisTemplate
+     * 오브젝트 저장용 RedisTemplate
      */
-    @Bean
-    public RedisTemplate<String, Object> redisTemplateObject(RedisConnectionFactory cf) {
+    @Bean(name = "objectRedisTemplate")
+    public RedisTemplate<String, Object> objectRedisTemplate(RedisConnectionFactory cf) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(cf);
         template.setKeySerializer(new StringRedisSerializer());
@@ -49,10 +47,10 @@ public class RedisConfig {
     }
 
     /**
-     * ✅ 정수값 전용 RedisTemplate (집중 시간 저장 등)
+     * 정수값 전용 RedisTemplate
      */
-    @Bean
-    public RedisTemplate<String, Integer> redisTemplateInteger(RedisConnectionFactory cf) {
+    @Bean(name = "integerRedisTemplate")
+    public RedisTemplate<String, Integer> integerRedisTemplate(RedisConnectionFactory cf) {
         RedisTemplate<String, Integer> template = new RedisTemplate<>();
         template.setConnectionFactory(cf);
         template.setKeySerializer(new StringRedisSerializer());
