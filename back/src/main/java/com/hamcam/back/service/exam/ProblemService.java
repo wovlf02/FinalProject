@@ -31,4 +31,8 @@ public class ProblemService {
     public void deleteQuestion(Integer id) {
         problemRepository.deleteById(id);
     }
+
+    public List<Problem> getProblemsByIds(List<Long> ids) {
+        return problemRepository.findByProblemIdIn(ids);
+    }
 } 

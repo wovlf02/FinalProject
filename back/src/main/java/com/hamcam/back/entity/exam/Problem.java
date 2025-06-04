@@ -3,7 +3,9 @@ package com.hamcam.back.entity.exam;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "problem")
 @Getter
@@ -38,6 +40,7 @@ public class Problem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "passage_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Passage passage;
     
     public Double getCorrectRate() {

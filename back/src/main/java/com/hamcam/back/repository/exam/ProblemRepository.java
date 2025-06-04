@@ -11,4 +11,6 @@ public interface ProblemRepository extends JpaRepository<Problem, Integer> {
     
     // 과목별 문제 조회
     List<Problem> findBySubject(String subject);
+
+    List<Problem> findByProblemIdIn(List<Long> ids);
 } 

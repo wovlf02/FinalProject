@@ -30,7 +30,7 @@ public class ProblemController {
             double min = 0, max = 100;
             switch (difficulty) {
                 case "high": max = 29; break; // 상: 0~29%
-                case "medium": min = 30; max = 79; break; // 중: 50~79%
+                case "medium": min = 30; max = 79; break; // 중: 30~79%
                 case "low": min = 80; max = 100; break; // 하: 80~100%
             }
             final double minFinal = min;
@@ -58,5 +58,10 @@ public class ProblemController {
     public ResponseEntity<Void> deleteQuestion(@PathVariable Integer id) {
         problemService.deleteQuestion(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/questions/by-ids")
+    public ResponseEntity<List<Problem>> getProblemsByIds(@RequestParam List<Long> ids) {
+        return ResponseEntity.ok(problemService.getProblemsByIds(ids));
     }
 } 
