@@ -142,7 +142,7 @@
     height: 100%;
     overflow-y: auto;
     align-items: start;
-    padding-right: 0.5px; /* ✅ 세로선 제거 */
+    padding-right: 0.5px;
     box-sizing: border-box;
 }
 
@@ -159,9 +159,9 @@
     overflow: hidden;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     padding: 0;
+    position: relative;
 }
 
-/* 캠 비디오 */
 .video-tile video {
     width: 100%;
     height: 200px;
@@ -171,74 +171,147 @@
     border-radius: 12px 12px 0 0;
 }
 
-/* 이름 */
 .video-tile .name {
     background: #444;
     color: white;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     padding: 0.5rem 0;
     width: 100%;
     text-align: center;
+    letter-spacing: 0.03em;
 }
 
-/* 버튼 컨트롤 */
 .video-tile .controls {
     display: flex;
     justify-content: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0;
+    gap: 0.6rem;
+    padding: 0.65rem 0;
     background: #f4f4f4;
     width: 100%;
+    border-radius: 0 0 12px 12px;
 }
+
 .video-tile .controls button {
     background: #e0e0e0;
     color: #333;
     border: none;
     border-radius: 6px;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
+    padding: 0.45rem 1.1rem;
+    font-size: 0.96rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    font-weight: 500;
 }
 .video-tile .controls button:hover {
     background: #d5d5d5;
 }
 
-/* ===== 채팅 영역 ===== */
+/* ===== 채팅 영역 (좌우 말풍선, 정렬) ===== */
 .chat-log {
     flex: 1;
     overflow-y: auto;
     background: #f9f9f9;
     border-radius: 0.6rem;
     padding: 1rem;
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
     margin-bottom: 1rem;
 }
-.chat-msg {
-    max-width: 80%;
-    padding: 0.8rem 1rem;
-    border-radius: 1rem;
-    font-size: 0.95rem;
-    line-height: 1.4;
-    word-break: break-word;
+
+.chat-message {
+    display: flex;
+    width: 100%;
 }
-.chat-msg.mine {
+
+.chat-message.mine {
+    justify-content: flex-end;
+}
+
+.chat-message.other {
+    justify-content: flex-start;
+}
+
+.chat-bubble-right {
     background: #1976d2;
     color: white;
+    border-radius: 18px 18px 2px 18px;
+    padding: 0.9rem 1.25rem;
+    max-width: 64%;
+    word-break: break-word;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
+}
+
+.chat-bubble-left {
+    background: #f1f1f1;
+    color: #222;
+    border-radius: 18px 18px 18px 2px;
+    padding: 0.9rem 1.25rem;
+    max-width: 64%;
+    word-break: break-word;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.6rem;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.06);
+}
+
+.chat-profile-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+    background: #e0e0e0;
+}
+
+.chat-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+}
+
+.chat-nickname {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.05rem;
+    font-size: 1rem;
+}
+
+.chat-content {
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+    line-height: 1.5;
+}
+
+.chat-time {
+    font-size: 0.92rem;
+    color: #999;
+    margin-top: 0.1rem;
     align-self: flex-end;
 }
-.chat-msg.other {
-    background: #eaecee;
-    color: #333;
+
+/* 오른쪽 말풍선(내 메시지)의 시간 */
+.chat-bubble-right .chat-time {
     align-self: flex-start;
+    margin-bottom: 0.3rem;
+    color: #bbe1ff;
+    font-size: 0.89rem;
+    font-weight: 400;
 }
-.chat-msg b {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.2rem;
+
+/* 왼쪽 말풍선(상대 메시지)의 시간 */
+.chat-bubble-left .chat-time {
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: 0.1rem;
+    align-self: flex-start;
 }
 
 /* ===== 입력창 ===== */
@@ -249,10 +322,14 @@
 }
 .chat-input input {
     flex: 1;
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     padding: 0.6rem 0.8rem;
     border-radius: 8px;
     border: 1px solid #ccc;
+    background: #fafbfc;
+}
+.chat-input button {
+    min-width: 70px;
 }
 
 /* ===== 반응형 ===== */
@@ -294,6 +371,16 @@
     .quizroom-chat-section h2 {
         font-size: 1.2rem;
     }
+
+    .chat-bubble-right,
+    .chat-bubble-left {
+        max-width: 80vw;
+        font-size: 0.98rem;
+        padding: 0.85rem 1rem;
+    }
+    .video-tile .controls {
+        padding: 0.4rem 0;
+    }
 }
 
 /* ===== 모달 영역 ===== */
@@ -334,9 +421,6 @@
     box-sizing: border-box;
 }
 
-
-
-/* 제목 */
 .modal h3 {
     font-size: 1.4rem;
     font-weight: 700;
@@ -344,7 +428,6 @@
     text-align: center;
 }
 
-/* ✅ Select 3개 가로 정렬 */
 .condition-row {
     display: flex;
     justify-content: center;
@@ -363,7 +446,6 @@
     min-width: 140px;
 }
 
-/* ✅ 버튼 중앙 정렬 */
 .fetch-button {
     padding: 0.7rem 1.6rem;
     font-size: 1rem;

@@ -42,7 +42,6 @@ const FocusRoom = () => {
                 console.log("📴 LiveKit 연결 해제됨");
             }
         };
-        // eslint-disable-next-line
     }, []);
 
     const enterRoom = async () => {
@@ -82,7 +81,7 @@ const FocusRoom = () => {
                     return prev;
                 });
 
-                participant.on('trackSubscribed', (track, publication) => {
+                participant.on('trackSubscribed', (track) => {
                     if (track.kind === 'video') {
                         const id = `video-${participant.identity}`;
                         let el = document.getElementById(id);
@@ -174,9 +173,9 @@ const FocusRoom = () => {
 
     const sendChat = (e) => {
         e.preventDefault();
-        if (chatMsg.trim() !== '') {
-            stompRef.current.send(`/app/focus/chat/${roomId}`, {}, JSON.stringify({
-                senderId: userId,
+        if (chatMsg.trim()) {
+            stompRef.current.send(`/app/focus/chat/send`, {}, JSON.stringify({
+                roomId: Number(roomId),
                 content: chatMsg
             }));
             setChatMsg('');
@@ -188,7 +187,6 @@ const FocusRoom = () => {
             <h1>📚 공부 집중방</h1>
 
             <div className="main-content">
-                {/* 캠 그리드 */}
                 <div id="video-container" className="video-grid">
                     {participants.map((user) => (
                         <div key={user.identity} className="video-wrapper">
@@ -212,7 +210,6 @@ const FocusRoom = () => {
                     ))}
                 </div>
 
-                {/* 오른쪽: 랭킹과 채팅 세로 분리 */}
                 <div className="side-section">
                     <div className="ranking-section">
                         <h3>📊 실시간 랭킹</h3>
@@ -233,7 +230,7 @@ const FocusRoom = () => {
                         <div className="chat-log">
                             {chatList.map((chat, index) => (
                                 <div key={index}>
-                                    <strong>{chat.senderId}:</strong> {chat.content}
+                                    <strong>{chat.nickname}</strong>: {chat.content}
                                 </div>
                             ))}
                         </div>

@@ -1,7 +1,6 @@
 package com.hamcam.back.dto.study.team.rest.response;
 
-import com.hamcam.back.entity.study.problem.Passage;
-import com.hamcam.back.entity.study.problem.Problem;
+import com.hamcam.back.entity.study.team.Problem;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -11,32 +10,34 @@ import java.util.List;
 @Getter
 @Builder
 public class QuizProblemResponse {
+
     private Long problemId;
     private String subject;
-    private String title;
-    private String imagePath;
+    private String title;       // 문제 제목 or 본문
     private List<String> choices;
-    private PassageContent passage;
+    private String imagePath;   // 이미지 경로 (국어 외 과목용)
+    private String passage;     // 국어 지문 (국어 전용)
 
-    public static QuizProblemResponse from(Problem problem, Passage passage) {
+    /**
+     * ✅ Problem + 지문 → QuizProblemResponse 변환
+     */
+    public static QuizProblemResponse of(Problem problem, String passageText) {
         return QuizProblemResponse.builder()
                 .problemId(problem.getProblemId())
                 .subject(problem.getSubject())
-                .title(problem.getSource() + " 문제")
+                .title(problem.getExplanation()) // 또는 problem.getTitle() 필드가 있다면 교체
+                .choices(parseChoices(problem.getAnswer())) // 임시 처리: 실제 choices 필드가 있다면 교체
                 .imagePath(problem.getImagePath())
-                .choices(parseChoices(problem.getAnswer())) // 실제 정답이 아닌 보기 목록이라면 다른 필드 필요
-                .passage(passage != null ? new PassageContent(passage.getTitle(), passage.getContent()) : null)
+                .passage(passageText)
                 .build();
     }
 
-    private static List<String> parseChoices(String raw) {
-        return Arrays.asList("①", "②", "③", "④", "⑤"); // 추후 실제 choice 컬럼 생기면 교체
-    }
-
-    @Getter
-    @Builder
-    public static class PassageContent {
-        private String title;
-        private String content;
+    /**
+     * ✅ 선택지를 임시로 파싱하는 유틸 (ex. "① ... / ② ... / ③ ...")
+     * 추후 DB에 choices 컬럼이 분리되어 있으면 교체 필요
+     */
+    private static List<String> parseChoices(String answer) {
+        // TODO: 임시 로직 (답안이 아닌 choices를 따로 저장하도록 추후 수정 필요)
+        return Arrays.asList("① 보기1", "② 보기2", "③ 보기3", "④ 보기4", "⑤ 보기5");
     }
 }

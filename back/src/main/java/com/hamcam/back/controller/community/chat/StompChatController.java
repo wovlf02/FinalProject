@@ -4,11 +4,18 @@ import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.request.ChatReadRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.dto.study.team.socket.request.FocusChatMessageRequest;
+import com.hamcam.back.dto.study.team.socket.request.StudyChatMessageRequest;
 import com.hamcam.back.dto.study.team.socket.response.FocusChatMessageResponse;
+import com.hamcam.back.entity.auth.User;
 import com.hamcam.back.entity.chat.ChatMessageType;
+import com.hamcam.back.global.exception.CustomException;
+import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.service.community.chat.ChatReadService;
 import com.hamcam.back.service.community.chat.WebSocketChatService;
-import com.hamcam.back.service.study.team.chat.FocusChatService;
+import com.hamcam.back.service.study.team.chat.StudyChatService;
+import com.hamcam.back.util.SessionUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -18,10 +25,6 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-/**
- * [StompChatController]
- * WebSocket 기반 실시간 채팅 메시지 처리 컨트롤러
- */
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -30,18 +33,18 @@ public class StompChatController {
     private final WebSocketChatService webSocketChatService;
     private final ChatReadService chatReadService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final FocusChatService focusChatService;
+    private final StudyChatService studyChatService;
+    private final UserRepository userRepository;
 
     private static final String CHAT_DEST_PREFIX = "/sub/chat/room/";
     private static final String FOCUS_CHAT_DEST_PREFIX = "/sub/focus/room/";
 
-    /**
-     * ✅ 커뮤니티 일반 채팅 메시지 수신 및 전송
-     */
     @MessageMapping("/chat/send")
     public void handleChatMessage(@Payload ChatMessageRequest messageRequest,
                                   SimpMessageHeaderAccessor accessor) {
-        Long userId = extractUserIdFromSession(accessor);
+        User user = extractUserFromSession(accessor);
+        Long userId = user.getId();
+
         log.info("📥 [채팅 수신] roomId={}, userId={}, type={}, content={}",
                 messageRequest.getRoomId(), userId, messageRequest.getType(), messageRequest.getContent());
 
@@ -56,13 +59,11 @@ public class StompChatController {
         messagingTemplate.convertAndSend(CHAT_DEST_PREFIX + response.getRoomId(), response);
     }
 
-    /**
-     * ✅ 커뮤니티 채팅 읽음 처리
-     */
     @MessageMapping("/chat/read")
     public void handleReadMessage(@Payload ChatReadRequest request,
                                   SimpMessageHeaderAccessor accessor) {
-        Long userId = extractUserIdFromSession(accessor);
+        User user = extractUserFromSession(accessor);
+        Long userId = user.getId();
         Long roomId = request.getRoomId();
         Long messageId = request.getMessageId();
 
@@ -81,39 +82,53 @@ public class StompChatController {
         log.info("✅ [READ_ACK 전송] messageId={}, unreadCount={}", messageId, unreadCount);
     }
 
-    /**
-     * ✅ FocusRoom 채팅 수신 및 브로드캐스트
-     */
     @MessageMapping("/focus/chat/{roomId}")
     public void handleFocusChat(@DestinationVariable Long roomId,
-                                @Payload FocusChatMessageRequest message,
+                                @Payload StudyChatMessageRequest message,
                                 SimpMessageHeaderAccessor accessor) {
-        Long senderId = extractUserIdFromSession(accessor);
-        log.info("📥 [FocusChat] roomId={}, senderId={}, content={}", roomId, senderId, message.getContent());
 
-        FocusChatMessageResponse response = focusChatService.saveAndBuild(roomId, senderId, message.getContent());
+        Long userId = SessionUtil.getUserIdFromSession(accessor.getSessionAttributes());
 
-        messagingTemplate.convertAndSend(FOCUS_CHAT_DEST_PREFIX + roomId + "/chat", response);
+        log.info("📥 [FocusChat] userId={}, roomId={}, content={}", userId, roomId, message.getContent());
+
+        // ✅ 채팅 처리
+        studyChatService.handleAndBroadcastChatMessage("focus", roomId, userId, message.getContent());
     }
 
+
     /**
-     * ✅ 세션에서 userId 추출
+     * ✅ WebSocket 세션에서 userId를 꺼내 User 조회
      */
-    private Long extractUserIdFromSession(SimpMessageHeaderAccessor accessor) {
+    private User extractUserFromSession(SimpMessageHeaderAccessor accessor) {
         Object userIdAttr = accessor.getSessionAttributes().get("userId");
 
-        if (userIdAttr instanceof Long userId) {
-            return userId;
-        } else if (userIdAttr instanceof Integer intId) {
-            return Long.valueOf(intId);
-        } else if (userIdAttr instanceof String strId) {
+        Long userId = null;
+        if (userIdAttr instanceof Long l) {
+            userId = l;
+        } else if (userIdAttr instanceof Integer i) {
+            userId = i.longValue();
+        } else if (userIdAttr instanceof String s) {
             try {
-                return Long.parseLong(strId);
+                userId = Long.parseLong(s);
             } catch (NumberFormatException e) {
-                log.warn("userId 세션 파싱 실패: {}", strId);
+                log.warn("userId 파싱 실패: {}", s);
             }
         }
 
-        throw new IllegalArgumentException("세션에서 userId를 가져올 수 없습니다.");
+        if (userId == null) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
+
+    private HttpServletRequest getHttpRequestFromAccessor(SimpMessageHeaderAccessor accessor) {
+        Object req = accessor.getSessionAttributes().get("HTTP_REQUEST");
+        if (req instanceof HttpServletRequest request) {
+            return request;
+        }
+        throw new IllegalArgumentException("HttpServletRequest를 세션에서 가져올 수 없습니다.");
+    }
+
 }
