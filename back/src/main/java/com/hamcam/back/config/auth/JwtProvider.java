@@ -88,11 +88,10 @@ public class JwtProvider {
                     .parseClaimsJws(token);
             return true;
         } catch (ExpiredJwtException e) {
-            System.out.println("JWT 토큰이 만료되었습니다.");
+            throw new ExpiredJwtException(e.getHeader(), e.getClaims(), "JWT 토큰이 만료되었습니다.");
         } catch (JwtException e) {
-            System.out.println("JWT 토큰이 유효하지 않습니다.");
+            throw new JwtException("JWT 토큰이 유효하지 않습니다.");
         }
-        return false;
     }
 
     /**
