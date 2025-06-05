@@ -1,81 +1,192 @@
 .side-menu {
-    width: 200px;
-    background-color: #f9f9f9;
+    width: 100%;
     height: 100vh;
-    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+    padding-top: 20px;
+    overflow-y: auto;
 }
 
 .side-menu-logo {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 24px;
-    padding-left: 12px;
+    width: 100%;
+    height: 60px;
+    background: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    padding: 0 10px;
+}
+
+.side-menu-logo:hover {
+    background: #333;
+}
+
+.logo-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
 }
 
 .side-menu-list {
     list-style: none;
-    padding-left: 10px;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .side-menu-list-item {
-    margin-bottom: 14px;
+    margin-bottom: 4px;
+    width: 100%;
 }
 
 .side-menu-button {
-    background: none;
+    width: 92%;
+    margin-left: 4%;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: transparent;
     border: none;
+    cursor: pointer;
     font-size: 16px;
     color: #222;
-    cursor: pointer;
-    padding: 6px 0;
-    font-weight: bold;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s;
     text-align: left;
-    width: 100%;
     padding-left: 12px;
 }
 
+.side-menu-button:hover,
 .side-menu-button.active {
-    color: #1c78dd;
-    background-color: #e6f0ff;
-    border-radius: 6px;
+    background-color: #e2e6ea;
+    color: #007bff;
 }
 
 .side-submenu-list {
     list-style: none;
-    padding-left: 28px; /* 좀 더 들여쓰기 */
-    margin-top: 12px;
+    padding: 0;
+    margin: 0 0 8px 0;
+    width: 100%;
 }
 
 .side-submenu-item {
-    margin-bottom: 10px;
+    margin: 2px 0;
+    width: 100%;
 }
 
 .side-submenu-button {
-    background: none;
+    width: 92%;
+    margin-left: 4%;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: transparent;
     border: none;
-    font-size: 16px;
-    color: #444;
     cursor: pointer;
-    padding: 6px 8px;
-    text-align: left;
-    width: 100%;
+    font-size: 14px;
+    color: #555;
     border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    text-align: left;
+    padding-left: 24px;
 }
 
+.side-submenu-button:hover,
 .side-submenu-button.active {
-    background-color: #d8e9ff;
-    color: #1c78dd;
-    font-weight: bold;
+    background-color: #e2e6ea;
+    color: #007bff;
 }
 
-/* ✅ hover 효과는 최소한으로 */
-.side-menu-button:hover {
-    color: #1c78dd !important;
-    background-color: #ececec !important;
+.side-user-profile {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid #e0e4ea;
+    margin-top: auto;
 }
 
-.side-submenu-button:hover {
-    background-color: #ececec;
+.side-user-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.side-user-nickname {
+    font-size: 14px;
+    font-weight: 600;
+    color: #222;
+}
+
+.side-menu-bottom {
+    padding: 16px;
+    border-top: 1px solid #e0e4ea;
+}
+
+/* 반응형 스타일 */
+@media (max-width: 900px) {
+    .side-menu {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .side-menu-logo {
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .side-menu-button {
+        height: 40px;
+        font-size: 15px;
+    }
+
+    .side-submenu-button {
+        height: 34px;
+        font-size: 13px;
+    }
+
+    .side-user-profile {
+        padding: 12px;
+    }
+
+    .side-user-image {
+        width: 36px;
+        height: 36px;
+    }
+
+    .side-user-nickname {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 600px) {
+    .side-menu {
+        max-width: 240px;
+    }
+
+    .side-menu-logo {
+        height: 45px;
+        font-size: 18px;
+    }
+
+    .side-menu-button {
+        height: 38px;
+        font-size: 14px;
+    }
+
+    .side-submenu-button {
+        height: 32px;
+        font-size: 12px;
+    }
 }
 
 .community-post-card {
@@ -128,25 +239,4 @@
 
 .post-menu:hover {
     color: #555;
-}
-
-.side-user-profile {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 20px 0;
-}
-
-.side-user-image {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-bottom: 8px;
-}
-
-.side-user-nickname {
-    font-weight: bold;
-    font-size: 14px;
-    color: #111;
 }
