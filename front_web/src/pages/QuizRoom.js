@@ -26,11 +26,14 @@ const QuizRoom = () => {
     const [selectedSource, setSelectedSource] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
 
+    // 내 캠 ON/OFF 관리
+    const [camOn, setCamOn] = useState(true);
+    const localStreamRef = useRef(null);
+
     const stompRef = useRef(null);
     const chatRef = useRef(null);
     const roomRef = useRef(null);
     const localVideoRefs = useRef({});
-    const localStreamRef = useRef(null);
 
     useEffect(() => {
         enterRoom();
@@ -40,7 +43,9 @@ const QuizRoom = () => {
         return () => {
             if (stompRef.current?.connected) stompRef.current.disconnect();
             if (roomRef.current) roomRef.current.disconnect();
+            stopMyCam();
         };
+        // eslint-disable-next-line
     }, []);
 
     const enterRoom = async () => {
@@ -59,16 +64,41 @@ const QuizRoom = () => {
             setUserId(user.user_id);
             setUserInfo(user);
             setParticipants([{ identity: user.user_id.toString(), nickname: user.nickname || `나 (${user.user_id})` }]);
-
-            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            localStreamRef.current = mediaStream;
-            const myVideo = localVideoRefs.current[user.user_id];
-            if (myVideo) myVideo.srcObject = mediaStream;
-
+            await startMyCam(user.user_id);
             await connectLiveKitSession(user.user_id.toString());
         } catch (err) {
             alert('카메라 권한이 필요합니다.');
         }
+    };
+
+    // 내 캠 ON: getUserMedia로 스트림 연결
+    const startMyCam = async (uid = userId) => {
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localStreamRef.current = mediaStream;
+            const myVideo = localVideoRefs.current[uid];
+            if (myVideo) myVideo.srcObject = mediaStream;
+            setCamOn(true);
+        } catch (e) {
+            setCamOn(false);
+        }
+    };
+
+    // 내 캠 OFF: 트랙 stop, 영상 끔
+    const stopMyCam = () => {
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => track.stop());
+        }
+        if (localVideoRefs.current[userId]) {
+            localVideoRefs.current[userId].srcObject = null;
+        }
+        setCamOn(false);
+    };
+
+    // 토글(ON/OFF)
+    const toggleMyCam = async () => {
+        if (camOn) stopMyCam();
+        else await startMyCam(userId);
     };
 
     const connectLiveKitSession = async (identity) => {
@@ -123,12 +153,10 @@ const QuizRoom = () => {
         }
     };
 
-
     const fetchChatHistory = async () => {
         try {
             const res = await api.get(`/study/chat/quiz/${roomId}`);
             setChatMessages(res.data);
-            console.log(res.data);
         } catch (e) {
             console.error("❌ 채팅 불러오기 실패", e);
         }
@@ -159,9 +187,7 @@ const QuizRoom = () => {
 
             client.subscribe(`/sub/quiz/room/${roomId}`, (msg) => {
                 const payload = JSON.parse(msg.body);
-                console.log("수신된 메시지: ", payload);
                 setChatMessages((prev) => {
-                    // sent_at + sender_id 기준으로 중복 제거
                     const isDuplicate = prev.some(
                         m => m.sent_at === payload.sent_at && m.sender_id === payload.sender_id && m.content === payload.content
                     );
@@ -183,14 +209,6 @@ const QuizRoom = () => {
         }));
 
         setChatInput('');
-    };
-
-    const toggleCam = (id) => {
-        const el = localVideoRefs.current[id];
-        if (el?.srcObject) {
-            const track = el.srcObject.getVideoTracks()[0];
-            if (track) track.enabled = !track.enabled;
-        }
     };
 
     const toggleMic = (id) => {
@@ -280,24 +298,40 @@ const QuizRoom = () => {
                     <h2>캠 화면</h2>
                     <div id="quizroom-video-grid" className="quizroom-video-grid">
                         {participants.map((p) => {
-                            // 둘 다 string 비교
                             const myId = userId?.toString();
                             const pid = p.identity?.toString();
+                            const isMe = pid === myId;
                             return (
-                                <div key={pid} className="video-tile">
+                                <div key={pid} className="video-tile" style={{ position: "relative" }}>
                                     <video
                                         id={`video-${pid}`}
                                         ref={(elkit) => {
                                             if (elkit) localVideoRefs.current[pid] = elkit;
                                         }}
                                         autoPlay
-                                        muted={pid === myId}
+                                        muted={isMe}
                                         playsInline
+                                        style={{
+                                            background: isMe && !camOn ? "#222" : "#000"
+                                        }}
                                     />
+                                    {/* 내 캠 OFF 오버레이 */}
+                                    {isMe && !camOn &&
+                                        <div style={{
+                                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                            background: 'rgba(40,40,40,0.7)', color: '#fff', display: 'flex',
+                                            alignItems: 'center', justifyContent: 'center', borderRadius: 12,
+                                            fontSize: 18, fontWeight: 600,
+                                            pointerEvents: 'none' // 버튼 클릭 방해 금지
+                                        }}>
+                                            카메라 OFF
+                                        </div>
+                                    }
                                     <div className="name">{p.nickname || pid}</div>
-                                    {pid === myId && (
+                                    {/* 내 캠만 토글 버튼 */}
+                                    {isMe && (
                                         <div className="controls">
-                                            <button onClick={() => toggleCam(pid)}>📷 ON/OFF</button>
+                                            <button onClick={toggleMyCam}>{camOn ? "📷 끄기" : "📷 켜기"}</button>
                                             <button onClick={() => toggleMic(pid)}>🎤 ON/OFF</button>
                                         </div>
                                     )}
@@ -307,15 +341,13 @@ const QuizRoom = () => {
                     </div>
                 </section>
 
-
                 <section className="quizroom-chat-section">
                     <h2>채팅</h2>
                     <div className="chat-log" ref={chatRef}>
                         {chatMessages.map((msg, idx) => {
-                            // 서버에서 온 데이터 명세에 맞게 필드 네이밍 보정
                             const isMine = msg.sender_id === userId;
                             const profileImg = msg.profile_url || '../../icons/default-profile.png';
-                            const time = msg.sent_at || msg.timestamp; // 혹시 timestamp로 오는 경우 대비
+                            const time = msg.sent_at || msg.timestamp;
                             return (
                                 <div key={idx} className={`chat-message ${isMine ? 'mine' : 'other'}`}>
                                     {isMine ? (
