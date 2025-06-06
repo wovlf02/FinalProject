@@ -3,11 +3,11 @@ package com.hamcam.back.controller.plan;
 import com.hamcam.back.dto.plan.PlanRequest;
 import com.hamcam.back.entity.plan.StudyPlan;
 import com.hamcam.back.repository.plan.StudyPlanRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
@@ -15,13 +15,13 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/plan")
+@RequiredArgsConstructor
 public class PlanController {
 
     @Value("${spring.ai.openai.api-key}")
     private String apiKey;
 
-    @Autowired
-    private StudyPlanRepository studyPlanRepository;
+    private final StudyPlanRepository studyPlanRepository;
 
     @PostMapping("/generate")
     public ResponseEntity<String> generatePlan(@RequestBody PlanRequest request, HttpServletRequest httpRequest) {
