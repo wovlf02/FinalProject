@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "problem")  // ✅ 실제 테이블명 확인 필요 (복수형이면 "problems"로 유지)
+@Table(name = "problem")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -19,7 +19,6 @@ public class Problem {
     @Column(nullable = false, length = 50)
     private String subject;
 
-    // ✅ precision/scale 제거: Double 타입에는 의미 없음
     @Column(name = "correct_rate")
     private Double correctRate;
 
@@ -36,10 +35,16 @@ public class Problem {
     private String explanation;
 
     /**
-     * ✅ passage_id 외래키: nullable 가능
-     * 지문이 없는 문제도 있으므로 Optional 관계로 설정
+     * ✅ 국어 지문 외래키 (nullable)
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "passage_id", nullable = true)
     private Passage passage;
+
+    /**
+     * ✅ 단원 외래키 (unit_id)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unit_id", nullable = false)
+    private Unit unit;
 }
