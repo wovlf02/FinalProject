@@ -25,8 +25,19 @@ public class ChatRoomController {
     private final ChatMessageService chatMessageService;
 
     /**
-     * ✅ 채팅방 생성
-     * - Multipart 요청 예외 적용
+     * ✅ [추가] JSON 요청(이미지 없이) 채팅방 생성
+     */
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<MessageResponse> createChatRoomJson(
+            @RequestBody ChatRoomCreateRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        ChatRoomResponse createdRoom = chatRoomService.createChatRoom(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("채팅방이 생성되었습니다.", createdRoom));
+    }
+
+    /**
+     * ✅ 기존: Multipart 요청(이미지 포함) 채팅방 생성
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MessageResponse> createChatRoom(
@@ -66,9 +77,8 @@ public class ChatRoomController {
         return ResponseEntity.ok(MessageResponse.of("채팅방 상세 조회 성공", result));
     }
 
-
     /**
-     * ✅ 채팅방 삭제
+     * ✅ 기존: body로 요청받는 채팅방 삭제 (body에 roomId 등 정보)
      */
     @DeleteMapping
     public ResponseEntity<MessageResponse> deleteChatRoom(
@@ -76,6 +86,18 @@ public class ChatRoomController {
             HttpServletRequest httpRequest
     ) {
         chatRoomService.deleteChatRoom(request, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("채팅방이 삭제되었습니다."));
+    }
+
+    /**
+     * ✅ [신규] URL 경로로 roomId 받아서 채팅방 삭제 (프론트엔드에서 DELETE /api/chat/rooms/{roomId}로 요청할 때)
+     */
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<MessageResponse> deleteChatRoomById(
+            @PathVariable("roomId") Long roomId,   // ← 반드시 "roomId" 명시!
+            HttpServletRequest httpRequest
+    ) {
+        chatRoomService.deleteChatRoomById(roomId, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("채팅방이 삭제되었습니다."));
     }
 }

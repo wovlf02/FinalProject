@@ -1,13 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import '../../css/Chat.css';
-import { FaPlus } from 'react-icons/fa';
+import '../../css/ChatRoomList.css';
+import { FaPlus, FaTrash } from 'react-icons/fa';
 import api from '../../api/api';
 import base_profile from '../../icons/base_profile.png';
-import peopleIcon from '../../icons/people.png';
+
+const getProfileUrl = (url) => {
+    if (!url || url === "" || url === "프로필 사진이 없습니다") return base_profile;
+    if (url.startsWith('C:\\FinalProject')) {
+        const webUrl = url.replace('C:\\FinalProject', '').replace(/\\/g, '/');
+        return `http://localhost:8080${webUrl}`;
+    }
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/uploads')) return `http://localhost:8080${url}`;
+    return base_profile;
+};
 
 const ChatRoomList = ({ selectedRoomId, setSelectedRoomId, onOpenCreateModal, onSelectRoom }) => {
     const [chatRooms, setChatRooms] = useState([]);
     const [roomSearch, setRoomSearch] = useState('');
+    const [myUserId, setMyUserId] = useState(null);
+
+    useEffect(() => {
+        api.get('/users/me', { withCredentials: true }).then(res => {
+            setMyUserId(res.data?.data?.user_id);
+        });
+    }, []);
 
     useEffect(() => {
         fetchChatRooms();
@@ -17,43 +34,30 @@ const ChatRoomList = ({ selectedRoomId, setSelectedRoomId, onOpenCreateModal, on
         try {
             const res = await api.get('/chat/rooms/my');
             const rooms = res.data?.data || [];
-            console.log(rooms);
-
             const mappedRooms = rooms.map(room => ({
                 roomId: room.room_id,
                 roomName: room.room_name,
                 roomType: room.room_type,
-                profileImageUrl: room.profile_image_url
-                    ? `http://localhost:8080${room.profile_image_url}`
-                    : '',
+                profileImageUrl: room.profile_image_url,
                 participantCount: room.participant_count,
-                totalMessageCount: room.total_message_count,
                 unreadCount: room.unread_count,
                 lastMessage: room.last_message,
                 lastMessageAt: room.last_message_at,
+                participants: room.participants,
             }));
-
             setChatRooms(mappedRooms);
             if (mappedRooms.length > 0 && !selectedRoomId) {
                 const defaultRoomId = mappedRooms[0].roomId;
                 setSelectedRoomId(defaultRoomId);
-                if (onSelectRoom) onSelectRoom(defaultRoomId); // ✅ 초기 선택 방 전달
+                if (onSelectRoom) onSelectRoom(defaultRoomId);
             }
         } catch (err) {
-            console.error('❌ 채팅방 목록 불러오기 실패:', err);
             setChatRooms([]);
         }
     };
 
     const handleRoomClick = (roomId) => {
-        console.log('🖱️ 채팅방 클릭:', roomId);
-
-        // ✅ Chat.jsx 쪽 상태 업데이트 위임
-        if (onSelectRoom) {
-            onSelectRoom(roomId);
-        }
-
-        // ✅ 클릭된 방의 뱃지를 제거
+        if (onSelectRoom) onSelectRoom(roomId);
         setChatRooms(prevRooms =>
             prevRooms.map(room =>
                 room.roomId === roomId
@@ -63,6 +67,39 @@ const ChatRoomList = ({ selectedRoomId, setSelectedRoomId, onOpenCreateModal, on
         );
     };
 
+    const handleDeleteRoom = async (roomId) => {
+        if (!window.confirm('정말 이 채팅방을 삭제하시겠습니까?')) return;
+        try {
+            await api.delete(`/chat/rooms/${roomId}`);
+            setChatRooms(prev => prev.filter(room => room.roomId !== roomId));
+            if (selectedRoomId === roomId) setSelectedRoomId(null);
+        } catch (err) {
+            alert('채팅방 삭제 실패');
+        }
+    };
+
+    const getRoomProfileAndName = (room) => {
+        if (!room.participants || !myUserId) {
+            return {
+                name: room.roomName,
+                profile: getProfileUrl(room.profileImageUrl),
+                count: room.participantCount
+            };
+        }
+        const others = room.participants.filter(p => String(p.user_id) !== String(myUserId));
+        if (room.roomType === 'DIRECT' && others.length === 1) {
+            return {
+                name: others[0].nickname,
+                profile: getProfileUrl(others[0].profile_image_url),
+                count: room.participants.length
+            };
+        }
+        return {
+            name: room.roomName,
+            profile: getProfileUrl(room.profileImageUrl),
+            count: room.participants.length
+        };
+    };
 
     const getPreviewMessage = (msg) => {
         if (!msg) return '(아직 메시지 없음)';
@@ -77,11 +114,11 @@ const ChatRoomList = ({ selectedRoomId, setSelectedRoomId, onOpenCreateModal, on
     };
 
     const filteredRooms = chatRooms.filter(room =>
-        room?.roomName?.toLowerCase().includes(roomSearch.toLowerCase())
+        getRoomProfileAndName(room).name.toLowerCase().includes(roomSearch.toLowerCase())
     );
 
     return (
-        <div className="chat-room-list-panel">
+        <div className="chat-room-list-panel modern">
             <div className="chat-room-header-row top">
                 <h4>Messages</h4>
                 <button className="chat-create-btn" onClick={onOpenCreateModal}>
@@ -92,52 +129,60 @@ const ChatRoomList = ({ selectedRoomId, setSelectedRoomId, onOpenCreateModal, on
                 <input
                     type="text"
                     className="chat-room-search-input"
-                    placeholder="채팅방 이름 검색"
+                    placeholder="채팅방/대화상대 검색"
                     value={roomSearch}
                     onChange={(e) => setRoomSearch(e.target.value)}
                 />
             </div>
-
             {filteredRooms.length === 0 ? (
                 <div className="friend-empty">채팅방이 없습니다.</div>
             ) : (
-                filteredRooms
-                    .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
-                    .map(room => (
+                filteredRooms.map(room => {
+                    const { name, profile, count } = getRoomProfileAndName(room);
+                    return (
                         <div
                             key={room.roomId}
-                            className={`chat-room-item ${room.roomId === selectedRoomId ? 'selected' : ''}`}
+                            className={`chat-room-item modern-card ${room.roomId === selectedRoomId ? 'selected' : ''}`}
                             onClick={() => handleRoomClick(room.roomId)}
                         >
                             <img
-                                src={room.profileImageUrl || base_profile}
-                                alt={room.roomName}
+                                src={profile}
+                                alt={name}
+                                className="modern-profile"
                                 onError={(e) => { e.target.src = base_profile; }}
                             />
-                            <div className="chat-room-info">
-                                <div className="chat-room-top">
-                                    <span className="chat-room-name">
-                                        {room.roomName}
-                                        <span className="chat-room-participants">
-                                            <img src={peopleIcon} alt="참여자" className="participants-icon" />
-                                            {room.participantCount}
-                                        </span>
+                            <div className="modern-info">
+                                <div className="modern-top">
+                                    <span className="modern-name">
+                                        {name}
+                                        <span className="modern-count">({count}명)</span>
                                     </span>
-                                    <span className="chat-room-time">
+                                    <span className="modern-time">
                                         {room.lastMessageAt ? room.lastMessageAt.slice(11, 16) : ''}
                                     </span>
+                                    <button
+                                        className="modern-delete-btn"
+                                        title="채팅방 삭제"
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleDeleteRoom(room.roomId);
+                                        }}
+                                    >
+                                        <FaTrash />
+                                    </button>
                                 </div>
-                                <div className="chat-room-bottom">
-                                    <span className="chat-room-message">
+                                <div className="modern-bottom">
+                                    <span className="modern-message">
                                         {getPreviewMessage(room.lastMessage)}
                                     </span>
                                     {room.unreadCount > 0 && (
-                                        <span className="chat-room-badge">{room.unreadCount}</span>
+                                        <span className="modern-badge">{room.unreadCount}</span>
                                     )}
                                 </div>
                             </div>
                         </div>
-                    ))
+                    );
+                })
             )}
         </div>
     );

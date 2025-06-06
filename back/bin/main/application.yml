@@ -1,0 +1,80 @@
+server:
+  port: 8080
+  address: 0.0.0.0
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/hamcam?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: elskvhfh12
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+
+  sql:
+    init:
+      encoding: UTF-8
+
+  mail:
+    host: smtp.naver.com
+    port: 465
+    username: nskfn02@naver.com
+    password: QLGVFX36FNC3
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+            trust: smtp.naver.com
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  ai:
+    openai:
+      api-key: "AIzaSyAnMziLv24BNczctq-J1k-fjH8sqalPKIk"
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      chat:
+        completions-path: /chat/completions
+        options:
+          model: gemini-1.5-flash
+
+  web:
+    resources:
+      static-locations: file:C:/FinalProject/uploads
+      add-mappings: true
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+jwt:
+  secret: e41e5bf5deb48e0be0ffb07dbbccd98112986e441b1d32b0f0a704ed1745c59f04ee5b701f1b4db8ac837263aa17c021d8014b8538f260e38c0dbaa71fbe9483
+  access-token-expiration: 3600000
+  refresh-token-expiration: 2592000000
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+
+file:
+  upload-dir: C:/FinalProject/back/uploads
+
+livekit:
+  api-key: 878de0038dbed61ed7daab9872fed4e2017e1a37a0b12038a1d62573b64cb4bc
+  api-secret: 878de0038dbed61ed7daab9872fed4e2017e1a37a0b12038a1d62573b64cb4bc
+  ws-url: ws://localhost:7880
+  ttl-minutes: 60
