@@ -459,3 +459,63 @@
 .fetch-button:hover {
     background-color: #125ea5;
 }
+
+.problem-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-bottom: 1rem;
+    max-height: 55vh; /* 또는 height: 100%로도 가능 */
+}
+
+
+.video-scroll {
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.scroll-chat {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    min-height: 0;
+}
+
+
+.answer-input-wrapper {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.answer-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.answer-guidance {
+    font-size: 0.92rem;
+    color: #888;
+    margin-left: 0.5rem;
+}
+
+.answer-input-wrapper input {
+    padding: 0.5rem 0.8rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    width: 160px;
+}
+
+.answer-input-wrapper button {
+    padding: 0.45rem 1rem;
+    font-size: 0.95rem;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
