@@ -19,21 +19,21 @@ public class QuizRoomRestController {
     private final QuizRoomRestService quizRoomService;
 
     /**
-     * ✅ 조건(subject, unit, level)에 따른 랜덤 문제 조회
+     * ✅ 조건(subject, source, level)에 따른 랜덤 문제 조회
      *
      * @param subject 과목명 (국어/수학/영어 등)
-     * @param unit 단원명 (예: 지수함수와 로그함수)
+     * @param source 출처 (예: 2025년 수능)
      * @param level 난이도 (최하/하/중/상/최상)
      * @return 문제 + (국어인 경우 지문 포함)
      */
     @GetMapping("/random")
     public ResponseEntity<QuizProblemResponse> getRandomProblem(
             @RequestParam String subject,
-            @RequestParam String unit,
+            @RequestParam String source,
             @RequestParam String level
     ) {
-        log.info("🔍 문제 요청 - subject={}, unit={}, level={}", subject, unit, level);
-        QuizProblemResponse problem = quizRoomService.getRandomProblem(subject, unit, level);
+        log.info("🔍 문제 요청 - subject={}, source={}, level={}", subject, source, level);
+        QuizProblemResponse problem = quizRoomService.getRandomProblem(subject, source, level);
         return ResponseEntity.ok(problem);
     }
 }

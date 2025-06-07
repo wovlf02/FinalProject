@@ -209,3 +209,4 @@ const StudyDetail = () => {
 };
 
 export default StudyDetail;
+

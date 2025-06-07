@@ -5,13 +5,6 @@ import '../css/QuizRoom.css';
 import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { connectToLiveKit } from '../utils/livekit';
-import { Room, RoomEvent, VideoTrack } from 'livekit-client';
-
-const allUnits = {
-    국어: ['국어 단원 1', '국어 단원 2', '국어 단원 3'],
-    수학: ['수학 단원 1', '수학 단원 2', '수학 단원 3'],
-    영어: ['영어 단원 1', '영어 단원 2', '영어 단원 3'],
-};
 
 const QuizRoom = () => {
     const { roomId } = useParams();
@@ -30,10 +23,8 @@ const QuizRoom = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState('');
-    const [selectedUnit, setSelectedUnit] = useState('');
+    const [selectedSource, setSelectedSource] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
-
-    const filteredUnits = selectedSubject ? allUnits[selectedSubject] : [];
 
     // 내 캠 ON/OFF 관리
     const [camOn, setCamOn] = useState(true);
@@ -141,7 +132,7 @@ const QuizRoom = () => {
     };
 
     const fetchProblem = async () => {
-        if (!selectedSubject || !selectedLevel || !selectedUnit) {
+        if (!selectedSubject || !selectedSource || !selectedLevel) {
             alert('모든 조건을 선택해주세요.');
             return;
         }
@@ -150,8 +141,8 @@ const QuizRoom = () => {
             const res = await api.get('/quiz/problems/random', {
                 params: {
                     subject: selectedSubject,
-                    level: selectedLevel,
-                    unit: selectedUnit
+                    source: selectedSource,
+                    level: selectedLevel
                 }
             });
             setProblem(res.data);
@@ -161,7 +152,6 @@ const QuizRoom = () => {
             alert('문제를 불러오지 못했습니다.');
         }
     };
-
 
     const fetchChatHistory = async () => {
         try {
@@ -396,23 +386,21 @@ const QuizRoom = () => {
                     <div className="modal">
                         <h3>문제 조건 선택</h3>
                         <div className="condition-row">
-                            <select onChange={(e) => {
-                                setSelectedSubject(e.target.value);
-                                setSelectedUnit('');
-                            }} defaultValue="">
+                            <select onChange={(e) => setSelectedSubject(e.target.value)} defaultValue="">
                                 <option value="" disabled>과목 선택</option>
                                 <option>국어</option>
                                 <option>수학</option>
                                 <option>영어</option>
                             </select>
-
-                            <select onChange={(e) => setSelectedUnit(e.target.value)} value={selectedUnit || ''}>
-                                <option value="" disabled>단원명 선택</option>
-                                {filteredUnits.map((unit, idx) => (
-                                    <option key={idx} value={unit}>{unit}</option>
-                                ))}
+                            <select onChange={(e) => setSelectedSource(e.target.value)} defaultValue="">
+                                <option value="" disabled>출처 선택</option>
+                                <option>2023년 3월 모의고사</option>
+                                <option>2024년 수능</option>
+                                <option>2024년 3월 모의고사</option>
+                                <option>2024년 6월 평가원 모의고사</option>
+                                <option>2024년 9월 평가원 모의고사</option>
+                                <option>2025년 수능</option>
                             </select>
-
                             <select onChange={(e) => setSelectedLevel(e.target.value)} defaultValue="">
                                 <option value="" disabled>난이도 선택</option>
                                 <option>최하</option>
@@ -422,7 +410,6 @@ const QuizRoom = () => {
                                 <option>최상</option>
                             </select>
                         </div>
-
                         <button className="fetch-button" onClick={fetchProblem}>문제 불러오기</button>
                     </div>
                 </div>
@@ -431,4 +418,4 @@ const QuizRoom = () => {
     );
 };
 
-export default QuizRoom;
+export default QuizRoom;    

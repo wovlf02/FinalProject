@@ -1,3 +1,4 @@
+
 // src/hooks/useRoomLifecycle.js
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -67,3 +68,4 @@ const useRoomLifecycle = ({ roomId, connectSocket, disconnectSocket, isHost = fa
 };
 
 export default useRoomLifecycle;
+

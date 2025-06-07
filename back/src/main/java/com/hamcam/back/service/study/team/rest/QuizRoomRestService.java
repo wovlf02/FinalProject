@@ -18,22 +18,23 @@ public class QuizRoomRestService {
 
     private final ProblemRepository problemRepository;
     private final PassageRepository passageRepository;
+
     private final Random random = new Random();
 
     /**
-     * ✅ 조건에 맞는 문제 중 하나를 랜덤하게 선택 (단원 기준)
+     * ✅ 조건에 맞는 문제 중 하나를 랜덤하게 선택
      *
      * @param subject 과목
-     * @param unitName 단원명
+     * @param source 출처
      * @param level 난이도 (최하/하/중/상/최상)
      * @return 문제 + 지문(국어일 경우)
      */
-    public QuizProblemResponse getRandomProblem(String subject, String unitName, String level) {
+    public QuizProblemResponse getRandomProblem(String subject, String source, String level) {
         int[] range = convertLevelToRateRange(level);
         double min = range[0];
         double max = range[1];
 
-        List<Problem> problemList = problemRepository.findBySubjectAndUnit_UnitAndCorrectRateBetween(subject, unitName, min, max);
+        List<Problem> problemList = problemRepository.findBySubjectAndSourceAndCorrectRateBetween(subject, source, min, max);
         if (problemList.isEmpty()) {
             throw new IllegalStateException("해당 조건의 문제가 존재하지 않습니다.");
         }
@@ -47,6 +48,7 @@ public class QuizRoomRestService {
 
         return QuizProblemResponse.of(selected, passage);
     }
+
 
     /**
      * ✅ 난이도 문자열을 정답률 범위로 변환
