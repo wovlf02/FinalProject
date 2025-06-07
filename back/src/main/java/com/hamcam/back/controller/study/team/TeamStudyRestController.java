@@ -104,17 +104,6 @@ public class TeamStudyRestController {
         return ResponseEntity.ok().build();
     }
 
-    /** ✅ 문제 필터링 조회 (QUIZ용) */
-    @GetMapping("/problems")
-    public ResponseEntity<List<ProblemSummary>> getProblems(
-            @RequestParam String subject,
-            @RequestParam Integer grade,
-            @RequestParam Integer month,
-            @RequestParam String difficulty
-    ) {
-        return ResponseEntity.ok(teamStudyRestService.getFilteredProblems(subject, grade, month, difficulty));
-    }
-
     /**
      * ✅ LiveKit 토큰 발급 (기본: 발표자 아님)
      * - roomName을 기준으로 토큰을 생성하고, presenter 권한은 false로 설정됨

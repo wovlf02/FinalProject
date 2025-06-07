@@ -34,7 +34,6 @@ const chartData = [
 
 function Evaluation() {
     const navigate = useNavigate();
-    // 시험 목록: localStorage에서 불러오고, 없으면 빈 배열
     const [tests, setTests] = useState(() => {
         const saved = localStorage.getItem('myTests');
         return saved ? JSON.parse(saved) : [];
@@ -49,12 +48,10 @@ function Evaluation() {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [detailTest, setDetailTest] = useState(null);
 
-    // 시험 목록이 바뀔 때마다 localStorage에 저장
     useEffect(() => {
         localStorage.setItem('myTests', JSON.stringify(tests));
     }, [tests]);
 
-    // 새 시험 추가
     const handleAddTest = (e) => {
         e.preventDefault();
         if (!addForm.title || !addForm.date || !addForm.range) return;
@@ -71,13 +68,11 @@ function Evaluation() {
         setShowAddModal(false);
     };
 
-    // 모달 닫기
     const handleCloseModal = () => {
         setShowAddModal(false);
         setAddForm({title: '', date: '', range: '', current: ''});
     };
 
-    // 상세보기 모달
     const handleDetail = (test) => {
         setDetailTest(test);
         setShowDetailModal(true);
@@ -87,15 +82,14 @@ function Evaluation() {
         setDetailTest(null);
     };
 
-    // 시험 삭제
     const handleDeleteTest = (title, date) => {
         setTests(tests.filter(t => !(t.title === title && t.date === date)));
         setShowDetailModal(false);
     };
 
-    // 기타 버튼 예시
+    // 학습 계획 메뉴로 이동
+    const handleStudyPlan = () => navigate('/plan/menu');
     const handleSchedule = () => navigate('/unit-evaluation/schedule');
-    const handleStudyPlan = () => navigate('/unit-evaluation/plan');
     const handleAIFeedback = () => navigate('/unit-evaluation/feedback');
 
     return (
@@ -110,7 +104,6 @@ function Evaluation() {
                     <button onClick={handleAIFeedback}>AI 피드백</button>
                 </div>
             </div>
-
             <div className="evaluation-section">
                 <h2>시험 준비 현황</h2>
                 <div className="evaluation-test-list">
@@ -269,11 +262,8 @@ function Evaluation() {
                     <h2>성적 분석</h2>
                     <div className="evaluation-chart-area">
                         <svg width="220" height="140">
-                            {/* Y축 */}
                             <line x1="30" y1="20" x2="30" y2="120" stroke="#ddd"/>
-                            {/* X축 */}
                             <line x1="30" y1="120" x2="200" y2="120" stroke="#ddd"/>
-                            {/* 평균 점수 선 */}
                             <polyline
                                 fill="none"
                                 stroke="#a78bfa"
@@ -284,7 +274,6 @@ function Evaluation() {
                                     ).join(' ')
                                 }
                             />
-                            {/* 내 점수 선 */}
                             <polyline
                                 fill="none"
                                 stroke="#6366f1"
@@ -295,7 +284,6 @@ function Evaluation() {
                                     ).join(' ')
                                 }
                             />
-                            {/* 점 찍기 */}
                             {chartData.map((d, i) => (
                                 <circle
                                     key={i}
@@ -314,7 +302,6 @@ function Evaluation() {
                                     fill="#a78bfa"
                                 />
                             ))}
-                            {/* X축 라벨 */}
                             {chartData.map((d, i) => (
                                 <text
                                     key={i + 'label'}
@@ -327,7 +314,6 @@ function Evaluation() {
                                     {d.name}
                                 </text>
                             ))}
-                            {/* 범례 */}
                             <rect x="140" y="30" width="10" height="3" fill="#6366f1"/>
                             <text x="155" y="35" fontSize="11" fill="#6366f1">내 점수</text>
                             <rect x="140" y="45" width="10" height="3" fill="#a78bfa"/>

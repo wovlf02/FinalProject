@@ -274,26 +274,4 @@ public class TeamStudyRestService {
         // 파일 저장 경로 기준으로 roomId 폴더가 존재한다는 가정
         return fileService.getStudyFileList(roomId);
     }
-
-
-    public List<ProblemSummary> getFilteredProblems(String subject, Integer grade, Integer month, String difficulty) {
-        List<QuizRoom> quizRooms = quizRoomRepository.findBySubjectAndGradeAndMonthAndDifficulty(subject, grade, month, difficulty);
-
-        return quizRooms.stream()
-                .map(QuizRoom::getProblemId)
-                .distinct()
-                .map(problemId -> problemRepository.findById(problemId).orElse(null))
-                .filter(Objects::nonNull)
-                .map(problem -> new ProblemSummary(
-                        problem.getId(),
-                        problem.getPassage() != null ? problem.getPassage().getTitle() : "(제목 없음)",
-                        problem.getSubject(),
-                        difficulty // QuizRoom 기준이므로 그대로 전달
-                ))
-                .collect(Collectors.toList());
-    }
-
-
-
-
 }

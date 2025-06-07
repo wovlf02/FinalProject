@@ -56,11 +56,9 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
 
-# ✅ JWT 설정 (Access Token: 1시간, Refresh Token: 30일)
-jwt:
-  secret: e41e5bf5deb48e0be0ffb07dbbccd98112986e441b1d32b0f0a704ed1745c59f04ee5b701f1b4db8ac837263aa17c021d8014b8538f260e38c0dbaa71fbe9483  # JWT 서명용 Secret Key
-  access-token-expiration: 3600000  # 1시간 (1000 * 60 * 60 ms)
-  refresh-token-expiration: 2592000000  # 30일 (1000 * 60 * 60 * 24 * 30 ms)
+  ai:
+    openai:
+      api-key: AIzaSyAnMziLv24BNczctq-J1k-fjH8sqalPKIk
 
 # ✅ 로깅 설정 (디버깅을 위한 로그 레벨)
 logging:

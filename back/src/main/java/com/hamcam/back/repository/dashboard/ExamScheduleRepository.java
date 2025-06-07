@@ -4,6 +4,7 @@ import com.hamcam.back.entity.dashboard.ExamSchedule;
 import com.hamcam.back.entity.auth.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,5 +23,8 @@ public interface ExamScheduleRepository extends JpaRepository<ExamSchedule, Long
     @Query("SELECT e FROM ExamSchedule e " +
             "WHERE e.user = :user AND e.examDate >= :today " +
             "ORDER BY e.examDate ASC")
-    Optional<ExamSchedule> findNearestExamSchedule(User user, LocalDate today);
+    Optional<ExamSchedule> findNearestExamSchedule(
+            @Param("user") User user,
+            @Param("today") LocalDate today
+    );
 }

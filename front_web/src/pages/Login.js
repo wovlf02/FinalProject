@@ -23,6 +23,7 @@ const Login = () => {
                 // ✅ 로그인 후 사용자 정보 조회
                 const userRes = await api.get('/users/me');
                 const user = userRes.data?.data;
+                console.log(user);
 
                 if (!user || !user.user_id) {
                     alert('사용자 정보를 불러올 수 없습니다.');

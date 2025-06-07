@@ -7,6 +7,7 @@ import com.hamcam.back.dto.study.team.socket.request.*;
 import com.hamcam.back.dto.study.team.socket.response.FileUploadNoticeResponse;
 import com.hamcam.back.dto.study.team.socket.response.VoteResultResponse;
 import com.hamcam.back.service.livekit.LiveKitService;
+import com.hamcam.back.service.study.team.chat.StudyChatService;
 import com.hamcam.back.service.study.team.socket.QuizRoomSocketService;
 import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +28,7 @@ public class QuizRoomSocketController {
     private final QuizRoomSocketService quizRoomSocketService;
     private final SimpMessagingTemplate messagingTemplate;
     private final LiveKitService liveKitService;
+    private final StudyChatService studyChatService;
 
     // ✅ 세션에서 userId 추출 유틸
     private Long extractUserId(HttpServletRequest request) {
@@ -113,16 +115,6 @@ public class QuizRoomSocketController {
     @MessageMapping("/quiz/terminate")
     public void terminateRoom(HttpServletRequest request, RoomTerminateRequest dto) {
         quizRoomSocketService.terminateRoom(dto.getRoomId(), extractUserId(request));
-    }
-
-    /**
-     * ✅ 채팅 전송
-     */
-    @MessageMapping("/quiz/chat/send")
-    public void sendChatMessage(HttpServletRequest request, ChatMessageRequest dto) {
-        Long userId = extractUserId(request);
-        ChatMessageResponse response = quizRoomSocketService.handleChatMessage(dto, userId);
-        messagingTemplate.convertAndSend("/sub/quiz/room/" + dto.getRoomId(), response);
     }
 
     /**

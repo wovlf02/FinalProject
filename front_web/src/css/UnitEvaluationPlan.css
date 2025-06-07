@@ -1,125 +1,146 @@
+/* UnitEvaluationPlan.css */
 .plan-container {
-    margin-left: 160px;
-    padding: 48px 32px 32px 32px;
+    margin: 0 auto;
+    padding: 48px 0 32px 0;
     background: #f7fafd;
     min-height: 100vh;
-    max-width: 800px;
+    max-width: 1200px;
     box-sizing: border-box;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px #0001;
 }
 
 .plan-ai-bar {
-    margin-bottom: 24px;
+    margin: 0 auto 36px auto;
     display: flex;
     align-items: center;
-    gap: 16px;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px #0001;
+    padding: 28px 32px 22px 32px;
+    max-width: 1000px;
 }
 
 .plan-ai-bar select {
-    padding: 7px 18px;
-    font-size: 1.05rem;
-    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 1.09rem;
+    border-radius: 8px;
     border: 1.5px solid #e0e4ea;
-    margin-right: 10px;
+    min-width: 150px;
+    height: 44px;
+    background: #f7fafd;
+    box-sizing: border-box;
+    font-weight: 500;
 }
 
 .plan-generate-btn {
-    background: #222;
+    background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
     color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 9px 26px;
-    font-size: 1.08rem;
-    font-weight: 600;
+    border-radius: 10px;
+    padding: 0 38px;
+    font-size: 1.13rem;
+    font-weight: 700;
     cursor: pointer;
-    margin-left: 10px;
-    transition: background 0.13s;
+    height: 46px;
+    transition: background 0.13s, box-shadow 0.13s;
+    box-shadow: 0 4px 16px #2563eb22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.03em;
 }
 
 .plan-generate-btn:hover {
-    background: #2563eb;
+    background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
+    box-shadow: 0 8px 24px #2563eb33;
 }
 
-.plan-summary-row {
-    display: flex;
-    gap: 22px;
-    margin-bottom: 30px;
-}
-
-.plan-summary-card {
+.ai-plan-result {
+    margin: 0 auto;
+    margin-top: 36px;
     background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px #0001;
-    padding: 18px 26px;
-    flex: 1;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px #0001;
+    padding: 32px 28px;
+    max-width: 1100px;
+}
+
+.ai-plan-result table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.ai-plan-result th,
+.ai-plan-result td {
+    border: 1.5px solid #e2e8f0;
+    padding: 18px 14px;
     text-align: center;
+    font-size: 17px;
+    transition: background 0.15s;
 }
 
-.plan-summary-label {
-    color: #888;
-    font-size: 1.01rem;
-    margin-bottom: 8px;
-}
-
-.plan-summary-value {
-    font-size: 1.4rem;
-    font-weight: 700;
+.ai-plan-result th {
+    background: linear-gradient(90deg, #e0e7ff 0%, #f1f5f9 100%);
     color: #222;
-}
-
-.plan-days-list {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    margin-bottom: 32px;
-}
-
-.plan-day-card {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px #0001;
-    padding: 22px 28px;
-    font-size: 1.09rem;
-}
-
-.plan-day-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    font-size: 1.13rem;
-}
-
-.plan-day-card ul {
-    margin: 0;
-    padding-left: 22px;
-}
-
-.plan-progress-section {
-    margin-top: 38px;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px #0001;
-    padding: 22px 28px;
-}
-
-.plan-progress-title {
     font-weight: 700;
-    font-size: 1.13rem;
-    margin-bottom: 14px;
+    font-size: 1.1rem;
 }
 
-.plan-progress-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.ai-plan-result tr:nth-child(even) {
+    background: #f7fafc;
 }
 
-.plan-progress-list li {
-    margin-bottom: 10px;
-    font-size: 1.07rem;
+.ai-plan-result tr:hover td {
+    background: #e0f2fe;
 }
 
-.plan-progress-list input[type="checkbox"] {
-    margin-right: 8px;
-    transform: scale(1.15);
+@media (max-width: 1100px) {
+    .plan-container {
+        max-width: 100vw;
+        padding: 24px 0 18px 0;
+    }
+    .ai-plan-result,
+    .plan-ai-bar {
+        max-width: 98vw;
+        padding-left: 2vw;
+        padding-right: 2vw;
+    }
+}
+
+@media (max-width: 700px) {
+    .plan-container {
+        padding: 8px 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .plan-ai-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px 2vw;
+        border-radius: 8px;
+    }
+    .plan-ai-bar select,
+    .plan-generate-btn {
+        width: 100%;
+        min-width: 0;
+    }
+    .ai-plan-result {
+        padding: 10px 2vw;
+        border-radius: 8px;
+    }
+    .ai-plan-result th, .ai-plan-result td {
+        font-size: 14px;
+        padding: 8px 4px;
+    }
 }

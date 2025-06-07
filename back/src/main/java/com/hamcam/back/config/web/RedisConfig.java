@@ -13,19 +13,16 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @EnableRedisRepositories
 public class RedisConfig {
 
-    /**
-     * ✅ Redis 연결 팩토리 설정
-     */
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
         return new LettuceConnectionFactory("localhost", 6379);
     }
 
     /**
-     * ✅ 문자열 전용 RedisTemplate
+     * 문자열 전용 RedisTemplate (커스텀 이름 부여)
      */
-    @Bean
-    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory cf) {
+    @Bean(name = "stringRedisTemplateCustom")
+    public RedisTemplate<String, String> stringRedisTemplateCustom(RedisConnectionFactory cf) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(cf);
         template.setKeySerializer(new StringRedisSerializer());
@@ -36,10 +33,10 @@ public class RedisConfig {
     }
 
     /**
-     * ✅ 오브젝트 저장용 RedisTemplate (예: 접속자 수, JSON 객체 등)
+     * 오브젝트 저장용 RedisTemplate
      */
-    @Bean
-    public RedisTemplate<String, Object> redisTemplateObject(RedisConnectionFactory cf) {
+    @Bean(name = "objectRedisTemplate")
+    public RedisTemplate<String, Object> objectRedisTemplate(RedisConnectionFactory cf) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(cf);
         template.setKeySerializer(new StringRedisSerializer());
@@ -50,10 +47,10 @@ public class RedisConfig {
     }
 
     /**
-     * ✅ 정수값 전용 RedisTemplate (집중 시간 저장 등)
+     * 정수값 전용 RedisTemplate
      */
-    @Bean
-    public RedisTemplate<String, Integer> redisTemplateInteger(RedisConnectionFactory cf) {
+    @Bean(name = "integerRedisTemplate")
+    public RedisTemplate<String, Integer> integerRedisTemplate(RedisConnectionFactory cf) {
         RedisTemplate<String, Integer> template = new RedisTemplate<>();
         template.setConnectionFactory(cf);
         template.setKeySerializer(new StringRedisSerializer());

@@ -5,6 +5,13 @@ import '../css/QuizRoom.css';
 import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { connectToLiveKit } from '../utils/livekit';
+import { Room, RoomEvent, VideoTrack } from 'livekit-client';
+
+const allUnits = {
+    국어: ['국어 단원 1', '국어 단원 2', '국어 단원 3'],
+    수학: ['수학 단원 1', '수학 단원 2', '수학 단원 3'],
+    영어: ['영어 단원 1', '영어 단원 2', '영어 단원 3'],
+};
 
 const QuizRoom = () => {
     const { roomId } = useParams();
@@ -16,30 +23,38 @@ const QuizRoom = () => {
     const [votePhase, setVotePhase] = useState(false);
     const [voteResult, setVoteResult] = useState(null);
     const [userId, setUserId] = useState(null);
+    const [userInfo, setUserInfo] = useState({});
     const [participants, setParticipants] = useState([]);
     const [chatMessages, setChatMessages] = useState([]);
     const [chatInput, setChatInput] = useState('');
 
     const [showModal, setShowModal] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState('');
-    const [selectedSource, setSelectedSource] = useState('');
+    const [selectedUnit, setSelectedUnit] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
-    const [sources, setSources] = useState([]);
+
+    const filteredUnits = selectedSubject ? allUnits[selectedSubject] : [];
+
+    // 내 캠 ON/OFF 관리
+    const [camOn, setCamOn] = useState(true);
+    const localStreamRef = useRef(null);
 
     const stompRef = useRef(null);
     const chatRef = useRef(null);
     const roomRef = useRef(null);
     const localVideoRefs = useRef({});
-    const localStreamRef = useRef(null);
 
     useEffect(() => {
         enterRoom();
         initAndFetchUser();
         connectWebSocket();
+        fetchChatHistory();
         return () => {
             if (stompRef.current?.connected) stompRef.current.disconnect();
             if (roomRef.current) roomRef.current.disconnect();
+            stopMyCam();
         };
+        // eslint-disable-next-line
     }, []);
 
     const enterRoom = async () => {
@@ -54,17 +69,45 @@ const QuizRoom = () => {
     const initAndFetchUser = async () => {
         try {
             const res = await api.get('/users/me');
-            const identity = res.data.data.user_id.toString();
-            setUserId(identity);
-            setParticipants([{ identity, nickname: `나 (${identity})` }]);
-            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            localStreamRef.current = mediaStream;
-            const myVideo = localVideoRefs.current[identity];
-            if (myVideo) myVideo.srcObject = mediaStream;
-            await connectLiveKitSession(identity);
+            const user = res.data.data;
+            setUserId(user.user_id);
+            setUserInfo(user);
+            setParticipants([{ identity: user.user_id.toString(), nickname: user.nickname || `나 (${user.user_id})` }]);
+            await startMyCam(user.user_id);
+            await connectLiveKitSession(user.user_id.toString());
         } catch (err) {
             alert('카메라 권한이 필요합니다.');
         }
+    };
+
+    // 내 캠 ON: getUserMedia로 스트림 연결
+    const startMyCam = async (uid = userId) => {
+        try {
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localStreamRef.current = mediaStream;
+            const myVideo = localVideoRefs.current[uid];
+            if (myVideo) myVideo.srcObject = mediaStream;
+            setCamOn(true);
+        } catch (e) {
+            setCamOn(false);
+        }
+    };
+
+    // 내 캠 OFF: 트랙 stop, 영상 끔
+    const stopMyCam = () => {
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => track.stop());
+        }
+        if (localVideoRefs.current[userId]) {
+            localVideoRefs.current[userId].srcObject = null;
+        }
+        setCamOn(false);
+    };
+
+    // 토글(ON/OFF)
+    const toggleMyCam = async () => {
+        if (camOn) stopMyCam();
+        else await startMyCam(userId);
     };
 
     const connectLiveKitSession = async (identity) => {
@@ -97,6 +140,38 @@ const QuizRoom = () => {
         });
     };
 
+    const fetchProblem = async () => {
+        if (!selectedSubject || !selectedLevel || !selectedUnit) {
+            alert('모든 조건을 선택해주세요.');
+            return;
+        }
+
+        try {
+            const res = await api.get('/quiz/problems/random', {
+                params: {
+                    subject: selectedSubject,
+                    level: selectedLevel,
+                    unit: selectedUnit
+                }
+            });
+            setProblem(res.data);
+            setShowModal(false);
+        } catch (error) {
+            console.error('문제 불러오기 실패:', error);
+            alert('문제를 불러오지 못했습니다.');
+        }
+    };
+
+
+    const fetchChatHistory = async () => {
+        try {
+            const res = await api.get(`/study/chat/quiz/${roomId}`);
+            setChatMessages(res.data);
+        } catch (e) {
+            console.error("❌ 채팅 불러오기 실패", e);
+        }
+    };
+
     const connectWebSocket = () => {
         const sock = new SockJS('/ws');
         const client = Stomp.over(sock);
@@ -122,32 +197,28 @@ const QuizRoom = () => {
 
             client.subscribe(`/sub/quiz/room/${roomId}`, (msg) => {
                 const payload = JSON.parse(msg.body);
-                setChatMessages((prev) => [...prev, payload]);
+                setChatMessages((prev) => {
+                    const isDuplicate = prev.some(
+                        m => m.sent_at === payload.sent_at && m.sender_id === payload.sender_id && m.content === payload.content
+                    );
+                    return isDuplicate ? prev : [...prev, payload];
+                });
                 setTimeout(() => {
                     chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
                 }, 100);
             });
         });
     };
-
     const sendMessage = (e) => {
         e.preventDefault();
         if (!chatInput.trim()) return;
 
         stompRef.current.send('/app/quiz/chat/send', {}, JSON.stringify({
-            roomId,
-            text: chatInput
+            room_id: Number(roomId),
+            content: chatInput
         }));
 
         setChatInput('');
-    };
-
-    const toggleCam = (id) => {
-        const el = localVideoRefs.current[id];
-        if (el?.srcObject) {
-            const track = el.srcObject.getVideoTracks()[0];
-            if (track) track.enabled = !track.enabled;
-        }
     };
 
     const toggleMic = (id) => {
@@ -158,53 +229,15 @@ const QuizRoom = () => {
         }
     };
 
-    const handleStart = () => setShowModal(true);
-
-    const fetchProblem = async () => {
-        if (!selectedSubject || !selectedSource || !selectedLevel) return;
-        try {
-            const res = await api.get('/quiz/problems/random', {
-                params: { subject: selectedSubject, source: selectedSource, level: selectedLevel }
-            });
-            setProblem(res.data);
-            setShowModal(false);
-        } catch {
-            alert('문제 불러오기 실패');
-        }
-    };
-
-    const handleRaiseHand = () => {
-        stompRef.current.send('/app/quiz/hand', {}, JSON.stringify({ roomId }));
-    };
-
-    const handleEndPresentation = () => {
-        stompRef.current.send('/app/quiz/end-presentation', {}, JSON.stringify({ roomId }));
-        setVotePhase(true);
-    };
-
-    const handleVote = (isSuccess) => {
-        stompRef.current.send('/app/quiz/vote', {}, JSON.stringify({
-            roomId,
-            vote: isSuccess ? 'SUCCESS' : 'FAIL'
-        }));
-    };
-
-    const handleContinue = () => {
-        stompRef.current.send('/app/quiz/continue', {}, JSON.stringify({ roomId }));
-        setProblem(null);
-        setVoteResult(null);
-    };
-
-    const handleTerminate = () => {
-        stompRef.current.send('/app/quiz/terminate', {}, JSON.stringify({ roomId }));
-        navigate('/study/team');
+    const formatTime = (timestamp) => {
+        const date = new Date(timestamp);
+        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
     };
 
     return (
         <div className="quizroom-wrapper">
             <h1 className="quizroom-title">📘 문제풀이방</h1>
             <div className="quizroom-main-content">
-                {/* 문제 섹션 */}
                 <section className="quizroom-problem-section">
                     <h2>문제</h2>
                     {problem ? (
@@ -229,7 +262,10 @@ const QuizRoom = () => {
                         <div className="presenter-section">
                             <span>🗣️ 발표자: {presenterId === userId ? "나" : `사용자 ${presenterId}`}</span>
                             {presenterId === userId && (
-                                <button onClick={handleEndPresentation}>🎤 발표 종료</button>
+                                <button onClick={() => {
+                                    stompRef.current.send('/app/quiz/end-presentation', {}, JSON.stringify({ roomId }));
+                                    setVotePhase(true);
+                                }}>🎤 발표 종료</button>
                             )}
                         </div>
                     )}
@@ -237,8 +273,8 @@ const QuizRoom = () => {
                     {votePhase && (
                         <div className="vote-section">
                             <h3>발표는 어땠나요?</h3>
-                            <button onClick={() => handleVote(true)}>👍 성공</button>
-                            <button onClick={() => handleVote(false)}>👎 실패</button>
+                            <button onClick={() => stompRef.current.send('/app/quiz/vote', {}, JSON.stringify({ roomId, vote: 'SUCCESS' }))}>👍 성공</button>
+                            <button onClick={() => stompRef.current.send('/app/quiz/vote', {}, JSON.stringify({ roomId, vote: 'FAIL' }))}>👎 실패</button>
                         </div>
                     )}
 
@@ -248,55 +284,100 @@ const QuizRoom = () => {
                             <div>성공: {voteResult.successCount}명</div>
                             <div>실패: {voteResult.failCount}명</div>
                             <div>결과: <strong>{voteResult.result === 'SUCCESS' ? '정답 인정!' : '정답 미인정'}</strong></div>
+                            <button onClick={() => {
+                                stompRef.current.send('/app/quiz/continue', {}, JSON.stringify({ roomId }));
+                                setProblem(null);
+                                setVoteResult(null);
+                            }}>🔁 계속하기</button>
+                            <button onClick={() => {
+                                stompRef.current.send('/app/quiz/terminate', {}, JSON.stringify({ roomId }));
+                                navigate('/study/team');
+                            }}>⛔ 종료하기</button>
                         </div>
                     )}
 
-                    <div className="action-buttons">
-                        {!problem && <button onClick={handleStart}>문제 선택</button>}
-                        {problem && !presenterId && <button onClick={handleRaiseHand}>✋ 손들기</button>}
-                        {voteResult && (
-                            <>
-                                <button onClick={handleContinue}>🔁 계속하기</button>
-                                <button onClick={handleTerminate}>⛔ 종료하기</button>
-                            </>
-                        )}
-                    </div>
+                    {!problem && (
+                        <button onClick={() => setShowModal(true)}>문제 선택</button>
+                    )}
+                    {problem && !presenterId && (
+                        <button onClick={() => stompRef.current.send('/app/quiz/hand', {}, JSON.stringify({ roomId }))}>✋ 손들기</button>
+                    )}
                 </section>
 
-                {/* 캠 화면 */}
                 <section className="quizroom-video-section">
                     <h2>캠 화면</h2>
                     <div id="quizroom-video-grid" className="quizroom-video-grid">
-                        {participants.map((p) => (
-                            <div key={p.identity} className="video-tile">
-                                <video
-                                    id={`video-${p.identity}`}
-                                    ref={(el) => {
-                                        if (el) localVideoRefs.current[p.identity] = el;
-                                    }}
-                                    autoPlay
-                                    muted={p.identity === userId}
-                                    playsInline
-                                />
-                                <div className="name">{p.nickname || p.identity}</div>
-                                {p.identity === userId && (
-                                    <div className="controls">
-                                        <button onClick={() => toggleCam(p.identity)}>📷 ON/OFF</button>
-                                        <button onClick={() => toggleMic(p.identity)}>🎤 ON/OFF</button>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                        {participants.map((p) => {
+                            const myId = userId?.toString();
+                            const pid = p.identity?.toString();
+                            const isMe = pid === myId;
+                            return (
+                                <div key={pid} className="video-tile" style={{ position: "relative" }}>
+                                    <video
+                                        id={`video-${pid}`}
+                                        ref={(elkit) => {
+                                            if (elkit) localVideoRefs.current[pid] = elkit;
+                                        }}
+                                        autoPlay
+                                        muted={isMe}
+                                        playsInline
+                                        style={{
+                                            background: isMe && !camOn ? "#222" : "#000"
+                                        }}
+                                    />
+                                    {/* 내 캠 OFF 오버레이 */}
+                                    {isMe && !camOn &&
+                                        <div style={{
+                                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                            background: 'rgba(40,40,40,0.7)', color: '#fff', display: 'flex',
+                                            alignItems: 'center', justifyContent: 'center', borderRadius: 12,
+                                            fontSize: 18, fontWeight: 600,
+                                            pointerEvents: 'none' // 버튼 클릭 방해 금지
+                                        }}>
+                                            카메라 OFF
+                                        </div>
+                                    }
+                                    <div className="name">{p.nickname || pid}</div>
+                                    {/* 내 캠만 토글 버튼 */}
+                                    {isMe && (
+                                        <div className="controls">
+                                            <button onClick={toggleMyCam}>{camOn ? "📷 끄기" : "📷 켜기"}</button>
+                                            <button onClick={() => toggleMic(pid)}>🎤 ON/OFF</button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
 
-                {/* 채팅 */}
                 <section className="quizroom-chat-section">
                     <h2>채팅</h2>
                     <div className="chat-log" ref={chatRef}>
-                        {chatMessages.map((msg, idx) => (
-                            <div key={idx}><b>{msg.sender}</b>: {msg.text}</div>
-                        ))}
+                        {chatMessages.map((msg, idx) => {
+                            const isMine = msg.sender_id === userId;
+                            const profileImg = msg.profile_url || '../../icons/default-profile.png';
+                            const time = msg.sent_at || msg.timestamp;
+                            return (
+                                <div key={idx} className={`chat-message ${isMine ? 'mine' : 'other'}`}>
+                                    {isMine ? (
+                                        <div className="chat-bubble-right">
+                                            <div className="chat-time">{formatTime(time)}</div>
+                                            <div className="chat-content">{msg.content}</div>
+                                        </div>
+                                    ) : (
+                                        <div className="chat-bubble-left">
+                                            <img src={profileImg} alt="profile" className="chat-profile-img" />
+                                            <div className="chat-info">
+                                                <div className="chat-nickname">{msg.nickname}</div>
+                                                <div className="chat-content">{msg.content}</div>
+                                                <div className="chat-time">{formatTime(time)}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                     <form onSubmit={sendMessage} className="chat-input">
                         <input
@@ -310,27 +391,28 @@ const QuizRoom = () => {
                 </section>
             </div>
 
-            {/* 모달 */}
             {showModal && (
                 <div className="modal-overlay">
                     <div className="modal">
                         <h3>문제 조건 선택</h3>
                         <div className="condition-row">
-                            <select onChange={(e) => setSelectedSubject(e.target.value)} defaultValue="">
+                            <select onChange={(e) => {
+                                setSelectedSubject(e.target.value);
+                                setSelectedUnit('');
+                            }} defaultValue="">
                                 <option value="" disabled>과목 선택</option>
                                 <option>국어</option>
                                 <option>수학</option>
                                 <option>영어</option>
                             </select>
-                            <select onChange={(e) => setSelectedSource(e.target.value)} defaultValue="">
-                                <option value="" disabled>출처 선택</option>
-                                <option>2023년 3월 모의고사</option>
-                                <option>2024년 수능</option>
-                                <option>2024년 3월 모의고사</option>
-                                <option>2024년 6월 평가원 모의고사</option>
-                                <option>2024년 9월 평가원 모의고사</option>
-                                <option>2025년 수능</option>
+
+                            <select onChange={(e) => setSelectedUnit(e.target.value)} value={selectedUnit || ''}>
+                                <option value="" disabled>단원명 선택</option>
+                                {filteredUnits.map((unit, idx) => (
+                                    <option key={idx} value={unit}>{unit}</option>
+                                ))}
                             </select>
+
                             <select onChange={(e) => setSelectedLevel(e.target.value)} defaultValue="">
                                 <option value="" disabled>난이도 선택</option>
                                 <option>최하</option>
@@ -340,6 +422,7 @@ const QuizRoom = () => {
                                 <option>최상</option>
                             </select>
                         </div>
+
                         <button className="fetch-button" onClick={fetchProblem}>문제 불러오기</button>
                     </div>
                 </div>

@@ -1,0 +1,82 @@
+.video-section {
+    flex: 3;
+    height: 100vh;
+    padding: 2vh 1vw;
+    background-color: #ffffff;
+    box-sizing: border-box;
+    overflow-y: auto;
+    border-right: 2px solid #ccc;
+}
+
+/* ✅ 반응형 1~2열 자동 전환 */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2vh;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* ✅ 캠 박스 전체 높이를 비율로 */
+.video-box {
+    height: 35vh;
+    background-color: #f0f8ff;
+    border: 2px solid #3949ab;
+    border-radius: 8px;
+    padding: 1vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+/* ✅ 헤더는 10% 정도 */
+.video-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5vh;
+    font-weight: bold;
+    font-size: 1.2vw;
+    color: #333;
+}
+
+/* ✅ 영상 영역은 비율로 */
+.video-area {
+    width: 100%;
+    height: 22vh;
+    background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 1vw;
+    border-radius: 4px;
+    margin-bottom: 1vh;
+    overflow: hidden;
+}
+
+/* ✅ 영상 자체도 비율 대응 */
+.video-element {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* ✅ 컨트롤 버튼도 화면 기준 */
+.video-controls {
+    display: flex;
+    gap: 1vw;
+    justify-content: center;
+}
+
+.video-controls button {
+    font-size: 1vw;
+    padding: 0.5vh 1vw;
+    background-color: #e8eaf6;
+    border: 1px solid #3949ab;
+    border-radius: 4px;
+    cursor: pointer;
+}

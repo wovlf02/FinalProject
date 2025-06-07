@@ -2,9 +2,6 @@ html, body {
     width: 100%;
     min-width: 0;
     overflow-x: hidden;
-    height: 100%;
-    margin: 0;
-    padding: 0;
 }
 
 :root {
@@ -14,7 +11,6 @@ html, body {
     --card-radius: 16px;
     --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     --side-width: 160px;
-    --header-height: 60px;
 }
 
 * {
@@ -22,6 +18,7 @@ html, body {
 }
 
 body {
+    margin: 0;
     font-family: 'Pretendard', 'Noto Sans KR', Arial, sans-serif;
     background: var(--bg-light);
     color: #222;
@@ -41,13 +38,8 @@ body {
     border-right: 1px solid #e0e4ea;
     display: flex;
     flex-direction: column;
-    z-index: 100;
+    z-index: 10;
     padding-top: 0;
-    transition: transform 0.3s ease;
-}
-
-.side-menu.active {
-    transform: translateX(0);
 }
 
 .side-menu-logo {
@@ -123,19 +115,16 @@ body {
 
 .main-layout {
     display: flex;
-    min-height: 100vh;
-    position: relative;
+    height: 100vh;
 }
 
 .dashboard-main {
     flex: 1;
-    padding: 48px 40px 40px calc(var(--side-width) + 40px);
+    padding: 48px 40px 40px 40px;
     min-width: 0;
     background: var(--bg-light);
     min-height: 100vh;
-    width: 100%;
-    overflow-x: hidden;
-    transition: padding 0.3s ease;
+    margin-left: var(--side-width);
 }
 
 .dashboard-header {
@@ -185,9 +174,8 @@ body {
 
 .dashboard-widgets {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 28px;
-    width: 100%;
 }
 
 .dashboard-card {
@@ -199,8 +187,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    width: 100%;
-    overflow: hidden;
 }
 
 .dashboard-card .card-title {
@@ -294,92 +280,61 @@ body {
     color: #555;
 }
 
-/* 반응형 스타일 */
-@media (max-width: 1200px) {
-    .dashboard-main {
-        padding: 40px 20px 40px calc(var(--side-width) + 20px);
-    }
-    
-    .dashboard-widgets {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-    }
-}
-
 @media (max-width: 900px) {
-    :root {
-        --side-width: 280px;
+    .main-layout {
+        flex-direction: column;
+        height: auto;
     }
-    
+
     .side-menu {
-        transform: translateX(-100%);
+        width: 100%;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid #e0e4ea;
+        padding: 0;
+        min-height: unset;
+        height: auto;
+        position: static;
     }
-    
-    .side-menu.active {
-        transform: translateX(0);
+
+    .side-menu-list {
+        flex-direction: row;
+        padding: 0 16px;
+        gap: 2px;
     }
-    
+
+    .side-menu-list-item {
+        border-radius: 0 0 8px 8px;
+        padding: 10px 18px;
+    }
+
+    .side-menu-bottom {
+        display: none;
+    }
+
     .dashboard-main {
-        padding: 40px 20px 40px 20px;
+        padding: 32px 8vw 24px 8vw;
+        min-height: 60vh;
+        margin-left: 0;
     }
-    
+
     .dashboard-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 16px;
     }
-    
-    .menu-toggle {
-        display: block;
-        z-index: 101;
-    }
-}
 
-@media (min-width: 901px) {
-    .side-menu {
-        transform: translateX(0) !important;
-    }
-
-    .dashboard-main {
-        padding-left: calc(var(--side-width) + 40px) !important;
+    .dashboard-widgets {
+        grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 600px) {
     .dashboard-main {
-        padding: 20px 16px 20px 16px;
+        padding: 20px 4vw 16px 4vw;
     }
-    
-    .dashboard-widgets {
-        grid-template-columns: 1fr;
-    }
-    
-    .dashboard-card {
-        padding: 20px 16px 16px 16px;
-    }
-    
+
     .dashboard-header h2 {
-        font-size: 1.5rem;
-    }
-}
-
-/* 모바일 메뉴 토글 버튼 */
-.menu-toggle {
-    display: none;
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    z-index: 100;
-    background: var(--brand-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 12px;
-    cursor: pointer;
-}
-
-@media (max-width: 900px) {
-    .menu-toggle {
-        display: block;
+        font-size: 1.3rem;
     }
 }

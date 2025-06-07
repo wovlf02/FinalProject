@@ -32,6 +32,8 @@ import PostDetail from './pages/Community/components/PostDetail';
 import StudyListPage from './pages/Community/components/StudyListPage';
 import StudyDetail from './pages/Community/components/StudyDetail';
 import StudyCreatePage from './pages/Community/components/StudyCreatePage';
+import UnitEvaluationPlanList from './pages/UnitEvaluationPlanList';
+import PlanMenu from './pages/PlanMenu';
 
 // ✅ 새로 추가된 팀 학습 관련 페이지
 import QuizRoom from './pages/QuizRoom';
@@ -40,27 +42,14 @@ import FocusRoom from './pages/FocusRoom';
 // 초기 스터디 목록
 const initialStudyList = [];
 
-const LayoutWithSidebar = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
-    };
-
-    return (
-        <div className="main-layout">
-            <button className="menu-toggle" onClick={toggleMenu}>
-                {isMenuOpen ? '✕' : '☰'}
-            </button>
-            <div className={`side-menu-container ${isMenuOpen ? 'active' : ''}`}>
-                <NavBar />
-            </div>
-            <div className={`dashboard-main ${isMenuOpen ? 'shifted' : ''}`}>
-                <Outlet />
-            </div>
+const LayoutWithSidebar = () => (
+    <div style={{ display: 'flex' }}>
+        <NavBar />
+        <div style={{ flex: 1, marginTop: '0px' }}>
+            <Outlet />
         </div>
-    );
-};
+    </div>
+);
 
 function App() {
     const [posts, setPosts] = useState([]);
@@ -102,6 +91,9 @@ function App() {
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/write" element={<PostWritePage onAddPost={handleAddPost} />} />
                     <Route path="/quiz-result" element={<QuizResult />} />
+                    <Route path="/plan/menu" element={<PlanMenu />} />
+                    <Route path="/plan/create" element={<UnitEvaluationPlan />} />
+                    <Route path="/plan/list" element={<UnitEvaluationPlanList />} />
                     <Route path="/unit-evaluation/plan" element={<UnitEvaluationPlan />} />
                     <Route path="/unit-evaluation/feedback" element={<UnitEvaluationFeedback />} />
                     <Route path="/unit-evaluation/schedule" element={<UnitEvaluationSchedule />} />

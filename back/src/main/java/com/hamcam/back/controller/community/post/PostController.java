@@ -145,7 +145,7 @@ public class PostController {
 
     /** ✅ 사이드바 - 스터디 상세 조회 */
     @GetMapping("/sidebar/studies/{studyId}")
-    public ResponseEntity<StudyInfoDto> getSidebarStudyDetail(@PathVariable Long studyId) {
+    public ResponseEntity<StudyInfoDto> getSidebarStudyDetail(@PathVariable("studyId") Long studyId) {
         return ResponseEntity.ok(postService.getSidebarStudyDetail(studyId));
     }
 
@@ -159,15 +159,15 @@ public class PostController {
         return ResponseEntity.ok(MessageResponse.of("스터디 참여 신청이 완료되었습니다."));
     }
 
+    
     @GetMapping("/sidebar/studies/{studyId}/applications")
     public ResponseEntity<UserListResponse> getStudyApplications(
-            @PathVariable Long studyId,
-            HttpServletRequest httpRequest
+        @PathVariable("studyId") Long studyId,
+        HttpServletRequest httpRequest
     ) {
         System.out.println(studyId);
         return ResponseEntity.ok(postService.getStudyApplications(studyId, httpRequest));
     }
-
 
     @PostMapping("/sidebar/studies/approve")
     public ResponseEntity<MessageResponse> approveStudyApplication(

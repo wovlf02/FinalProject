@@ -1,246 +1,461 @@
-.quiz-room-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 30px;
-    background-color: #f8f9fb;
-    min-height: 100vh;
-    font-family: 'Pretendard', sans-serif;
+/* ===== Wrapper ===== */
+.quizroom-wrapper {
+    padding-left: 13vw;
+    padding-top: 2rem;
+    padding-right: 2vw;
+    background-color: #f9fafb;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
 }
 
-.quiz-room-container h1 {
-    font-size: 28px;
+.quizroom-title {
+    font-size: 1.8rem;
     font-weight: 700;
-    margin-bottom: 25px;
-    color: #333;
-    text-align: center;
+    color: #222;
+    margin-bottom: 1.5rem;
 }
 
-.main-layout {
+/* ===== 전체 콘텐츠 ===== */
+.quizroom-main-content {
     display: flex;
-    gap: 24px;
-    margin-bottom: 30px;
+    flex-direction: row;
+    width: 100%;
+    height: calc(100vh - 10rem);
+    gap: 1.5rem;
+    box-sizing: border-box;
 }
 
-.video-grid {
-    flex: 2;
+/* ===== 공통 카드 ===== */
+.quizroom-problem-section,
+.quizroom-video-section,
+.quizroom-chat-section {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* ===== 비율 배분 ===== */
+.quizroom-problem-section {
+    flex: 1.3;
+}
+.quizroom-video-section {
+    flex: 1.5;
+    overflow: hidden;
+}
+.quizroom-chat-section {
+    flex: 1.2;
+}
+
+/* ===== 타이틀 ===== */
+.quizroom-problem-section h2,
+.quizroom-video-section h2,
+.quizroom-chat-section h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+/* ===== 문제 출력 영역 ===== */
+.problem-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #0d47a1;
+    margin-bottom: 0.6rem;
+}
+.problem-passage {
+    background: #f1f3f5;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+.problem-choices {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    padding-left: 1.2rem;
+    line-height: 1.5;
+}
+.hint-box {
+    background: #f8f9fa;
+    border: 1px solid #dce3e8;
+    padding: 1rem;
+    font-size: 0.95rem;
+    border-radius: 0.6rem;
+    line-height: 1.5;
+}
+
+/* ===== 발표자 / 투표 / 결과 ===== */
+.presenter-section,
+.vote-section,
+.result-section {
+    padding: 1rem;
+    font-size: 1rem;
+    border-radius: 0.6rem;
+    margin-bottom: 1rem;
+}
+.presenter-section { background: #e3f2fd; }
+.vote-section { background: #fff3cd; text-align: center; }
+.result-section { background: #e8f5e9; }
+.result-section strong { color: #2e7d32; }
+
+/* ===== 버튼 공통 ===== */
+.action-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 0.8rem;
     justify-content: center;
-    align-items: flex-start;
+    margin-top: 1rem;
 }
-
-.video-tile {
-    position: relative;
-    width: 280px;
-    height: 210px;
-    background: #000;
-    border-radius: 12px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.video-tile video {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    border-bottom: 1px solid #444;
-}
-
-.video-tile div {
-    color: white;
-    padding: 4px 0;
-    font-size: 14px;
-    background-color: #222;
-    width: 100%;
-    text-align: center;
-}
-
-.video-tile button {
-    background-color: #444;
-    color: white;
-    border: none;
-    padding: 4px 10px;
-    margin: 2px;
-    font-size: 12px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.video-tile button:hover {
-    background-color: #666;
-}
-
-.chat-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #ccc;
-    border-radius: 12px;
-    overflow: hidden;
-    background-color: white;
-}
-
-.chat-log {
-    flex: 1;
-    max-height: 400px;
-    overflow-y: auto;
-    padding: 15px;
-    font-size: 14px;
-    line-height: 1.6;
-    background-color: #f9f9f9;
-}
-
-.chat-input {
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-    background-color: #fff;
-}
-
-.chat-input input {
-    flex: 1;
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    outline: none;
-}
-
+.action-buttons button,
+.vote-section button,
 .chat-input button {
-    margin-left: 8px;
-    padding: 8px 14px;
-    background-color: #1976d2;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
     border: none;
-    color: white;
-    font-size: 14px;
     border-radius: 8px;
+    background-color: #1976d2;
+    color: white;
     cursor: pointer;
+    transition: background-color 0.2s ease;
 }
-
+.vote-section button:first-child { background: #4caf50; }
+.vote-section button:last-child { background: #f44336; }
+.action-buttons button:hover,
+.vote-section button:hover,
 .chat-input button:hover {
     background-color: #125ea5;
 }
 
-.problem-section {
+/* ===== 캠 그리드 ===== */
+.quizroom-video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    align-items: start;
+    padding-right: 0.5px;
+    box-sizing: border-box;
+}
+
+/* 캠 카드 */
+.video-tile {
     background: #fff;
-    padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-}
-
-.problem-section h2 {
-    font-size: 20px;
-    margin-bottom: 10px;
-}
-
-.passage {
-    background-color: #f1f3f5;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 15px;
-    margin-bottom: 15px;
-    white-space: pre-wrap;
-}
-
-.problem-section ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-.problem-section li {
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-    font-size: 15px;
-}
-
-.presenter-section {
-    background-color: #e3f2fd;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    font-size: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    padding: 0;
+    position: relative;
+}
+
+.video-tile video {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    background: #000;
+    border-radius: 12px 12px 0 0;
+}
+
+.video-tile .name {
+    background: #444;
+    color: white;
+    font-size: 0.95rem;
+    padding: 0.5rem 0;
+    width: 100%;
+    text-align: center;
+    letter-spacing: 0.03em;
+}
+
+.video-tile .controls {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.65rem 0;
+    background: #f4f4f4;
+    width: 100%;
+    border-radius: 0 0 12px 12px;
+}
+
+.video-tile .controls button {
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    border-radius: 6px;
+    padding: 0.45rem 1.1rem;
+    font-size: 0.96rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+}
+.video-tile .controls button:hover {
+    background: #d5d5d5;
+}
+
+/* ===== 채팅 영역 (좌우 말풍선, 정렬) ===== */
+.chat-log {
+    flex: 1;
+    overflow-y: auto;
+    background: #f9f9f9;
+    border-radius: 0.6rem;
+    padding: 1rem;
+    font-size: 0.98rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.chat-message {
+    display: flex;
+    width: 100%;
+}
+
+.chat-message.mine {
+    justify-content: flex-end;
+}
+
+.chat-message.other {
+    justify-content: flex-start;
+}
+
+.chat-bubble-right {
+    background: #1976d2;
+    color: white;
+    border-radius: 18px 18px 2px 18px;
+    padding: 0.9rem 1.25rem;
+    max-width: 64%;
+    word-break: break-word;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
+}
+
+.chat-bubble-left {
+    background: #f1f1f1;
+    color: #222;
+    border-radius: 18px 18px 18px 2px;
+    padding: 0.9rem 1.25rem;
+    max-width: 64%;
+    word-break: break-word;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.6rem;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.06);
+}
+
+.chat-profile-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+    background: #e0e0e0;
+}
+
+.chat-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+}
+
+.chat-nickname {
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 0.05rem;
+    font-size: 1rem;
+}
+
+.chat-content {
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+    line-height: 1.5;
+}
+
+.chat-time {
+    font-size: 0.92rem;
+    color: #999;
+    margin-top: 0.1rem;
+    align-self: flex-end;
+}
+
+/* 오른쪽 말풍선(내 메시지)의 시간 */
+.chat-bubble-right .chat-time {
+    align-self: flex-start;
+    margin-bottom: 0.3rem;
+    color: #bbe1ff;
+    font-size: 0.89rem;
+    font-weight: 400;
+}
+
+/* 왼쪽 말풍선(상대 메시지)의 시간 */
+.chat-bubble-left .chat-time {
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: 0.1rem;
+    align-self: flex-start;
+}
+
+/* ===== 입력창 ===== */
+.chat-input {
+    display: flex;
+    gap: 0.6rem;
     align-items: center;
 }
+.chat-input input {
+    flex: 1;
+    font-size: 0.98rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #fafbfc;
+}
+.chat-input button {
+    min-width: 70px;
+}
 
-.vote-section {
-    background-color: #fff3cd;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+/* ===== 반응형 ===== */
+@media (max-width: 900px) {
+    .quizroom-wrapper {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .quizroom-main-content {
+        flex-direction: column;
+        width: 100%;
+        height: auto;
+    }
+
+    .quizroom-problem-section,
+    .quizroom-video-section,
+    .quizroom-chat-section {
+        padding: 1rem;
+        height: auto;
+    }
+
+    .quizroom-video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+
+    .video-tile video {
+        height: 30vw;
+    }
+
+    .chat-log,
+    .chat-input input,
+    .chat-input button {
+        font-size: 1rem;
+    }
+
+    .quizroom-problem-section h2,
+    .quizroom-video-section h2,
+    .quizroom-chat-section h2 {
+        font-size: 1.2rem;
+    }
+
+    .chat-bubble-right,
+    .chat-bubble-left {
+        max-width: 80vw;
+        font-size: 0.98rem;
+        padding: 0.85rem 1rem;
+    }
+    .video-tile .controls {
+        padding: 0.4rem 0;
+    }
+}
+
+/* ===== 모달 영역 ===== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    overflow: auto;
+}
+
+.modal {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+    width: fit-content;
+    min-width: 600px;
+    max-width: 90vw;
+
+    /* ✅ 세로 크기 콘텐츠에 맞게 */
+    height: auto;
+    max-height: 90vh;
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    box-sizing: border-box;
+}
+
+.modal h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
     text-align: center;
 }
 
-.vote-section h3 {
-    font-size: 18px;
-    margin-bottom: 15px;
-}
-
-.vote-section button {
-    padding: 10px 20px;
-    font-size: 15px;
-    margin: 0 10px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.vote-section button:first-child {
-    background-color: #4caf50;
-    color: white;
-}
-
-.vote-section button:first-child:hover {
-    background-color: #3e8e41;
-}
-
-.vote-section button:last-child {
-    background-color: #f44336;
-    color: white;
-}
-
-.vote-section button:last-child:hover {
-    background-color: #d32f2f;
-}
-
-.result-section {
-    background-color: #e8f5e9;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    font-size: 16px;
-    line-height: 1.6;
-}
-
-.result-section strong {
-    color: #2e7d32;
-}
-
-.action-buttons {
+.condition-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
     justify-content: center;
-    margin-top: 10px;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
 }
 
-.action-buttons button {
-    padding: 12px 18px;
-    font-size: 15px;
-    border: none;
+.condition-row select {
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
     border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #f1f1f1;
+    min-width: 140px;
+}
+
+.fetch-button {
+    padding: 0.7rem 1.6rem;
+    font-size: 1rem;
     background-color: #1976d2;
     color: white;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s;
 }
-
-.action-buttons button:hover {
+.fetch-button:hover {
     background-color: #125ea5;
 }

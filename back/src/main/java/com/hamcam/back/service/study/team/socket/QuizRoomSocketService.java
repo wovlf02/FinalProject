@@ -1,13 +1,11 @@
 package com.hamcam.back.service.study.team.socket;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.dto.study.team.socket.request.FileUploadNoticeRequest;
 import com.hamcam.back.dto.study.team.socket.request.VoteType;
-import com.hamcam.back.dto.study.team.socket.response.FileUploadNoticeResponse;
-import com.hamcam.back.dto.study.team.socket.response.TextNoticeResponse;
-import com.hamcam.back.dto.study.team.socket.response.VoteResultResponse;
-import com.hamcam.back.dto.study.team.socket.response.VoteUITriggerResponse;
+import com.hamcam.back.dto.study.team.socket.response.*;
 import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.study.team.QuizRoom;
 import com.hamcam.back.global.exception.CustomException;
@@ -18,6 +16,7 @@ import com.hamcam.back.repository.study.StudyRoomParticipantRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +34,10 @@ public class QuizRoomSocketService {
     private final StudyRoomParticipantRepository participantRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
+
+    private static final String CHAT_KEY_PREFIX = "quiz:%s:chat";
 
     // 발표 후보자 저장: roomId → userId 순서대로 저장
     private final Map<Long, Queue<Long>> handRaisedQueue = new ConcurrentHashMap<>();
@@ -196,28 +199,36 @@ public class QuizRoomSocketService {
     }
 
     /**
-     * ✅ 실시간 채팅 메시지 처리
+     * ✅ 채팅 메시지 처리: Redis 저장 + WebSocket 브로드캐스트
      */
-    public ChatMessageResponse handleChatMessage(ChatMessageRequest requestDto, Long userId) {
+    public void handleAndBroadcastChatMessage(String roomType, Long roomId, Long userId, String content) {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        ChatMessageResponse response = ChatMessageResponse.builder()
-                .messageId(null) // 저장 안 하므로 null
-                .roomId(requestDto.getRoomId())
+        String roomKey = roomType + "-" + roomId;
+
+        StudyChatMessageResponse response = StudyChatMessageResponse.builder()
+                .roomId(roomKey)
                 .senderId(userId)
                 .nickname(user.getNickname())
-                .profileUrl(user.getProfileImageUrl()) // 필요 시 null 가능
-                .content(requestDto.getContent())
-                .type(ChatMessageType.TEXT)
-                .storedFileName(null)
+                .profileUrl(user.getProfileImageUrl())
+                .content(content)
                 .sentAt(LocalDateTime.now())
-                .unreadCount(0)
                 .build();
 
-        log.info("💬 채팅 메시지 from {}: {}", user.getNickname(), requestDto.getContent());
-        return response;
+        try {
+            String key = String.format("study:%s:chat", roomKey);
+            String json = objectMapper.writeValueAsString(response);
+            redisTemplate.opsForList().rightPush(key, json);
+        } catch (Exception e) {
+            log.error("❌ Redis 채팅 저장 실패", e);
+        }
+
+        messagingTemplate.convertAndSend("/sub/" + roomType + "/room/" + roomId, response);
+
+        log.info("💬 [{}] 채팅 메시지 from {}: {}", roomKey, user.getNickname(), content);
     }
+
 
 
     /**

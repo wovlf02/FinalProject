@@ -72,12 +72,20 @@ public class FriendRequest {
     private FriendRequestStatus status;
 
     /**
+     * 삭제 여부 (기본값 false)
+     */
+    @Builder.Default
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
+    /**
      * 요청 생성 시 기본값 자동 설정
      */
     @PrePersist
     protected void onCreate() {
         if (this.requestedAt == null) this.requestedAt = LocalDateTime.now();
         if (this.status == null) this.status = FriendRequestStatus.PENDING;
+        if (this.isDeleted == null) this.isDeleted = false;
     }
 
     // ===== 비즈니스 로직 =====
