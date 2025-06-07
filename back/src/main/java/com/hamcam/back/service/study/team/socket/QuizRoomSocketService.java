@@ -1,16 +1,19 @@
 package com.hamcam.back.service.study.team.socket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hamcam.back.dto.common.MessageResponse;
 import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
 import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
 import com.hamcam.back.dto.study.team.socket.request.FileUploadNoticeRequest;
 import com.hamcam.back.dto.study.team.socket.request.VoteType;
 import com.hamcam.back.dto.study.team.socket.response.*;
 import com.hamcam.back.entity.chat.ChatMessageType;
+import com.hamcam.back.entity.study.team.Problem;
 import com.hamcam.back.entity.study.team.QuizRoom;
 import com.hamcam.back.global.exception.CustomException;
 import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.auth.UserRepository;
+import com.hamcam.back.repository.study.ProblemRepository;
 import com.hamcam.back.repository.study.QuizRoomRepository;
 import com.hamcam.back.repository.study.StudyRoomParticipantRepository;
 import jakarta.transaction.Transactional;
@@ -36,6 +39,7 @@ public class QuizRoomSocketService {
     private final SimpMessagingTemplate messagingTemplate;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final ProblemRepository  problemRepository;
 
     private static final String CHAT_KEY_PREFIX = "quiz:%s:chat";
 
@@ -47,6 +51,9 @@ public class QuizRoomSocketService {
 
     // 투표 현황 저장: roomId → userId → VoteType
     private final Map<Long, Map<Long, VoteType>> voteMap = new ConcurrentHashMap<>();
+
+    // 랭킹 저장용 Map
+    private final Map<Long, List<String>> correctUserRankingMap = new ConcurrentHashMap<>();
 
     /**
      * ✅ 방 입장 처리
@@ -73,6 +80,7 @@ public class QuizRoomSocketService {
         handRaisedQueue.put(roomId, new LinkedList<>());
         presenterMap.remove(roomId);
         voteMap.remove(roomId);
+        correctUserRankingMap.remove(roomId); // ✅ 정답자 랭킹 초기화
     }
 
     /**
@@ -247,6 +255,84 @@ public class QuizRoomSocketService {
 
         log.info("파일 업로드 완료: {} by {}", requestDto.getFileName(), nickname);
         return response;
+    }
+
+    /**
+     * ✅ 정답 제출 처리
+     */
+    public void submitAnswer(Long roomId, Long problemId, Long userId, String nickname, String submittedAnswer) {
+        // 1. 문제 조회
+        Problem problem = problemRepository.findById(problemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROBLEM_NOT_FOUND));
+
+        String correctAnswer = problem.getAnswer().trim();
+        String userInput = submittedAnswer.trim();
+
+        // 2. 정답 비교
+        boolean isCorrect = correctAnswer.equals(userInput);
+
+        if (!isCorrect) {
+            log.info("❌ 오답 제출: {} (제출: '{}', 정답: '{}')", nickname, userInput, correctAnswer);
+
+            // 오답도 알림은 보내되, data.correct = false 포함
+            messagingTemplate.convertAndSend(
+                    "/sub/quiz/room/" + roomId,
+                    MessageResponse.of(nickname + "님이 정답을 맞추셨습니다!", Map.of("correct", false, "nickname", nickname))
+            );
+            return;
+        }
+
+        // 3. 정답자 랭킹 리스트 초기화
+        correctUserRankingMap.putIfAbsent(roomId, new ArrayList<>());
+        List<String> ranking = correctUserRankingMap.get(roomId);
+
+        // 4. 중복 정답 방지
+        if (ranking.contains(nickname)) {
+            log.info("⚠️ 이미 정답 맞춘 사용자: {}", nickname);
+            return;
+        }
+
+        // 5. 랭킹에 추가
+        ranking.add(nickname);
+        log.info("✅ 정답자 등록: {} (room {})", nickname, roomId);
+
+        // 6. 랭킹 브로드캐스트
+        List<RankingDto> dtoList = new ArrayList<>();
+        for (int i = 0; i < ranking.size(); i++) {
+            dtoList.add(new RankingDto(i + 1, ranking.get(i)));
+        }
+
+        messagingTemplate.convertAndSend("/sub/quiz/room/" + roomId + "/ranking", dtoList);
+
+        // 7. 정답자 메시지 전송 (data에 correct 포함)
+        messagingTemplate.convertAndSend(
+                "/sub/quiz/room/" + roomId,
+                MessageResponse.of(nickname + "님이 정답을 맞추셨습니다!", Map.of("correct", true, "nickname", nickname))
+        );
+    }
+
+    /**
+     * ✅ 문제 변경 시 상태 초기화 처리
+     */
+    public void changeProblem(Long roomId, Long problemId) {
+        log.info("🔄 문제 전환: roomId={}, problemId={}", roomId, problemId);
+
+        // 1. 정답자 랭킹 초기화
+        correctUserRankingMap.put(roomId, new ArrayList<>());
+
+        // ✅ 랭킹 초기화 브로드캐스트 추가
+        messagingTemplate.convertAndSend("/sub/quiz/room/" + roomId + "/ranking", new ArrayList<>());
+
+        // 2. 발표자, 손들기, 투표 상태 초기화
+        handRaisedQueue.remove(roomId);
+        presenterMap.remove(roomId);
+        voteMap.remove(roomId);
+
+        // 3. 문제 변경 공지
+        messagingTemplate.convertAndSend(
+                "/sub/quiz/room/" + roomId,
+                new TextNoticeResponse("🧠 새로운 문제가 선택되었습니다! 모두 도전해보세요.")
+        );
     }
 
 

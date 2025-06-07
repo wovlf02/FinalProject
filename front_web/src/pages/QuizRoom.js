@@ -27,6 +27,7 @@ const QuizRoom = () => {
     const [selectedLevel, setSelectedLevel] = useState('');
     const [userAnswer, setUserAnswer] = useState('');
     const [rankingList, setRankingList] = useState([]);  // 정답자 리스트
+    const [hasSubmittedCorrect, setHasSubmittedCorrect] = useState(false);
 
 
     const unitData = [
@@ -176,10 +177,12 @@ const QuizRoom = () => {
 
         stompRef.current.send('/app/quiz/answer', {}, JSON.stringify({
             room_id: Number(roomId),
+            problem_id: problem?.problem_id,  // ✅ 문제 ID 추가
             user_id: userId,
             nickname: userInfo.nickname,
             answer: userAnswer.trim()
         }));
+
 
         setUserAnswer('');
     };
@@ -275,11 +278,17 @@ const QuizRoom = () => {
             });
             setProblem(res.data);
             setShowModal(false);
+
+            // ✅ 문제를 불러온 후 서버에 문제 시작 알림 전송
+            stompRef.current.send('/app/quiz/start', {}, JSON.stringify({
+                roomId: Number(roomId)
+            }));
         } catch (error) {
             console.error('문제 불러오기 실패:', error);
             alert('문제를 불러오지 못했습니다.');
         }
     };
+
 
 
     const fetchChatHistory = async () => {
@@ -295,6 +304,7 @@ const QuizRoom = () => {
         const sock = new SockJS('/ws');
         const client = Stomp.over(sock);
         stompRef.current = client;
+
         client.connect({}, () => {
             client.send('/app/quiz/enter', {}, JSON.stringify({ roomId }));
 
@@ -304,6 +314,7 @@ const QuizRoom = () => {
                 setVotePhase(false);
                 setVoteResult(null);
                 setRankingList([]);
+                setHasSubmittedCorrect(false);
             });
 
             client.subscribe(`/sub/quiz/room/${roomId}/presenter`, (msg) => {
@@ -317,12 +328,33 @@ const QuizRoom = () => {
 
             client.subscribe(`/sub/quiz/room/${roomId}`, (msg) => {
                 const payload = JSON.parse(msg.body);
+
+                const isCorrectNotice = payload.message?.includes("님이 정답을 맞추셨습니다!");
+                const isMine = payload.message?.includes(userInfo.nickname);
+
+                // ✅ 정답 메시지면 alert만 띄우고 채팅에 표시 X
+                if (isCorrectNotice) {
+                    if (isMine) {
+                        setHasSubmittedCorrect(true);
+                        if (payload.data?.correct === true) {
+                            alert("🎉 정답을 맞추셨습니다!");
+                        }
+                    } else if (payload.data?.correct === false && payload.nickname === userInfo.nickname) {
+                        alert("❌ 오답입니다. 다시 시도해보세요!");
+                    }
+                    return; // 채팅 목록에는 추가하지 않음
+                }
+
+                // ✅ 일반 채팅 메시지 처리
                 setChatMessages((prev) => {
                     const isDuplicate = prev.some(
-                        m => m.sent_at === payload.sent_at && m.sender_id === payload.sender_id && m.content === payload.content
+                        m => m.sent_at === payload.sent_at &&
+                            m.sender_id === payload.sender_id &&
+                            m.content === payload.content
                     );
                     return isDuplicate ? prev : [...prev, payload];
                 });
+
                 setTimeout(() => {
                     chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
                 }, 100);
@@ -330,9 +362,8 @@ const QuizRoom = () => {
 
             client.subscribe(`/sub/quiz/room/${roomId}/ranking`, (msg) => {
                 const ranking = JSON.parse(msg.body);
-                setRankingList(ranking); // 정답자 목록
+                setRankingList(ranking);
             });
-
         });
     };
 
@@ -393,8 +424,9 @@ const QuizRoom = () => {
                                             value={userAnswer}
                                             onChange={(e) => setUserAnswer(e.target.value)}
                                             placeholder="예: 3번, 22"
+                                            disabled={hasSubmittedCorrect}  // ✅ 정답 맞춘 경우 비활성화
                                         />
-                                        <button type="submit">제출</button>
+                                        <button type="submit" disabled={hasSubmittedCorrect}>제출</button>
                                     </form>
                                 </div>
                             </>
@@ -486,43 +518,66 @@ const QuizRoom = () => {
                 </section>
 
                 <section className="quizroom-chat-section">
-                    <h2>채팅</h2>
-                    <div className="chat-log scroll-chat" ref={chatRef}>
-                        {chatMessages.map((msg, idx) => {
-                            const isMine = msg.sender_id === userId;
-                            const profileImg = msg.profile_url || '../../icons/default-profile.png';
-                            const time = msg.sent_at || msg.timestamp;
-                            return (
-                                <div key={idx} className={`chat-message ${isMine ? 'mine' : 'other'}`}>
-                                    {isMine ? (
-                                        <div className="chat-bubble-right">
-                                            <div className="chat-time">{formatTime(time)}</div>
-                                            <div className="chat-content">{msg.content}</div>
-                                        </div>
-                                    ) : (
-                                        <div className="chat-bubble-left">
-                                            <img src={profileImg} alt="profile" className="chat-profile-img" />
-                                            <div className="chat-info">
-                                                <div className="chat-nickname">{msg.nickname}</div>
-                                                <div className="chat-content">{msg.content}</div>
-                                                <div className="chat-time">{formatTime(time)}</div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                    {/* 정답자 랭킹 */}
+                    <div className="quizroom-ranking-wrapper">
+                        <h2 className="section-title">📊 정답자 랭킹</h2>
+                        <div className="ranking-scroll">
+                            {rankingList.length === 0 ? (
+                                <div className="ranking-empty">정답자가 없습니다.</div>
+                            ) : (
+                                <ul className="ranking-list">
+                                    {rankingList.map((user, idx) => (
+                                        <li key={idx} className="ranking-item">
+                                            <span className="ranking-rank">{idx + 1}등</span>
+                                            <span className="ranking-nickname">{user.nickname}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
                     </div>
-                    <form onSubmit={sendMessage} className="chat-input">
-                        <input
-                            type="text"
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            placeholder="메시지 입력"
-                        />
-                        <button type="submit">전송</button>
-                    </form>
+
+                    {/* 채팅창 */}
+                    <div className="quizroom-chat-wrapper">
+                        <h2 className="section-title">💬 채팅</h2>
+                        <div className="chat-log scroll-chat" ref={chatRef}>
+                            {chatMessages.map((msg, idx) => {
+                                const isMine = msg.sender_id === userId;
+                                const profileImg = msg.profile_url || '../../icons/default-profile.png';
+                                const time = msg.sent_at || msg.timestamp;
+                                return (
+                                    <div key={idx} className={`chat-message ${isMine ? 'mine' : 'other'}`}>
+                                        {isMine ? (
+                                            <div className="chat-bubble-right">
+                                                <div className="chat-time">{formatTime(time)}</div>
+                                                <div className="chat-content">{msg.content}</div>
+                                            </div>
+                                        ) : (
+                                            <div className="chat-bubble-left">
+                                                <img src={profileImg} alt="profile" className="chat-profile-img" />
+                                                <div className="chat-info">
+                                                    <div className="chat-nickname">{msg.nickname}</div>
+                                                    <div className="chat-content">{msg.content}</div>
+                                                    <div className="chat-time">{formatTime(time)}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <form onSubmit={sendMessage} className="chat-input">
+                            <input
+                                type="text"
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                placeholder="메시지를 입력하세요..."
+                            />
+                            <button type="submit">전송</button>
+                        </form>
+                    </div>
                 </section>
+
             </div>
 
             {/* 모달 */}

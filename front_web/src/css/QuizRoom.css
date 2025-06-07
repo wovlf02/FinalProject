@@ -28,8 +28,7 @@
 
 /* ===== 공통 카드 ===== */
 .quizroom-problem-section,
-.quizroom-video-section,
-.quizroom-chat-section {
+.quizroom-video-section {
     background: #fff;
     border-radius: 1rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -47,9 +46,6 @@
 .quizroom-video-section {
     flex: 1.5;
     overflow: hidden;
-}
-.quizroom-chat-section {
-    flex: 1.2;
 }
 
 /* ===== 타이틀 ===== */
@@ -550,4 +546,80 @@
 }
 .answer-input-wrapper button:hover {
     background-color: #125ea5;
+}
+
+/* ========== 📊 정답자 랭킹 섹션 ========== */
+.quizroom-ranking-wrapper {
+    flex: 1;
+    background: #eef4fb;
+    border: 1px solid #c9d9eb;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ranking-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.98rem;
+    color: #333;
+}
+
+.ranking-rank {
+    font-weight: 600;
+    color: #1976d2;
+}
+
+.ranking-nickname {
+    font-weight: 500;
+    color: #222;
+}
+
+.ranking-empty {
+    text-align: center;
+    color: #999;
+    font-size: 0.95rem;
+}
+
+/* ========== 💬 채팅 섹션 수정 ========== */
+.quizroom-chat-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.quizroom-chat-wrapper h2.section-title,
+.quizroom-ranking-wrapper h2.section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+    color: #2a2a2a;
+}
+
+.quizroom-chat-section {
+    flex: 1.2;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
 }
