@@ -487,7 +487,6 @@
     margin-top: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
 }
 
 .answer-label {
@@ -503,7 +502,7 @@
 }
 
 .answer-input-wrapper input {
-    padding: 0.5rem 0.8rem;
+    padding: 1rem 0.8rem;
     font-size: 1rem;
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -511,11 +510,44 @@
 }
 
 .answer-input-wrapper button {
-    padding: 0.45rem 1rem;
+    padding: 0.8rem 1rem;
     font-size: 0.95rem;
     background-color: #1976d2;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.answer-input-wrapper form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;             /* 입력창과 버튼 사이 간격 */
+    margin-top: 0.5rem;
+}
+
+.problem-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.problem-select-button {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.problem-select-button:hover {
+    background-color: #125ea5;
+}
+.answer-input-wrapper button:hover {
+    background-color: #125ea5;
 }

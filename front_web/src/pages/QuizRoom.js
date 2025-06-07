@@ -26,6 +26,8 @@ const QuizRoom = () => {
     const [selectedUnit, setSelectedUnit] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
     const [userAnswer, setUserAnswer] = useState('');
+    const [rankingList, setRankingList] = useState([]);  // 정답자 리스트
+
 
     const unitData = [
         { subject: '수학', unit: '지수와 로그' },
@@ -170,19 +172,18 @@ const QuizRoom = () => {
 
     const handleSubmitAnswer = (e) => {
         e.preventDefault();
-        if (!userAnswer.trim()) return;
-        if (!problem) return;
+        if (!userAnswer.trim() || !problem) return;
 
-        const input = userAnswer.trim();
-        if (input === problem.answer) {
-            stompRef.current.send('/app/quiz/chat/send', {}, JSON.stringify({
-                room_id: Number(roomId),
-                content: `${userInfo.nickname || '익명'}님이 정답을 맞추셨습니다.`,
-                sender_id: 'SYSTEM'
-            }));
-        }
+        stompRef.current.send('/app/quiz/answer', {}, JSON.stringify({
+            room_id: Number(roomId),
+            user_id: userId,
+            nickname: userInfo.nickname,
+            answer: userAnswer.trim()
+        }));
+
         setUserAnswer('');
     };
+
 
     const initAndFetchUser = async () => {
         try {
@@ -302,6 +303,7 @@ const QuizRoom = () => {
                 setPresenterId(null);
                 setVotePhase(false);
                 setVoteResult(null);
+                setRankingList([]);
             });
 
             client.subscribe(`/sub/quiz/room/${roomId}/presenter`, (msg) => {
@@ -325,6 +327,12 @@ const QuizRoom = () => {
                     chatRef.current?.scrollTo(0, chatRef.current.scrollHeight);
                 }, 100);
             });
+
+            client.subscribe(`/sub/quiz/room/${roomId}/ranking`, (msg) => {
+                const ranking = JSON.parse(msg.body);
+                setRankingList(ranking); // 정답자 목록
+            });
+
         });
     };
 
@@ -358,7 +366,12 @@ const QuizRoom = () => {
             <h1 className="quizroom-title">📘 문제풀이방</h1>
             <div className="quizroom-main-content">
                 <section className="quizroom-problem-section">
-                    <h2>문제</h2>
+                    <h2 className="problem-header">
+                        문제
+                        <button className="problem-select-button" onClick={() => setShowModal(true)}>
+                            문제 선택
+                        </button>
+                    </h2>
                     <div className="problem-scroll">
                         {problem ? (
                             <>
@@ -368,19 +381,18 @@ const QuizRoom = () => {
                                 ) : (
                                     <img src={problem.image_path} alt="문제 이미지" className="problem-image" />
                                 )}
-
-                                {/* ✅ 정답 입력창 UI */}
                                 <div className="answer-input-wrapper">
-                                    <form onSubmit={handleSubmitAnswer}>
+                                    <form onSubmit={handleSubmitAnswer} className="answer-form">
                                         <label htmlFor="answerInput" className="answer-label">
-                                            정답을 입력하세요 <span className="answer-guidance">(예: 3, 22)</span>
+                                            정답을 입력하세요
+                                            <span className="answer-guidance"></span>
                                         </label>
                                         <input
                                             id="answerInput"
                                             type="text"
                                             value={userAnswer}
                                             onChange={(e) => setUserAnswer(e.target.value)}
-                                            placeholder="정답 번호 입력"
+                                            placeholder="예: 3번, 22"
                                         />
                                         <button type="submit">제출</button>
                                     </form>
@@ -428,13 +440,6 @@ const QuizRoom = () => {
                             }}>⛔ 종료하기</button>
                         </div>
                     )}
-
-                    {!problem && (
-                        <button onClick={() => setShowModal(true)}>문제 선택</button>
-                    )}
-                    {problem && !presenterId && (
-                        <button onClick={() => stompRef.current.send('/app/quiz/hand', {}, JSON.stringify({ roomId }))}>✋ 손들기</button>
-                    )}
                 </section>
 
                 <section className="quizroom-video-section">
@@ -454,9 +459,7 @@ const QuizRoom = () => {
                                         autoPlay
                                         muted={isMe}
                                         playsInline
-                                        style={{
-                                            background: isMe && !camOn ? "#222" : "#000"
-                                        }}
+                                        style={{ background: isMe && !camOn ? "#222" : "#000" }}
                                     />
                                     {isMe && !camOn &&
                                         <div style={{
