@@ -12,10 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.util.List;
 
 @Slf4j
+@ConditionalOnProperty(name = "livekit.enabled", havingValue = "true", matchIfMissing = false)
 @RestController
 @RequestMapping("/api/study/team")
 @RequiredArgsConstructor

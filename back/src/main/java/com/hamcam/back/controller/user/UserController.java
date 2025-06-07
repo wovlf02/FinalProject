@@ -5,6 +5,7 @@ import com.hamcam.back.dto.user.response.UserProfileResponse;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,20 @@ public class UserController {
     /** ✅ 내 프로필 조회 */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getMyInfo(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            log.warn("[/api/users/me] 세션이 없음");
+            return ResponseEntity.status(401).body(ApiResponse.fail("세션이 만료되었습니다."));
+        }
+
+        Object userId = session.getAttribute("userId");
+        log.info("[/api/users/me] 세션 ID: {}, userId: {}", session.getId(), userId);
+
+        if (userId == null) {
+            log.warn("[/api/users/me] 세션에 userId가 없음");
+            return ResponseEntity.status(401).body(ApiResponse.fail("인증되지 않은 사용자입니다."));
+        }
+
         UserProfileResponse response = userService.getMyInfo(request);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

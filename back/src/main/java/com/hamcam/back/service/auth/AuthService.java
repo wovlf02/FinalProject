@@ -13,11 +13,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
 
 @Slf4j
@@ -72,9 +77,19 @@ public class AuthService {
             throw new CustomException(ErrorCode.LOGIN_PASSWORD_MISMATCH);
         }
 
-        // ✅ 세션에 사용자 ID 저장
+        // ✅ 세션 생성 및 사용자 ID 저장
         HttpSession session = httpRequest.getSession(true);
-        session.setAttribute("userId", user.getId());
+        session.setAttribute("userId", String.valueOf(user.getId()));
+        log.info("[로그인] 세션 생성 - ID: {}, userId: {}", session.getId(), user.getId());
+
+        // Spring Security 인증 객체 생성 및 세션 저장
+        UsernamePasswordAuthenticationToken authentication =
+            new UsernamePasswordAuthenticationToken(user.getUsername(), null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+        session.setAttribute("SPRING_SECURITY_CONTEXT", context);
+        log.info("[로그인] SecurityContext 저장 완료");
 
         return LoginResponse.from(user);
     }

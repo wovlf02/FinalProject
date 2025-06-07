@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
+@ConditionalOnProperty(name = "livekit.enabled", havingValue = "true", matchIfMissing = false)
 @Service
 @RequiredArgsConstructor
 public class LiveKitService {

@@ -19,8 +19,10 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Slf4j
+@ConditionalOnProperty(name = "livekit.enabled", havingValue = "true", matchIfMissing = false)
 @Controller
 @RequiredArgsConstructor
 public class QuizRoomSocketController {

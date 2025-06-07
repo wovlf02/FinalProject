@@ -12,10 +12,26 @@ const api = axios.create({
     },
 });
 
-// ✅ 응답 인터셉터: 인증 실패 시 리디렉션 처리
-api.interceptors.response.use(
-    (response) => response,
+// ✅ 요청 인터셉터
+api.interceptors.request.use(
+    (config) => {
+        console.log('🚀 요청:', config.url, '쿠키:', document.cookie);
+        return config;
+    },
     (error) => {
+        console.error('❌ 요청 에러:', error);
+        return Promise.reject(error);
+    }
+);
+
+// ✅ 응답 인터셉터
+api.interceptors.response.use(
+    (response) => {
+        console.log('✅ 응답:', response.config.url, '상태:', response.status);
+        return response;
+    },
+    (error) => {
+        console.error('❌ 응답 에러:', error.response?.status, error.response?.data);
         if (error.response?.status === 401) {
             console.warn('인증 실패: 로그인 페이지로 이동');
             window.location.href = '/login';
