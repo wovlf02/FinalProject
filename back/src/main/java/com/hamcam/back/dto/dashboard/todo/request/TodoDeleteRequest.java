@@ -1,5 +1,6 @@
 package com.hamcam.back.dto.dashboard.todo.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -13,5 +14,6 @@ import lombok.*;
 public class TodoDeleteRequest {
 
     @NotNull
+    @JsonProperty("todoId")
     private Long todoId;
 }

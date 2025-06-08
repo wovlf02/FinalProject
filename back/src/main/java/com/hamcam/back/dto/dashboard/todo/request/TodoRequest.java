@@ -27,7 +27,8 @@ public class TodoRequest {
 
     @NotNull(message = "날짜를 입력해주세요.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate date;
+    @JsonProperty("date")
+    private LocalDate todoDate;
 
     @NotNull(message = "우선순위를 입력해주세요.")
     private PriorityLevel priority;

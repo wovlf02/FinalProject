@@ -24,6 +24,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.repository.TodoRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -42,6 +45,7 @@ public class DashboardService {
     private final UserRepository userRepository;
     private final StudyTimeRepository studyTimeRepository;
     private final NoticeRepository noticeRepository;
+    private static final Logger log = LoggerFactory.getLogger(DashboardService.class);
 
     public List<CalendarEventDto> getMonthlyCalendarEvents(CalendarRequest request, HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
@@ -68,16 +72,25 @@ public class DashboardService {
                 .stream().map(this::toTodoResponse).collect(Collectors.toList());
     }
 
-    public TodoResponse createTodo(TodoRequest request, HttpServletRequest httpRequest) {
-        User user = getSessionUser(httpRequest);
+    /**
+     * Todo 생성
+     */
+    @Transactional
+    public TodoResponse createTodo(TodoRequest request, User user) {
+        log.info("📝 Todo 생성 요청 - title: {}, date: {}, priority: {}", 
+            request.getTitle(), request.getTodoDate(), request.getPriority());
+            
         Todo todo = Todo.builder()
-                .user(user)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .todoDate(request.getDate())
+                .todoDate(request.getTodoDate())
                 .priority(request.getPriority())
                 .completed(false)
+                .user(user)
                 .build();
+                
+        log.info("📝 Todo 생성 - id: {}, date: {}", todo.getId(), todo.getTodoDate());
+        
         return toTodoResponse(todoRepository.save(todo));
     }
 
@@ -86,19 +99,38 @@ public class DashboardService {
         todo.setTitle(request.getTitle());
         todo.setDescription(request.getDescription());
         todo.setTodoDate(request.getTodoDate());
-        todo.setPriority(request.getPriority());
+        todo.setPriority(convertPriority(request.getPriority()));
     }
 
-    public void deleteTodo(TodoDeleteRequest request) {
+    @Transactional
+    public void deleteTodo(TodoDeleteRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Todo todo = getTodoOrThrow(request.getTodoId());
+        
+        // 사용자 권한 확인
+        if (!todo.getUser().getId().equals(user.getId())) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+        
         todoRepository.delete(todo);
     }
 
     @Transactional
-    public TodoResponse toggleTodoCompletion(TodoToggleRequest request) {
+    public void toggleTodoCompletion(TodoToggleRequest request) {
+        if (request == null || request.getTodoId() == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
         Todo todo = getTodoOrThrow(request.getTodoId());
+        log.info("📝 Todo 상태 변경 - id: {}, 현재 상태: {}", todo.getId(), todo.isCompleted());
+        
         todo.setCompleted(!todo.isCompleted());
-        return toTodoResponse(todo);
+        
+        // 완료 상태가 되면 삭제
+        if (todo.isCompleted()) {
+            log.info("🗑️ Todo 삭제 - id: {}", todo.getId());
+            todoRepository.delete(todo);
+        }
     }
 
 
@@ -326,7 +358,10 @@ public class DashboardService {
     }
 
 
-    private User getSessionUser(HttpServletRequest request) {
+    /**
+     * 세션에서 사용자 정보 조회
+     */
+    public User getSessionUser(HttpServletRequest request) {
         Long userId = SessionUtil.getUserId(request);
         return getUser(userId);
     }
@@ -337,6 +372,9 @@ public class DashboardService {
     }
 
     private Todo getTodoOrThrow(Long todoId) {
+        if (todoId == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
         return todoRepository.findById(todoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TODO_NOT_FOUND));
     }
@@ -347,7 +385,7 @@ public class DashboardService {
                 .id(todo.getId())
                 .title(todo.getTitle())
                 .description(todo.getDescription())
-                .date(todo.getTodoDate())
+                .todoDate(todo.getTodoDate())
                 .priority(todo.getPriority())
                 .completed(todo.isCompleted())
                 .build();
@@ -381,5 +419,24 @@ public class DashboardService {
                 .toList();
     }
 
+    private User getUserFromRequest(HttpServletRequest request) {
+        String email = request.getHeader("X-User-Email");
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TodoResponse> getAllTodos(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        List<Todo> todos = todoRepository.findAllByUserOrderByTodoDateDesc(user);
+        log.info("📋 Todo 목록 조회 - user: {}, count: {}", user.getId(), todos.size());
+        todos.forEach(todo -> log.info("  - id: {}, date: {}, title: {}", 
+            todo.getId(), todo.getTodoDate(), todo.getTitle()));
+        return todos.stream().map(this::toTodoResponse).collect(Collectors.toList());
+    }
+
+    private PriorityLevel convertPriority(PriorityLevel priorityLevel) {
+        return priorityLevel;
+    }
 
 }

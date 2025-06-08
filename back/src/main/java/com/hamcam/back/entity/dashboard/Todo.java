@@ -28,7 +28,7 @@ public class Todo {
     private String description;
 
     /** 할 일 날짜 (YYYY-MM-DD) */
-    @Column(nullable = false)
+    @Column(name = "todo_date", nullable = false, columnDefinition = "DATE")
     private LocalDate todoDate;
 
     /** 우선순위 (LOW, NORMAL, HIGH) */
