@@ -2,12 +2,10 @@ package com.hamcam.back.service.study.team.socket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hamcam.back.dto.common.MessageResponse;
-import com.hamcam.back.dto.community.chat.request.ChatMessageRequest;
-import com.hamcam.back.dto.community.chat.response.ChatMessageResponse;
+import com.hamcam.back.dto.study.team.rest.response.QuizProblemResponse;
 import com.hamcam.back.dto.study.team.socket.request.FileUploadNoticeRequest;
 import com.hamcam.back.dto.study.team.socket.request.VoteType;
 import com.hamcam.back.dto.study.team.socket.response.*;
-import com.hamcam.back.entity.chat.ChatMessageType;
 import com.hamcam.back.entity.study.team.Problem;
 import com.hamcam.back.entity.study.team.QuizRoom;
 import com.hamcam.back.global.exception.CustomException;
@@ -16,6 +14,7 @@ import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.repository.study.ProblemRepository;
 import com.hamcam.back.repository.study.QuizRoomRepository;
 import com.hamcam.back.repository.study.StudyRoomParticipantRepository;
+import com.hamcam.back.service.study.team.rest.QuizRoomRestService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +39,7 @@ public class QuizRoomSocketService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final ProblemRepository  problemRepository;
+    private final QuizRoomRestService  quizRoomRestService;
 
     private static final String CHAT_KEY_PREFIX = "quiz:%s:chat";
 
@@ -72,14 +72,28 @@ public class QuizRoomSocketService {
     /**
      * ✅ 문제 시작 처리
      */
-    public void startProblem(Long roomId, Long userId) {
+    public void startProblem(Long roomId, Long userId, String subject, String unit, String level) {
         validateHost(roomId, userId);
-        log.info("문제 시작됨: room {}", roomId);
+        log.info("문제 시작됨: roomId={}, userId={}, subject={}, unit={}, level={}", roomId, userId, subject, unit, level);
 
-        // 초기화
+        // 문제 랜덤 선택
+        QuizProblemResponse problem = quizRoomRestService.getRandomProblem(subject, unit, level);
+
+        // 상태 초기화
         handRaisedQueue.put(roomId, new LinkedList<>());
-        correctUserRankingMap.remove(roomId); // ✅ 정답자 랭킹 초기화
+        presenterMap.remove(roomId);
+        voteMap.remove(roomId);
+        correctUserRankingMap.put(roomId, new ArrayList<>());
+
+        // ✅ 정답자 랭킹 초기화 브로드캐스트
+        messagingTemplate.convertAndSend("/sub/quiz/room/" + roomId + "/ranking", new ArrayList<>());
+
+        // ✅ 문제 전송 (문제 전용 채널로만)
+        messagingTemplate.convertAndSend("/sub/quiz/room/" + roomId + "/problem", problem);
     }
+
+
+
 
     /**
      * ✅ 손들기 처리
@@ -308,30 +322,4 @@ public class QuizRoomSocketService {
                 MessageResponse.of(nickname + "님이 정답을 맞추셨습니다!", Map.of("correct", true, "nickname", nickname))
         );
     }
-
-    /**
-     * ✅ 문제 변경 시 상태 초기화 처리
-     */
-    public void changeProblem(Long roomId, Long problemId) {
-        log.info("🔄 문제 전환: roomId={}, problemId={}", roomId, problemId);
-
-        // 1. 정답자 랭킹 초기화
-        correctUserRankingMap.put(roomId, new ArrayList<>());
-
-        // ✅ 랭킹 초기화 브로드캐스트 추가
-        messagingTemplate.convertAndSend("/sub/quiz/room/" + roomId + "/ranking", new ArrayList<>());
-
-        // 2. 발표자, 손들기, 투표 상태 초기화
-        handRaisedQueue.remove(roomId);
-        presenterMap.remove(roomId);
-        voteMap.remove(roomId);
-
-        // 3. 문제 변경 공지
-        messagingTemplate.convertAndSend(
-                "/sub/quiz/room/" + roomId,
-                new TextNoticeResponse("🧠 새로운 문제가 선택되었습니다! 모두 도전해보세요.")
-        );
-    }
-
-
 }

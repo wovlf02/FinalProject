@@ -5,6 +5,7 @@ import '../css/QuizRoom.css';
 import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { connectToLiveKit } from '../utils/livekit';
+import {API_BASE_URL_8080} from "../api/apiUrl";
 
 const QuizRoom = () => {
     const { roomId } = useParams();
@@ -262,36 +263,26 @@ const QuizRoom = () => {
         });
     };
 
-    const fetchProblem = async () => {
+    const fetchProblem = () => {
         if (!selectedSubject || !selectedLevel || !selectedUnit) {
             alert('모든 조건을 선택해주세요.');
             return;
         }
 
-        try {
-            const res = await api.get('/quiz/problems/random', {
-                params: {
-                    subject: selectedSubject,
-                    level: selectedLevel,
-                    unit: selectedUnit
-                }
-            });
-            setProblem(res.data);
-            console.log(res.data);
-            setShowModal(false);
+        // 서버에서 문제를 랜덤으로 뽑아 브로드캐스트하므로 클라이언트는 수신만
+        stompRef.current.send('/app/quiz/start', {}, JSON.stringify({
+            room_id: Number(roomId),
+            user_id: userInfo.user_id,
+            subject: selectedSubject,
+            unit: selectedUnit,
+            level: selectedLevel
+        }));
 
-            // ✅ 문제를 불러온 후 서버에 문제 시작 알림 전송
-            stompRef.current.send('/app/quiz/start', {}, JSON.stringify({
-                room_id: Number(roomId),
-                user_id: userInfo.user_id
-            }));
-            setRankingList([]);
-            setHasSubmittedCorrect(false);
-        } catch (error) {
-            console.error('문제 불러오기 실패:', error);
-            alert('문제를 불러오지 못했습니다.');
-        }
+        setShowModal(false);
+        setRankingList([]);
+        setHasSubmittedCorrect(false);
     };
+
 
 
 
@@ -414,7 +405,15 @@ const QuizRoom = () => {
                                 {problem.subject === '국어' ? (
                                     <div className="problem-passage">{problem.passage?.content}</div>
                                 ) : (
-                                    <img src={problem.image_path} alt="문제 이미지" className="problem-image" />
+                                    <img
+                                        src={`${API_BASE_URL_8080}${problem.image_path}`}  // ← 서버 경로 보정
+                                        alt="문제 이미지"
+                                        className="problem-image"
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            console.error("❌ 문제 이미지 로드 실패:", e.currentTarget.src);
+                                        }}
+                                    />
                                 )}
                                 <div className="answer-input-wrapper">
                                     <form onSubmit={handleSubmitAnswer} className="answer-form">

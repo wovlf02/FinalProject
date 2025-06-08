@@ -123,16 +123,13 @@ public class QuizRoomSocketController {
      */
     @MessageMapping("/quiz/answer")
     public void submitAnswer(QuizAnswerRequest dto) {
-        Long userId = dto.getUserId(); // ✅ 사용자 ID는 프론트에서 명시적으로 같이 보내야 함
-        quizRoomSocketService.submitAnswer(dto.getRoomId(), dto.getProblemId(), userId, dto.getNickname(), dto.getAnswer());
+        Long userId = dto.getUserId();
+        quizRoomSocketService.submitAnswer(
+                dto.getRoomId(),
+                dto.getProblemId(),
+                userId,
+                dto.getNickname(),
+                dto.getAnswer()
+        );
     }
-
-    /**
-     * ✅ 문제 변경 시 랭킹 초기화 및 문제 상태 반영
-     */
-    @MessageMapping("/quiz/problem/change")
-    public void changeProblem(RoomProblemChangeRequest dto) {
-        quizRoomSocketService.changeProblem(dto.getRoomId(), dto.getProblemId());
-    }
-
 }
