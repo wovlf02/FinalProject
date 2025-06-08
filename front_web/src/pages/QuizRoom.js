@@ -277,12 +277,16 @@ const QuizRoom = () => {
                 }
             });
             setProblem(res.data);
+            console.log(res.data);
             setShowModal(false);
 
             // ✅ 문제를 불러온 후 서버에 문제 시작 알림 전송
             stompRef.current.send('/app/quiz/start', {}, JSON.stringify({
-                roomId: Number(roomId)
+                room_id: Number(roomId),
+                user_id: userInfo.user_id
             }));
+            setRankingList([]);
+            setHasSubmittedCorrect(false);
         } catch (error) {
             console.error('문제 불러오기 실패:', error);
             alert('문제를 불러오지 못했습니다.');

@@ -78,8 +78,6 @@ public class QuizRoomSocketService {
 
         // 초기화
         handRaisedQueue.put(roomId, new LinkedList<>());
-        presenterMap.remove(roomId);
-        voteMap.remove(roomId);
         correctUserRankingMap.remove(roomId); // ✅ 정답자 랭킹 초기화
     }
 

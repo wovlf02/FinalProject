@@ -61,9 +61,16 @@ public class QuizRoomSocketController {
      * ✅ 문제풀이 시작 요청
      */
     @MessageMapping("/quiz/start")
-    public void startProblem(HttpServletRequest request, RoomStartRequest dto) {
-        quizRoomSocketService.startProblem(dto.getRoomId(), extractUserId(request));
+    public void startProblem(RoomStartRequest dto) {
+        quizRoomSocketService.startProblem(
+                dto.getRoomId(),
+                dto.getUserId(),
+                dto.getSubject(),
+                dto.getUnit(),
+                dto.getLevel()
+        );
     }
+
 
     /**
      * ✅ 손들기 - 발표자 후보 등록
@@ -71,14 +78,6 @@ public class QuizRoomSocketController {
     @MessageMapping("/quiz/hand")
     public void raiseHand(HttpServletRequest request, RoomHandRequest dto) {
         quizRoomSocketService.raiseHand(dto.getRoomId(), extractUserId(request));
-    }
-
-    /**
-     * ✅ 발표자 선정 알림
-     */
-    @MessageMapping("/quiz/announce")
-    public void announcePresenter(HttpServletRequest request, PresenterAnnounceRequest dto) {
-        quizRoomSocketService.announcePresenter(dto.getRoomId(), extractUserId(request));
     }
 
     /**
@@ -99,14 +98,6 @@ public class QuizRoomSocketController {
         if (result != null) {
             messagingTemplate.convertAndSend("/sub/quiz/room/" + dto.getRoomId(), result);
         }
-    }
-
-    /**
-     * ✅ 다음 문제풀이 요청
-     */
-    @MessageMapping("/quiz/continue")
-    public void continueQuiz(HttpServletRequest request, RoomContinueRequest dto) {
-        quizRoomSocketService.continueQuiz(dto.getRoomId(), extractUserId(request));
     }
 
     /**
