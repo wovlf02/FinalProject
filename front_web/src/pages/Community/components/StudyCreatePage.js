@@ -183,4 +183,3 @@ const inputStyle = {
 };
 
 export default StudyCreatePage;
-

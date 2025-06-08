@@ -1,4 +1,3 @@
-
 // src/hooks/useQuizRoom.js
 import { useState, useEffect } from 'react';
 import useTeamRoomSocket from './useTeamRoomSocket';
@@ -132,4 +131,3 @@ const useQuizRoom = (roomId, userId) => {
 };
 
 export default useQuizRoom;
-

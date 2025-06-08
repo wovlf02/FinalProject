@@ -3,20 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import '../css/Navbar.css';
 import api from '../api/api';
 import base_profile from '../icons/base_profile.png'; // ✅ 이미지 import로 수정
-import hamcam_logo from '../picture/HamCam_Logo_main.png'; // ✅ HamCam_Logo.png 이미지 import 경로 수정
 
 const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab, user }) => {
-    const navigate = useNavigate();
-
-    const handleLogoClick = () => {
-        navigate('/dashboard');
-    };
-
     return (
         <div className="side-menu">
-            <div className="side-menu-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-                <img src={hamcam_logo} alt="HamCam Logo" className="logo-image" />
-            </div>
+            <div className="side-menu-logo">로고</div>
 
             <ul className="side-menu-list">
                 {menuItems.map((item) => (

@@ -115,4 +115,3 @@ const StudyListPage = () => {
 };
 
 export default StudyListPage;
-

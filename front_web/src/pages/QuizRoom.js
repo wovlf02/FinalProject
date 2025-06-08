@@ -23,8 +23,9 @@ const QuizRoom = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [selectedSubject, setSelectedSubject] = useState('');
-    const [selectedSource, setSelectedSource] = useState('');
+    const [selectedUnit, setSelectedUnit] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
+
 
     // 내 캠 ON/OFF 관리
     const [camOn, setCamOn] = useState(true);
@@ -132,7 +133,7 @@ const QuizRoom = () => {
     };
 
     const fetchProblem = async () => {
-        if (!selectedSubject || !selectedSource || !selectedLevel) {
+        if (!selectedSubject || !selectedLevel || !selectedUnit) {
             alert('모든 조건을 선택해주세요.');
             return;
         }
@@ -141,8 +142,8 @@ const QuizRoom = () => {
             const res = await api.get('/quiz/problems/random', {
                 params: {
                     subject: selectedSubject,
-                    source: selectedSource,
-                    level: selectedLevel
+                    level: selectedLevel,
+                    unit: selectedUnit
                 }
             });
             setProblem(res.data);
@@ -152,6 +153,7 @@ const QuizRoom = () => {
             alert('문제를 불러오지 못했습니다.');
         }
     };
+
 
     const fetchChatHistory = async () => {
         try {
@@ -386,21 +388,23 @@ const QuizRoom = () => {
                     <div className="modal">
                         <h3>문제 조건 선택</h3>
                         <div className="condition-row">
-                            <select onChange={(e) => setSelectedSubject(e.target.value)} defaultValue="">
+                            <select onChange={(e) => {
+                                setSelectedSubject(e.target.value);
+                                setSelectedUnit('');
+                            }} defaultValue="">
                                 <option value="" disabled>과목 선택</option>
                                 <option>국어</option>
                                 <option>수학</option>
                                 <option>영어</option>
                             </select>
-                            <select onChange={(e) => setSelectedSource(e.target.value)} defaultValue="">
-                                <option value="" disabled>출처 선택</option>
-                                <option>2023년 3월 모의고사</option>
-                                <option>2024년 수능</option>
-                                <option>2024년 3월 모의고사</option>
-                                <option>2024년 6월 평가원 모의고사</option>
-                                <option>2024년 9월 평가원 모의고사</option>
-                                <option>2025년 수능</option>
+
+                            <select onChange={(e) => setSelectedUnit(e.target.value)} value={selectedUnit || ''}>
+                                <option value="" disabled>단원명 선택</option>
+                                {filteredUnits.map((unit, idx) => (
+                                    <option key={idx} value={unit}>{unit}</option>
+                                ))}
                             </select>
+
                             <select onChange={(e) => setSelectedLevel(e.target.value)} defaultValue="">
                                 <option value="" disabled>난이도 선택</option>
                                 <option>최하</option>
@@ -410,6 +414,7 @@ const QuizRoom = () => {
                                 <option>최상</option>
                             </select>
                         </div>
+
                         <button className="fetch-button" onClick={fetchProblem}>문제 불러오기</button>
                     </div>
                 </div>
@@ -418,4 +423,4 @@ const QuizRoom = () => {
     );
 };
 
-export default QuizRoom;    
+export default QuizRoom;
