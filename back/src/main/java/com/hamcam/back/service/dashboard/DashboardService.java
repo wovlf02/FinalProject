@@ -89,8 +89,16 @@ public class DashboardService {
         todo.setPriority(request.getPriority());
     }
 
-    public void deleteTodo(TodoDeleteRequest request) {
+    @Transactional
+    public void deleteTodo(TodoDeleteRequest request, HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
         Todo todo = getTodoOrThrow(request.getTodoId());
+        
+        // 사용자 권한 확인
+        if (!todo.getUser().getId().equals(user.getId())) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+        
         todoRepository.delete(todo);
     }
 
@@ -337,6 +345,9 @@ public class DashboardService {
     }
 
     private Todo getTodoOrThrow(Long todoId) {
+        if (todoId == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
         return todoRepository.findById(todoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TODO_NOT_FOUND));
     }

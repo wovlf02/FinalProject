@@ -1,115 +1,144 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import api from '../../api/api';
+import './DashboardTodo.css';
 
-const DashboardTodo = ({ selectedDate }) => {
+const DashboardTodo = () => {
     const [todos, setTodos] = useState([]);
     const [newTodo, setNewTodo] = useState('');
+    const [selectedDate, setSelectedDate] = useState(moment().format('YYYY-MM-DD'));
+    const [priority, setPriority] = useState('NORMAL');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        if (!selectedDate) return;
         fetchTodos();
     }, [selectedDate]);
 
-    // ✅ Todo 조회
     const fetchTodos = async () => {
         try {
-            const res = await api.post('/dashboard/todos/date', {
-                date: moment(selectedDate).format('YYYY-MM-DD'),
+            const response = await api.post('/dashboard/todos/date', {
+                date: selectedDate
             });
-            setTodos(res.data);
+            setTodos(response.data);
         } catch (error) {
-            console.error('할 일 조회 실패:', error);
+            console.error('Error fetching todos:', error);
+            alert('할일 목록을 불러오는 중 오류가 발생했습니다.');
         }
     };
 
-    // ✅ Todo 생성
-    const handleAddTodo = async (e) => {
-        e.preventDefault();
-        if (!newTodo.trim()) return;
+    const handleAddTodo = async () => {
+        if (!newTodo.trim()) {
+            alert('할일을 입력해주세요.');
+            return;
+        }
+
         try {
-            await api.post('/dashboard/todos', {
+            const todoData = {
                 title: newTodo,
                 description: '',
-                date: moment(selectedDate).format('YYYY-MM-DD'),
-                priority: 'NORMAL',
-            });
+                date: selectedDate,
+                priority: priority,
+                completed: false
+            };
+
+            console.log('Sending todo data:', todoData);
+
+            const response = await api.post('/dashboard/todos', todoData);
+            console.log('Todo added successfully:', response.data);
+
             setNewTodo('');
+            setIsModalOpen(false);
             fetchTodos();
         } catch (error) {
-            console.error('할 일 추가 실패:', error);
+            console.error('Error adding todo:', error);
+            alert('할일 추가 중 오류가 발생했습니다.');
         }
     };
 
-    // ✅ Todo 완료 토글
-    const handleToggle = async (todoId) => {
+    const handleToggleTodo = async (todoId) => {
         try {
-            const res = await api.put('/dashboard/todos/complete', {
-                todo_id: todoId,
-            });
-            setTodos((prev) =>
-                prev.map((todo) => (todo.id === todoId ? res.data : todo))
-            );
-        } catch (error) {
-            console.error('완료 토글 실패:', error);
-        }
-    };
+            const todo = todos.find(t => t.id === todoId);
+            if (!todo.completed) {
+                const confirmed = window.confirm('이 할일을 완료하시겠습니까?');
+                if (!confirmed) return;
 
-    // ✅ Todo 삭제
-    const handleDelete = async (todoId) => {
-        try {
-            await api.post('/dashboard/todos/delete', {
-                todo_id: todoId,
-            });
-            setTodos((prev) => prev.filter((todo) => todo.id !== todoId));
+                // 완료된 할일은 바로 삭제
+                try {
+                    console.log('Deleting todo with ID:', todoId);
+                    const deleteData = { todoId: todoId };
+                    console.log('Delete request data:', deleteData);
+                    await api.post('/dashboard/todos/delete', deleteData);
+                    alert('할일이 완료되었습니다!');
+                    fetchTodos();
+                } catch (error) {
+                    console.error('Error deleting todo:', error);
+                    alert('할일 삭제 중 오류가 발생했습니다.');
+                }
+            }
         } catch (error) {
-            console.error('삭제 실패:', error);
+            console.error('Error handling todo:', error);
+            alert('할일 처리 중 오류가 발생했습니다.');
         }
     };
 
     return (
-        <div className="dashboard-card dashboard-todo-card">
-            <div style={{ color: '#222', fontWeight: 600, marginBottom: 8 }}>
-                {moment(selectedDate).format('YYYY년 M월 D일')}의 할 일
+        <div className="dashboard-todo">
+            <div className="dashboard-todo-header">
+                <h3>새 할일 목록</h3>
+                <button onClick={() => setIsModalOpen(true)}>+ 새 할일</button>
             </div>
-            <form onSubmit={handleAddTodo} style={{ marginBottom: 8 }}>
-                <input
-                    type="text"
-                    value={newTodo}
-                    onChange={(e) => setNewTodo(e.target.value)}
-                    placeholder="할 일을 입력하세요"
-                    style={{ width: '70%', marginRight: 8 }}
-                />
-                <button type="submit">추가</button>
-            </form>
-            {todos.map((todo) => (
-                <div
-                    key={todo.id}
-                    className={`dashboard-todo-item${todo.completed ? ' done' : ''}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleToggle(todo.id)}
-                >
-                    <input
-                        type="checkbox"
-                        checked={todo.completed}
-                        readOnly
-                        style={{ marginRight: 8 }}
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                    <span style={{ flex: 1 }}>{todo.title}</span>
-                    <button
-                        className="dashboard-todo-delete-btn"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(todo.id);
-                        }}
-                        aria-label="삭제"
-                        title="삭제"
-                    >
-                        🗑️
-                    </button>
+
+            {isModalOpen && (
+                <div className="dashboard-modal">
+                    <h3>todoList 추가</h3>
+                    <div className="dashboard-modal-content">
+                        <div className="dashboard-modal-input-group">
+                            <input
+                                type="text"
+                                value={newTodo}
+                                onChange={(e) => setNewTodo(e.target.value)}
+                                placeholder="할 일을 입력하세요"
+                            />
+                            <select
+                                value={priority}
+                                onChange={(e) => setPriority(e.target.value)}
+                                className="priority-select"
+                            >
+                                <option value="LOW">낮음</option>
+                                <option value="NORMAL">보통</option>
+                                <option value="HIGH">높음</option>
+                            </select>
+                        </div>
+                        <div className="date-picker">
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="modal-buttons">
+                            <button onClick={handleAddTodo}>추가</button>
+                            <button onClick={() => setIsModalOpen(false)}>취소</button>
+                        </div>
+                    </div>
                 </div>
-            ))}
+            )}
+
+            <div className="todo-list">
+                {todos.map((todo) => (
+                    <div key={todo.id} className={`todo-item ${todo.completed ? 'completed' : ''}`}>
+                        <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={() => handleToggleTodo(todo.id)}
+                        />
+                        <span className="todo-title">{todo.title}</span>
+                        <span className={`priority-badge ${todo.priority.toLowerCase()}`}>
+                            {todo.priority}
+                        </span>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };

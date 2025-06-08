@@ -72,9 +72,10 @@ public class DashboardController {
     // ✅ Todo 삭제
     @PostMapping("/todos/delete")
     public ResponseEntity<MessageResponse> deleteTodo(
-            @RequestBody TodoDeleteRequest request
+            @RequestBody TodoDeleteRequest request,
+            HttpServletRequest httpRequest
     ) {
-        dashboardService.deleteTodo(request);
+        dashboardService.deleteTodo(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("🗑️ Todo가 삭제되었습니다."));
     }
 
