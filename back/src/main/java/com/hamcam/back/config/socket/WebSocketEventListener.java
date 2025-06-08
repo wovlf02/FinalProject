@@ -64,10 +64,15 @@ public class WebSocketEventListener {
         if (userIdObj != null) {
             String userId = userIdObj.toString();
             String key = ONLINE_KEY_PREFIX + userId;
-            if (Boolean.TRUE.equals(redisTemplate.delete(key))) {
-                log.info("🧹 온라인 상태 제거 완료: {}", key);
-            } else {
-                log.warn("⚠️ 온라인 상태 키가 없거나 삭제 실패: {}", key);
+            try {
+                Boolean deleted = redisTemplate.delete(key);
+                if (Boolean.TRUE.equals(deleted)) {
+                    log.info("🧹 온라인 상태 제거 완료: {}", key);
+                } else {
+                    log.warn("⚠️ 온라인 상태 키가 없거나 삭제 실패: {}", key);
+                }
+            } catch (Exception e) {
+                log.error("❌ 온라인 상태 삭제 중 오류 발생: {}", e.getMessage());
             }
         } else {
             log.warn("⚠️ 연결 종료된 세션에 userId 없음: sessionId = {}", sessionId);

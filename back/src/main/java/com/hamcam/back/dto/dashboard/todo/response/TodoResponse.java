@@ -1,15 +1,14 @@
 package com.hamcam.back.dto.dashboard.todo.response;
 
+import com.hamcam.back.entity.dashboard.Todo;
 import com.hamcam.back.entity.dashboard.PriorityLevel;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class TodoResponse {
 
@@ -32,7 +31,7 @@ public class TodoResponse {
      * 날짜
      */
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    private LocalDate date;
+    private LocalDate todoDate;
 
     /**
      * 우선순위 (LOW, NORMAL, HIGH)

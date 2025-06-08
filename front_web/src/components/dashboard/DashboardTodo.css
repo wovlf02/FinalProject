@@ -18,6 +18,19 @@
     color: #333;
 }
 
+.dashboard-todo-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.dashboard-todo-controls .date-picker {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
 .dashboard-todo-header button {
     background: #007bff;
     color: white;
@@ -161,4 +174,11 @@
 .priority-badge.high {
     background: #f8d7da;
     color: #842029;
+}
+
+.no-todos {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+    font-style: italic;
 } 

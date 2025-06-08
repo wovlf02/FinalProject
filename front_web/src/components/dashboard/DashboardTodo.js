@@ -12,13 +12,11 @@ const DashboardTodo = () => {
 
     useEffect(() => {
         fetchTodos();
-    }, [selectedDate]);
+    }, []);
 
     const fetchTodos = async () => {
         try {
-            const response = await api.post('/dashboard/todos/date', {
-                date: selectedDate
-            });
+            const response = await api.get('/dashboard/todos');
             setTodos(response.data);
         } catch (error) {
             console.error('Error fetching todos:', error);
@@ -37,8 +35,7 @@ const DashboardTodo = () => {
                 title: newTodo,
                 description: '',
                 date: selectedDate,
-                priority: priority,
-                completed: false
+                priority: priority
             };
 
             console.log('Sending todo data:', todoData);
@@ -57,40 +54,29 @@ const DashboardTodo = () => {
 
     const handleToggleTodo = async (todoId) => {
         try {
-            const todo = todos.find(t => t.id === todoId);
-            if (!todo.completed) {
-                const confirmed = window.confirm('이 할일을 완료하시겠습니까?');
-                if (!confirmed) return;
-
-                // 완료된 할일은 바로 삭제
-                try {
-                    console.log('Deleting todo with ID:', todoId);
-                    const deleteData = { todoId: todoId };
-                    console.log('Delete request data:', deleteData);
-                    await api.post('/dashboard/todos/delete', deleteData);
-                    alert('할일이 완료되었습니다!');
-                    fetchTodos();
-                } catch (error) {
-                    console.error('Error deleting todo:', error);
-                    alert('할일 삭제 중 오류가 발생했습니다.');
-                }
-            }
+            const requestData = { todoId: Number(todoId) };
+            console.log('Sending toggle request:', requestData);
+            const response = await api.put('/dashboard/todos/complete', requestData);
+            console.log('Toggle response:', response.data);
+            fetchTodos();
         } catch (error) {
-            console.error('Error handling todo:', error);
-            alert('할일 처리 중 오류가 발생했습니다.');
+            console.error('Error toggling todo:', error);
+            console.error('Request data:', { todoId });
+            console.error('Error details:', error.response?.data);
+            alert('할일 상태 변경 중 오류가 발생했습니다.');
         }
     };
 
     return (
         <div className="dashboard-todo">
             <div className="dashboard-todo-header">
-                <h3>새 할일 목록</h3>
+                <h3>할일 목록</h3>
                 <button onClick={() => setIsModalOpen(true)}>+ 새 할일</button>
             </div>
 
             {isModalOpen && (
                 <div className="dashboard-modal">
-                    <h3>todoList 추가</h3>
+                    <h3>할일 추가</h3>
                     <div className="dashboard-modal-content">
                         <div className="dashboard-modal-input-group">
                             <input
@@ -125,19 +111,24 @@ const DashboardTodo = () => {
             )}
 
             <div className="todo-list">
-                {todos.map((todo) => (
-                    <div key={todo.id} className={`todo-item ${todo.completed ? 'completed' : ''}`}>
-                        <input
-                            type="checkbox"
-                            checked={todo.completed}
-                            onChange={() => handleToggleTodo(todo.id)}
-                        />
-                        <span className="todo-title">{todo.title}</span>
-                        <span className={`priority-badge ${todo.priority.toLowerCase()}`}>
-                            {todo.priority}
-                        </span>
-                    </div>
-                ))}
+                {todos.length === 0 ? (
+                    <div className="no-todos">등록된 할일이 없습니다.</div>
+                ) : (
+                    todos.map((todo) => (
+                        <div key={todo.id} className={`todo-item ${todo.completed ? 'completed' : ''}`}>
+                            <input
+                                type="checkbox"
+                                checked={todo.completed}
+                                onChange={() => handleToggleTodo(todo.id)}
+                            />
+                            <span className="todo-title">{todo.title}</span>
+                            <span className={`priority-badge ${todo.priority.toLowerCase()}`}>
+                                {todo.priority}
+                            </span>
+                            <span className="todo-date">{moment(todo.date).format('YYYY-MM-DD')}</span>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

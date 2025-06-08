@@ -23,6 +23,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -33,6 +35,7 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
     private final GPTReflectionService gptReflectionService;
+    private static final Logger log = LoggerFactory.getLogger(DashboardController.class);
 
     // 📆 월별 캘린더 이벤트
     @PostMapping("/calendar")
@@ -54,10 +57,9 @@ public class DashboardController {
 
     // ✅ Todo 생성
     @PostMapping("/todos")
-    public ResponseEntity<MessageResponse> createTodo(
-            @RequestBody TodoRequest request,
-            HttpServletRequest httpRequest
-    ) {
+    public ResponseEntity<MessageResponse> createTodo(@RequestBody TodoRequest request, HttpServletRequest httpRequest) {
+        log.info("📝 Todo 생성 요청 - title: {}, date: {}, priority: {}", 
+            request.getTitle(), request.getTodoDate(), request.getPriority());
         dashboardService.createTodo(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("✅ Todo가 생성되었습니다."));
     }
@@ -81,10 +83,19 @@ public class DashboardController {
 
     // ✅ Todo 완료 토글
     @PutMapping("/todos/complete")
-    public ResponseEntity<TodoResponse> toggleTodo(
-            @RequestBody TodoToggleRequest request
+    public ResponseEntity<MessageResponse> toggleTodoCompletion(
+            @RequestBody TodoToggleRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return ResponseEntity.ok(dashboardService.toggleTodoCompletion(request));
+        log.info("�� Todo 완료 상태 변경 요청 - request: {}", request);
+        log.info("🔄 Todo 완료 상태 변경 요청 - todoId: {}", request.getTodoId());
+        try {
+            dashboardService.toggleTodoCompletion(request);
+            return ResponseEntity.ok(MessageResponse.of("✅ Todo가 완료되었습니다."));
+        } catch (Exception e) {
+            log.error("❌ Todo 완료 상태 변경 실패: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     // 🗓 시험 일정 전체 조회
@@ -195,6 +206,12 @@ public class DashboardController {
     @GetMapping("/notices")
     public ResponseEntity<List<NoticeResponse>> getNotices() {
         return ResponseEntity.ok(dashboardService.getNotices());
+    }
+
+    // 📅 모든 Todo 조회
+    @GetMapping("/todos")
+    public ResponseEntity<List<TodoResponse>> getAllTodos(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getAllTodos(httpRequest));
     }
 
 }

@@ -24,6 +24,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hamcam.back.global.exception.ErrorCode;
+import com.hamcam.back.repository.TodoRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -42,6 +45,7 @@ public class DashboardService {
     private final UserRepository userRepository;
     private final StudyTimeRepository studyTimeRepository;
     private final NoticeRepository noticeRepository;
+    private static final Logger log = LoggerFactory.getLogger(DashboardService.class);
 
     public List<CalendarEventDto> getMonthlyCalendarEvents(CalendarRequest request, HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
@@ -74,8 +78,8 @@ public class DashboardService {
                 .user(user)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .todoDate(request.getDate())
-                .priority(request.getPriority())
+                .todoDate(request.getTodoDate())
+                .priority(convertPriority(request.getPriority()))
                 .completed(false)
                 .build();
         return toTodoResponse(todoRepository.save(todo));
@@ -86,7 +90,7 @@ public class DashboardService {
         todo.setTitle(request.getTitle());
         todo.setDescription(request.getDescription());
         todo.setTodoDate(request.getTodoDate());
-        todo.setPriority(request.getPriority());
+        todo.setPriority(convertPriority(request.getPriority()));
     }
 
     @Transactional
@@ -103,10 +107,21 @@ public class DashboardService {
     }
 
     @Transactional
-    public TodoResponse toggleTodoCompletion(TodoToggleRequest request) {
+    public void toggleTodoCompletion(TodoToggleRequest request) {
+        if (request == null || request.getTodoId() == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
         Todo todo = getTodoOrThrow(request.getTodoId());
+        log.info("📝 Todo 상태 변경 - id: {}, 현재 상태: {}", todo.getId(), todo.isCompleted());
+        
         todo.setCompleted(!todo.isCompleted());
-        return toTodoResponse(todo);
+        
+        // 완료 상태가 되면 삭제
+        if (todo.isCompleted()) {
+            log.info("🗑️ Todo 삭제 - id: {}", todo.getId());
+            todoRepository.delete(todo);
+        }
     }
 
 
@@ -358,7 +373,7 @@ public class DashboardService {
                 .id(todo.getId())
                 .title(todo.getTitle())
                 .description(todo.getDescription())
-                .date(todo.getTodoDate())
+                .todoDate(todo.getTodoDate())
                 .priority(todo.getPriority())
                 .completed(todo.isCompleted())
                 .build();
@@ -392,5 +407,23 @@ public class DashboardService {
                 .toList();
     }
 
+    private User getUserFromRequest(HttpServletRequest request) {
+        String email = request.getHeader("X-User-Email");
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TodoResponse> getAllTodos(HttpServletRequest httpRequest) {
+        User user = getSessionUser(httpRequest);
+        return todoRepository.findAllByUserOrderByTodoDateDesc(user)
+                .stream()
+                .map(this::toTodoResponse)
+                .collect(Collectors.toList());
+    }
+
+    private PriorityLevel convertPriority(PriorityLevel priorityLevel) {
+        return priorityLevel;
+    }
 
 }
