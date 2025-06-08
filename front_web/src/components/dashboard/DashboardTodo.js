@@ -31,10 +31,15 @@ const DashboardTodo = () => {
         }
 
         try {
+            // 선택된 날짜를 YYYY-MM-DD 형식으로 변환
+            const formattedDate = moment(selectedDate).format('YYYY-MM-DD');
+            console.log('Selected date:', selectedDate);
+            console.log('Formatted date:', formattedDate);
+
             const todoData = {
                 title: newTodo,
                 description: '',
-                date: selectedDate,
+                date: formattedDate,
                 priority: priority
             };
 
@@ -99,7 +104,10 @@ const DashboardTodo = () => {
                             <input
                                 type="date"
                                 value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
+                                onChange={(e) => {
+                                    console.log('Date selected:', e.target.value);
+                                    setSelectedDate(e.target.value);
+                                }}
                             />
                         </div>
                         <div className="modal-buttons">

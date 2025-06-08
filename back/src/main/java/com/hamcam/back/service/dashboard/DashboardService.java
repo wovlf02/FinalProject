@@ -72,16 +72,25 @@ public class DashboardService {
                 .stream().map(this::toTodoResponse).collect(Collectors.toList());
     }
 
-    public TodoResponse createTodo(TodoRequest request, HttpServletRequest httpRequest) {
-        User user = getSessionUser(httpRequest);
+    /**
+     * Todo 생성
+     */
+    @Transactional
+    public TodoResponse createTodo(TodoRequest request, User user) {
+        log.info("📝 Todo 생성 요청 - title: {}, date: {}, priority: {}", 
+            request.getTitle(), request.getTodoDate(), request.getPriority());
+            
         Todo todo = Todo.builder()
-                .user(user)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .todoDate(request.getTodoDate())
-                .priority(convertPriority(request.getPriority()))
+                .priority(request.getPriority())
                 .completed(false)
+                .user(user)
                 .build();
+                
+        log.info("📝 Todo 생성 - id: {}, date: {}", todo.getId(), todo.getTodoDate());
+        
         return toTodoResponse(todoRepository.save(todo));
     }
 
@@ -349,7 +358,10 @@ public class DashboardService {
     }
 
 
-    private User getSessionUser(HttpServletRequest request) {
+    /**
+     * 세션에서 사용자 정보 조회
+     */
+    public User getSessionUser(HttpServletRequest request) {
         Long userId = SessionUtil.getUserId(request);
         return getUser(userId);
     }
@@ -416,10 +428,11 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public List<TodoResponse> getAllTodos(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        return todoRepository.findAllByUserOrderByTodoDateDesc(user)
-                .stream()
-                .map(this::toTodoResponse)
-                .collect(Collectors.toList());
+        List<Todo> todos = todoRepository.findAllByUserOrderByTodoDateDesc(user);
+        log.info("📋 Todo 목록 조회 - user: {}, count: {}", user.getId(), todos.size());
+        todos.forEach(todo -> log.info("  - id: {}, date: {}, title: {}", 
+            todo.getId(), todo.getTodoDate(), todo.getTitle()));
+        return todos.stream().map(this::toTodoResponse).collect(Collectors.toList());
     }
 
     private PriorityLevel convertPriority(PriorityLevel priorityLevel) {

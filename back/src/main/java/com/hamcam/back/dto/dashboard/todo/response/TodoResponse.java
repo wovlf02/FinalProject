@@ -5,6 +5,7 @@ import com.hamcam.back.entity.dashboard.PriorityLevel;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.format.annotation.DateTimeFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDate;
 
@@ -31,6 +32,7 @@ public class TodoResponse {
      * 날짜
      */
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    @JsonProperty("date")
     private LocalDate todoDate;
 
     /**

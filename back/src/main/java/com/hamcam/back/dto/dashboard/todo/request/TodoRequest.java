@@ -26,7 +26,7 @@ public class TodoRequest {
     private String description;
 
     @NotNull(message = "날짜를 입력해주세요.")
-    @DateTimeFormat(pattern = "yyyy.MM.dd")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     @JsonProperty("date")
     private LocalDate todoDate;
 

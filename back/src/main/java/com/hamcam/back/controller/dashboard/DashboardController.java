@@ -17,25 +17,27 @@ import com.hamcam.back.dto.dashboard.stats.response.*;
 import com.hamcam.back.dto.dashboard.time.request.StudyTimeUpdateRequest;
 import com.hamcam.back.dto.dashboard.todo.request.*;
 import com.hamcam.back.dto.dashboard.todo.response.TodoResponse;
+import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.dashboard.DashboardService;
 import com.hamcam.back.service.dashboard.GPTReflectionService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+@Slf4j
 @RestController
-@RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
+@RequestMapping("/api/dashboard")
 public class DashboardController {
 
     private final DashboardService dashboardService;
     private final GPTReflectionService gptReflectionService;
-    private static final Logger log = LoggerFactory.getLogger(DashboardController.class);
 
     // 📆 월별 캘린더 이벤트
     @PostMapping("/calendar")
@@ -55,12 +57,20 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getTodosByDate(request, httpRequest));
     }
 
-    // ✅ Todo 생성
+    /**
+     * Todo 생성
+     */
     @PostMapping("/todos")
-    public ResponseEntity<MessageResponse> createTodo(@RequestBody TodoRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<MessageResponse> createTodo(
+            @Valid @RequestBody TodoRequest request,
+            HttpServletRequest httpRequest) {
         log.info("📝 Todo 생성 요청 - title: {}, date: {}, priority: {}", 
             request.getTitle(), request.getTodoDate(), request.getPriority());
-        dashboardService.createTodo(request, httpRequest);
+            
+        User user = dashboardService.getSessionUser(httpRequest);
+        TodoResponse response = dashboardService.createTodo(request, user);
+        log.info("✅ Todo 생성 완료 - id: {}, date: {}", response.getId(), response.getTodoDate());
+        
         return ResponseEntity.ok(MessageResponse.of("✅ Todo가 생성되었습니다."));
     }
 
