@@ -21,14 +21,32 @@ public class ExamSchedule {
     /**
      * 시험명 (예: 중간고사, 모의고사 등)
      */
-    @Column(name = "exam_name", nullable = false, length = 100) // 🔁 이름 명확하게
-    private String examName;
+    @Column(nullable = false, length = 100)
+    private String title;
+
+    /**
+     * 과목명 (예: 수학, 영어 등)
+     */
+    @Column(length = 50)
+    private String subject;
 
     /**
      * 시험일 (D-Day 기준)
      */
     @Column(nullable = false)
     private LocalDate examDate;
+
+    /**
+     * 시험 설명 (선택)
+     */
+    @Column(length = 500)
+    private String description;
+
+    /**
+     * 시험 장소 (선택)
+     */
+    @Column(length = 200)
+    private String location;
 
     /**
      * 소속 사용자 (N:1)

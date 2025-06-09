@@ -17,6 +17,7 @@ const DashboardTodo = () => {
     const fetchTodos = async () => {
         try {
             const response = await api.get('/dashboard/todos');
+            console.log('Fetched todos:', response.data);
             setTodos(response.data);
         } catch (error) {
             console.error('Error fetching todos:', error);
@@ -31,7 +32,6 @@ const DashboardTodo = () => {
         }
 
         try {
-            // 선택된 날짜를 YYYY-MM-DD 형식으로 변환
             const formattedDate = moment(selectedDate).format('YYYY-MM-DD');
             console.log('Selected date:', selectedDate);
             console.log('Formatted date:', formattedDate);
@@ -45,15 +45,22 @@ const DashboardTodo = () => {
 
             console.log('Sending todo data:', todoData);
 
-            const response = await api.post('/dashboard/todos', todoData);
-            console.log('Todo added successfully:', response.data);
+            const response = await api.post('/dashboard/todos', todoData, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            setNewTodo('');
-            setIsModalOpen(false);
-            fetchTodos();
+            if (response.data.success) {
+                setNewTodo('');
+                setIsModalOpen(false);
+                fetchTodos();
+            } else {
+                alert(response.data.message || '할일 추가 중 오류가 발생했습니다.');
+            }
         } catch (error) {
             console.error('Error adding todo:', error);
-            alert('할일 추가 중 오류가 발생했습니다.');
+            alert(error.response?.data?.message || '할일 추가 중 오류가 발생했습니다.');
         }
     };
 

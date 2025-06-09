@@ -27,9 +27,11 @@ import com.hamcam.back.global.exception.ErrorCode;
 import com.hamcam.back.repository.TodoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.hamcam.back.service.auth.SessionService;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -46,6 +48,7 @@ public class DashboardService {
     private final StudyTimeRepository studyTimeRepository;
     private final NoticeRepository noticeRepository;
     private static final Logger log = LoggerFactory.getLogger(DashboardService.class);
+    private final SessionService sessionService;
 
     public List<CalendarEventDto> getMonthlyCalendarEvents(CalendarRequest request, HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
@@ -53,13 +56,13 @@ public class DashboardService {
         LocalDate end = request.getMonth().atEndOfMonth();
 
         List<Todo> todos = todoRepository.findAllByUserAndTodoDateBetween(user, start, end);
-        List<ExamSchedule> exams = examScheduleRepository.findAllByUserOrderByExamDateAsc(user)
+        List<ExamSchedule> exams = examScheduleRepository.findByUserId(user.getId())
                 .stream().filter(e -> !e.getExamDate().isBefore(start) && !e.getExamDate().isAfter(end)).toList();
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, start, end);
 
         Map<LocalDate, CalendarEventDto> map = new HashMap<>();
         todos.forEach(todo -> map.computeIfAbsent(todo.getTodoDate(), d -> new CalendarEventDto(d)).getTodos().add(todo.getTitle()));
-        exams.forEach(exam -> map.computeIfAbsent(exam.getExamDate(), d -> new CalendarEventDto(d)).getExams().add(exam.getExamName()));
+        exams.forEach(exam -> map.computeIfAbsent(exam.getExamDate(), d -> new CalendarEventDto(d)).getExams().add(exam.getTitle()));
         sessions.forEach(s -> map.computeIfAbsent(s.getStudyDate(), d -> new CalendarEventDto(d)).setTotalStudyMinutes(
                 map.getOrDefault(s.getStudyDate(), new CalendarEventDto(s.getStudyDate())).getTotalStudyMinutes() + s.getDurationMinutes()));
 
@@ -72,9 +75,6 @@ public class DashboardService {
                 .stream().map(this::toTodoResponse).collect(Collectors.toList());
     }
 
-    /**
-     * Todo 생성
-     */
     @Transactional
     public TodoResponse createTodo(TodoRequest request, User user) {
         log.info("📝 Todo 생성 요청 - title: {}, date: {}, priority: {}", 
@@ -107,7 +107,6 @@ public class DashboardService {
         User user = getSessionUser(httpRequest);
         Todo todo = getTodoOrThrow(request.getTodoId());
         
-        // 사용자 권한 확인
         if (!todo.getUser().getId().equals(user.getId())) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
@@ -122,54 +121,78 @@ public class DashboardService {
         }
 
         Todo todo = getTodoOrThrow(request.getTodoId());
-        log.info("📝 Todo 상태 변경 - id: {}, 현재 상태: {}", todo.getId(), todo.isCompleted());
-        
         todo.setCompleted(!todo.isCompleted());
         
-        // 완료 상태가 되면 삭제
         if (todo.isCompleted()) {
-            log.info("🗑️ Todo 삭제 - id: {}", todo.getId());
             todoRepository.delete(todo);
         }
     }
 
-
+    @Transactional(readOnly = true)
     public List<ExamScheduleResponse> getAllExamSchedules(HttpServletRequest httpRequest) {
-        User user = getSessionUser(httpRequest);
-
-        return examScheduleRepository.findAllByUserOrderByExamDateAsc(user)
-                .stream()
-                .map(e -> ExamScheduleResponse.builder()
-                        .id(e.getId())
-                        .examName(e.getExamName())  // ✅ 필드명에 맞게 변경
-                        .examDate(e.getExamDate())
-                        .build()
-                )
+        User user = sessionService.getCurrentUser(httpRequest);
+        List<ExamSchedule> schedules = examScheduleRepository.findAllByUserOrderByExamDateAsc(user);
+        return schedules.stream()
+                .map(schedule -> ExamScheduleResponse.builder()
+                        .id(schedule.getId())
+                        .title(schedule.getTitle())
+                        .subject(schedule.getSubject())
+                        .examDate(schedule.getExamDate())
+                        .description(schedule.getDescription())
+                        .location(schedule.getLocation())
+                        .build())
                 .collect(Collectors.toList());
     }
 
-
+    @Transactional
     public void createExamSchedule(ExamScheduleRequest request, HttpServletRequest httpRequest) {
-        User user = getSessionUser(httpRequest);
+        log.info("📝 시험 일정 등록 요청 - title: {}, subject: {}, date: {}", 
+            request.getTitle(), request.getSubject(), request.getExamDate());
+            
+        User user = sessionService.getCurrentUser(httpRequest);
+        
+        // 시험 날짜가 현재보다 이전인지 확인
+        if (request.getExamDate().isBefore(LocalDate.now())) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
 
-        examScheduleRepository.save(
-                ExamSchedule.builder()
-                        .user(user)
-                        .examName(request.getExamName())  // ✅ examName → title 필드에 매핑
-                        .examDate(request.getExamDate())
-                        .build()
-        );
+        // 사용자의 현재 등록된 시험 일정 개수 확인
+        List<ExamSchedule> existingSchedules = examScheduleRepository.findAllByUserOrderByExamDateAsc(user);
+        if (existingSchedules.size() >= 3) {
+            throw new CustomException(ErrorCode.EXAM_SCHEDULE_LIMIT_EXCEEDED);
+        }
+        
+        ExamSchedule schedule = ExamSchedule.builder()
+                .user(user)
+                .title(request.getTitle())
+                .subject(request.getSubject())
+                .examDate(request.getExamDate())
+                .description(request.getDescription())
+                .location(request.getLocation())
+                .build();
+                
+        examScheduleRepository.save(schedule);
+        log.info("✅ 시험 일정 등록 완료 - id: {}, title: {}", schedule.getId(), schedule.getTitle());
     }
 
-
+    @Transactional(readOnly = true)
     public DDayInfoResponse getNearestExamSchedule(HttpServletRequest httpRequest) {
-        User user = getSessionUser(httpRequest);
-        return examScheduleRepository.findNearestExamSchedule(user, LocalDate.now())
-                .map(e -> {
-                    long diff = LocalDate.now().until(e.getExamDate()).getDays();
-                    String dday = diff == 0 ? "D-day" : (diff > 0 ? "D-" + diff : "D+" + Math.abs(diff));
-                    return DDayInfoResponse.builder().title(e.getExamName()).examDate(e.getExamDate()).ddayText(dday).build();
-                }).orElse(null);
+        User user = sessionService.getCurrentUser(httpRequest);
+        LocalDate now = LocalDate.now();
+        ExamSchedule nearestExam = examScheduleRepository.findFirstByUserAndExamDateAfterOrderByExamDateAsc(user, now);
+        
+        if (nearestExam == null) {
+            return DDayInfoResponse.builder()
+                    .title("다가오는 시험이 없습니다")
+                    .dDay(0L)
+                    .build();
+        }
+
+        long dDay = ChronoUnit.DAYS.between(now, nearestExam.getExamDate());
+        return DDayInfoResponse.builder()
+                .title(nearestExam.getTitle())
+                .dDay(Long.valueOf(dDay))
+                .build();
     }
 
     public TotalStatsResponse getTotalStudyStats(HttpServletRequest httpRequest) {
@@ -203,13 +226,11 @@ public class DashboardService {
                 .build();
     }
 
-
     public WeeklyStatsResponse getWeeklyStats(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(6);
 
-        // 📌 1. 초기 7일치 맵 생성
         Map<LocalDate, WeeklyStatsResponse.DailyStat> map = new TreeMap<>();
         for (int i = 0; i < 7; i++) {
             LocalDate date = startDate.plusDays(i);
@@ -220,18 +241,16 @@ public class DashboardService {
                     .build());
         }
 
-        // 📌 2. 세션 데이터 조회 및 누적
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, startDate, today);
         for (StudySession session : sessions) {
             LocalDate date = session.getStudyDate();
             WeeklyStatsResponse.DailyStat stat = map.get(date);
             if (stat != null) {
                 stat.setStudyMinutes(stat.getStudyMinutes() + session.getDurationMinutes());
-                stat.setWarningCount(stat.getWarningCount() + session.getWarningCount()); // warningCount 필드 전제
+                stat.setWarningCount(stat.getWarningCount() + session.getWarningCount());
             }
         }
 
-        // 📌 3. 임시 growthList (향후 DB 연동 가능)
         List<GrowthResponse> growthList = List.of(
                 new GrowthResponse("수학", 12),
                 new GrowthResponse("영어", 8),
@@ -239,19 +258,16 @@ public class DashboardService {
                 new GrowthResponse("과학", 5)
         );
 
-        // 📌 4. 최종 DTO 구성
         return WeeklyStatsResponse.builder()
                 .dailyStats(new ArrayList<>(map.values()))
                 .growthList(growthList)
                 .build();
     }
 
-
     public MonthlyStatsResponse getMonthlyStats(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
-        YearMonth currentMonth = YearMonth.now();
-        LocalDate start = currentMonth.atDay(1);
-        LocalDate end = currentMonth.atEndOfMonth();
+        LocalDate start = LocalDate.now().withDayOfMonth(1);
+        LocalDate end = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
 
         List<StudySession> sessions = studySessionRepository.findByUserAndStudyDateBetween(user, start, end);
         int total = sessions.stream().mapToInt(StudySession::getDurationMinutes).sum();
@@ -278,7 +294,6 @@ public class DashboardService {
                 .build();
     }
 
-
     private Map<LocalDate, List<StudySession>> getStudySessionsByDate(User user, LocalDate start, LocalDate end) {
         return studySessionRepository.findByUserAndStudyDateBetween(user, start, end).stream()
                 .collect(Collectors.groupingBy(StudySession::getStudyDate));
@@ -286,10 +301,9 @@ public class DashboardService {
 
     private Map<Integer, List<StudySession>> groupByWeekOfMonth(List<StudySession> sessions) {
         return sessions.stream().collect(Collectors.groupingBy(
-                s -> (s.getStudyDate().getDayOfMonth() - 1) / 7 // 0~4 → 주차
+                s -> (s.getStudyDate().getDayOfMonth() - 1) / 7
         ));
     }
-
 
     public BestFocusDayResponse getBestFocusDay(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
@@ -299,15 +313,17 @@ public class DashboardService {
                 .findFirst()
                 .map(s -> BestFocusDayResponse.builder()
                         .bestDay(s.getStudyDate())
-                        .bestFocusRate((int) Math.round(s.getFocusRate()))  // ✅ 오류 해결
+                        .bestFocusRate((int) Math.round(s.getFocusRate()))
                         .build())
                 .orElse(null);
     }
 
-
     public GoalSuggestionResponse getSuggestedGoal(HttpServletRequest httpRequest) {
-        getSessionUser(httpRequest); // 유효성만 확인
-        return GoalSuggestionResponse.builder().message("최근 집중률을 고려해 하루 2.5시간을 추천합니다.").suggestedDailyGoalMinutes(150).build();
+        getSessionUser(httpRequest);
+        return GoalSuggestionResponse.builder()
+                .message("최근 집중률을 고려해 하루 2.5시간을 추천합니다.")
+                .suggestedDailyGoalMinutes(150)
+                .build();
     }
 
     public void updateGoalManually(GoalUpdateRequest request, HttpServletRequest httpRequest) {
@@ -357,10 +373,6 @@ public class DashboardService {
         }).collect(Collectors.toList());
     }
 
-
-    /**
-     * 세션에서 사용자 정보 조회
-     */
     public User getSessionUser(HttpServletRequest request) {
         Long userId = SessionUtil.getUserId(request);
         return getUser(userId);
@@ -378,7 +390,6 @@ public class DashboardService {
         return todoRepository.findById(todoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TODO_NOT_FOUND));
     }
-
 
     private TodoResponse toTodoResponse(Todo todo) {
         return TodoResponse.builder()
@@ -419,12 +430,6 @@ public class DashboardService {
                 .toList();
     }
 
-    private User getUserFromRequest(HttpServletRequest request) {
-        String email = request.getHeader("X-User-Email");
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
     @Transactional(readOnly = true)
     public List<TodoResponse> getAllTodos(HttpServletRequest httpRequest) {
         User user = getSessionUser(httpRequest);
@@ -439,4 +444,15 @@ public class DashboardService {
         return priorityLevel;
     }
 
+    public void deleteExamSchedule(Long examId, HttpServletRequest httpRequest) {
+        Long userId = SessionUtil.getUserId(httpRequest);
+        ExamSchedule exam = examScheduleRepository.findById(examId)
+                .orElseThrow(() -> new RuntimeException("시험 일정을 찾을 수 없습니다."));
+        
+        if (!exam.getUser().getId().equals(userId)) {
+            throw new RuntimeException("본인의 시험 일정만 삭제할 수 있습니다.");
+        }
+        
+        examScheduleRepository.delete(exam);
+    }
 }

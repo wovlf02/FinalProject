@@ -13,6 +13,7 @@ import './DashboardCalendar.css';
 const DashboardCalendar = ({ selectedDate: propSelectedDate, setSelectedDate: propSetSelectedDate, highlightedDates = [] }) => {
     const [currentDate, setCurrentDate] = useState(moment());
     const [todos, setTodos] = useState([]);
+    const [examSchedules, setExamSchedules] = useState([]);
     const [selectedDate, setSelectedDate] = useState(propSelectedDate ? moment(propSelectedDate) : null);
 
     // 할일 목록을 가져오는 함수
@@ -25,14 +26,33 @@ const DashboardCalendar = ({ selectedDate: propSelectedDate, setSelectedDate: pr
         }
     };
 
-    // 컴포넌트 마운트 시와 월이 변경될 때 할일 목록을 가져옵니다
+    // 시험 일정을 가져오는 함수
+    const fetchExamSchedules = async () => {
+        try {
+            const response = await api.get('/dashboard/exams');
+            if (response.data && response.data.success) {
+                setExamSchedules(response.data.data || []);
+            } else {
+                setExamSchedules([]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch exam schedules:', error);
+            setExamSchedules([]);
+        }
+    };
+
+    // 컴포넌트 마운트 시와 월이 변경될 때 할일 목록과 시험 일정을 가져옵니다
     useEffect(() => {
         fetchTodos();
+        fetchExamSchedules();
     }, [currentDate]);
 
-    // 1분마다 할일 목록을 새로고침합니다
+    // 1분마다 할일 목록과 시험 일정을 새로고침합니다
     useEffect(() => {
-        const interval = setInterval(fetchTodos, 60000);
+        const interval = setInterval(() => {
+            fetchTodos();
+            fetchExamSchedules();
+        }, 60000);
         return () => clearInterval(interval);
     }, []);
 
@@ -64,6 +84,10 @@ const DashboardCalendar = ({ selectedDate: propSelectedDate, setSelectedDate: pr
                 moment(todo.date).format('YYYY-MM-DD') === day.format('YYYY-MM-DD')
             );
 
+            const examsForDay = Array.isArray(examSchedules) ? examSchedules.filter(exam => 
+                moment(exam.exam_date).format('YYYY-MM-DD') === day.format('YYYY-MM-DD')
+            ) : [];
+
             days.push(
                 <div
                     key={day.format('YYYY-MM-DD')}
@@ -75,6 +99,11 @@ const DashboardCalendar = ({ selectedDate: propSelectedDate, setSelectedDate: pr
                         {todosForDay.map(todo => (
                             <div key={todo.id} className={`todo-item priority-${todo.priority}`}>
                                 {todo.title}
+                            </div>
+                        ))}
+                        {examsForDay.map(exam => (
+                            <div key={exam.id} className="todo-item exam-item">
+                                {exam.title}
                             </div>
                         ))}
                     </div>

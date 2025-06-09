@@ -1,0 +1,1 @@
+ALTER TABLE exam_schedule DROP COLUMN IF EXISTS exam_name; 

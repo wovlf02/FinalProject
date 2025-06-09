@@ -110,4 +110,11 @@
 .todo-item.priority-low {
   background-color: #e8f5e9;
   color: #2e7d32;
+}
+
+.todo-item.exam-item {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  font-weight: 500;
+  border-left: 3px solid #1565c0;
 } 
