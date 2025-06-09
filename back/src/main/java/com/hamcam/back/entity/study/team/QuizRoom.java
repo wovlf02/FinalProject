@@ -1,9 +1,7 @@
 package com.hamcam.back.entity.study.team;
 
 import com.hamcam.back.entity.auth.User;
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,6 +30,11 @@ public class QuizRoom extends StudyRoom {
 
     @Column(nullable = true)
     private String difficulty;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_problem_id")
+    private Problem currentProblem;
+
 
     @Builder
     public QuizRoom(String title,

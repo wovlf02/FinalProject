@@ -39,6 +39,7 @@ public enum ErrorCode {
     INVALID_ROOM_TYPE(HttpStatus.BAD_REQUEST, "E4015", "유효하지 않은 방 타입입니다."),
     INVALID_OPERATION(HttpStatus.BAD_REQUEST, "E4016", "허용되지 않는 작업입니다."),
 
+
     // ❌ 중복 (409)
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "E4091", "이미 존재하는 아이디입니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "E4092", "이미 존재하는 닉네임입니다."),
@@ -63,6 +64,7 @@ public enum ErrorCode {
     MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "E4050", "해당 메시지를 찾을 수 없습니다."),
     TODO_NOT_FOUND(HttpStatus.NOT_FOUND, "E4051", "해당 TODO 항목을 찾을 수 없습니다."),
     STUDY_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "E4052", "해당 학습방을 찾을 수 없습니다."),
+    PROBLEM_NOT_FOUND(HttpStatus.NOT_FOUND, "E4053", "해당 문제를 찾을 수 없습니다."),
 
     // 🛠 서버 내부 오류 (500)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "E5001", "서버 내부 오류가 발생했습니다."),
@@ -73,10 +75,7 @@ public enum ErrorCode {
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E5006", "이메일 전송 중 오류가 발생했습니다."),
 
     // 📚 WebRTC 팀 학습방 전용
-    ROOM_ALREADY_CLOSED(HttpStatus.BAD_REQUEST, "E6001", "이미 종료된 방입니다."),
-
-    // ⏰ 시험 일정 오류 (400)
-    EXAM_SCHEDULE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "E40010", "시험 일정은 최대 3개까지만 등록할 수 있습니다.");
+    ROOM_ALREADY_CLOSED(HttpStatus.BAD_REQUEST, "E6001", "이미 종료된 방입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
