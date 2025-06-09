@@ -1,8 +1,9 @@
 package com.hamcam.back.dto.dashboard.exam.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -17,12 +18,18 @@ public class DDayInfoResponse {
     private String title;
 
     /**
-     * 시험 날짜 (예: 2025-05-30)
+     * 과목명 (예: 수학)
      */
-    private LocalDate examDate;
+    private String subject;
 
     /**
-     * D-Day 표시 문자열 (예: D-5, D-day, D+2)
+     * 시험 날짜 (예: 2025-05-30 14:30)
      */
-    private String ddayText;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm")
+    private LocalDateTime examDate;
+
+    /**
+     * D-Day 계산 결과 (예: 5, 0, -2)
+     */
+    private Long dDay;
 }

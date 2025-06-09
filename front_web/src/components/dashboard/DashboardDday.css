@@ -1,0 +1,243 @@
+.dashboard-dday {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    max-width: 1024px;
+    margin: 0 auto;
+}
+
+.dday-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.dday-header h2 {
+    font-size: 1.6rem;
+    color: #333;
+    margin: 0;
+}
+
+.add-exam-button {
+    background: #4A90E2;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.add-exam-button:hover {
+    background: #357ABD;
+}
+
+/* 시험 카드 영역 */
+.exam-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    width: 100%;
+    flex: 1;
+    padding-bottom: 20px;
+}
+
+/* 시험 카드 */
+.exam-item {
+    background: #F8F9FA;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #E9ECEF;
+    height: 220px;
+}
+
+.exam-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.exam-info {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.exam-title-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.exam-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    word-break: break-word;
+}
+
+.exam-date-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.exam-date {
+    font-size: 0.95rem;
+    color: #666;
+}
+
+.d-day {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4A90E2;
+    background: #E8F0FE;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    text-align: center;
+}
+
+.delete-button {
+    background: #FF4B4B;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+    margin-top: auto;
+    width: 100%;
+}
+
+.delete-button:hover {
+    background: #E63939;
+}
+
+/* 등록된 시험이 없을 경우 */
+.no-exam {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.no-exam p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.no-exam-sub {
+    font-size: 0.9rem;
+    color: #999;
+    margin-top: 10px;
+}
+
+/* 모달 영역 */
+.dashboard-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.dashboard-modal-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-modal-card h3 {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 1.3rem;
+}
+
+.dashboard-modal-content {
+    margin-bottom: 24px;
+}
+
+.dashboard-modal-row {
+    margin-bottom: 16px;
+}
+
+.dashboard-modal-row label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.dashboard-modal-row input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.dashboard-modal-row input:focus {
+    outline: none;
+    border-color: #4A90E2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.dashboard-modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.dashboard-modal-buttons button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.save-button {
+    background: #4A90E2;
+    color: white;
+    border: none;
+}
+
+.save-button:hover {
+    background: #357ABD;
+}
+
+.cancel-button {
+    background: #F1F3F5;
+    color: #495057;
+    border: 1px solid #DEE2E6;
+}
+
+.cancel-button:hover {
+    background: #E9ECEF;
+}

@@ -109,19 +109,30 @@ public class DashboardController {
     }
 
     // 🗓 시험 일정 전체 조회
-    @PostMapping("/exams")
-    public ResponseEntity<List<ExamScheduleResponse>> getExamSchedules(HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(dashboardService.getAllExamSchedules(httpRequest));
+    @GetMapping("/exams")
+    public ResponseEntity<ApiResponse<List<ExamScheduleResponse>>> getExamSchedules(HttpServletRequest httpRequest) {
+        List<ExamScheduleResponse> schedules = dashboardService.getAllExamSchedules(httpRequest);
+        return ResponseEntity.ok(ApiResponse.ok(schedules));
     }
 
     // 🗓 시험 일정 등록
     @PostMapping("/exams/register")
-    public ResponseEntity<MessageResponse> createExamSchedule(
+    public ResponseEntity<ApiResponse<Void>> createExamSchedule(
             @RequestBody ExamScheduleRequest request,
             HttpServletRequest httpRequest
     ) {
         dashboardService.createExamSchedule(request, httpRequest);
-        return ResponseEntity.ok(MessageResponse.of("✅ 시험 일정이 등록되었습니다."));
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    // 🗓 시험 일정 삭제
+    @DeleteMapping("/exams/{examId}")
+    public ResponseEntity<MessageResponse> deleteExamSchedule(
+            @PathVariable Long examId,
+            HttpServletRequest httpRequest
+    ) {
+        dashboardService.deleteExamSchedule(examId, httpRequest);
+        return ResponseEntity.ok(MessageResponse.of("🗑️ 시험 일정이 삭제되었습니다."));
     }
 
     // 🗓 D-Day 조회

@@ -16,45 +16,45 @@ const api = axios.create({
 
 console.log('API instance created with baseURL:', api.defaults.baseURL);
 
-// ✅ 요청 인터셉터: 요청 전 로깅
-api.interceptors.request.use(
-    (config) => {
-        console.log('API Request:', {
-            method: config.method,
-            url: config.url,
-            data: config.data,
-            headers: config.headers
-        });
-        return config;
-    },
-    (error) => {
-        console.error('API Request Error:', error);
-        return Promise.reject(error);
-    }
-);
+// // ✅ 요청 인터셉터: 요청 전 로깅
+// api.interceptors.request.use(
+//     (config) => {
+//         console.log('API Request:', {
+//             method: config.method,
+//             url: config.url,
+//             data: config.data,
+//             headers: config.headers
+//         });
+//         return config;
+//     },
+//     (error) => {
+//         console.error('API Request Error:', error);
+//         return Promise.reject(error);
+//     }
+// );
 
-// ✅ 응답 인터셉터: 인증 실패 시 리디렉션 처리
-api.interceptors.response.use(
-    (response) => {
-        console.log('API Response:', {
-            status: response.status,
-            data: response.data
-        });
-        return response;
-    },
-    (error) => {
-        console.error('API Response Error:', {
-            message: error.message,
-            response: error.response,
-            request: error.request
-        });
-        if (error.response?.status === 401) {
-            console.warn('인증 실패: 로그인 페이지로 이동');
-            window.location.href = '/login';
-        }
-        return Promise.reject(error);
-    }
-);
+// // ✅ 응답 인터셉터: 인증 실패 시 리디렉션 처리
+// api.interceptors.response.use(
+//     (response) => {
+//         console.log('API Response:', {
+//             status: response.status,
+//             data: response.data
+//         });
+//         return response;
+//     },
+//     (error) => {
+//         console.error('API Response Error:', {
+//             message: error.message,
+//             response: error.response,
+//             request: error.request
+//         });
+//         if (error.response?.status === 401) {
+//             console.warn('인증 실패: 로그인 페이지로 이동');
+//             window.location.href = '/login';
+//         }
+//         return Promise.reject(error);
+//     }
+// );
 
 // ✅ 단일 파일 또는 복수 파일 업로드 지원 메서드
 api.upload = async (url, files, extraData = {}) => {
