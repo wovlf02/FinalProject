@@ -1,3 +1,5 @@
 .idea
 node_modules
-livekit-local/docker-compose.yml
+
+livekit-local/
+docker-compose.yml

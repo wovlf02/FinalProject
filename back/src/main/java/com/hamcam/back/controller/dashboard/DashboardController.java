@@ -17,18 +17,23 @@ import com.hamcam.back.dto.dashboard.stats.response.*;
 import com.hamcam.back.dto.dashboard.time.request.StudyTimeUpdateRequest;
 import com.hamcam.back.dto.dashboard.todo.request.*;
 import com.hamcam.back.dto.dashboard.todo.response.TodoResponse;
+import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.dashboard.DashboardService;
 import com.hamcam.back.service.dashboard.GPTReflectionService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
-@RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
+@RequestMapping("/api/dashboard")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -52,13 +57,20 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getTodosByDate(request, httpRequest));
     }
 
-    // ✅ Todo 생성
+    /**
+     * Todo 생성
+     */
     @PostMapping("/todos")
     public ResponseEntity<MessageResponse> createTodo(
-            @RequestBody TodoRequest request,
-            HttpServletRequest httpRequest
-    ) {
-        dashboardService.createTodo(request, httpRequest);
+            @Valid @RequestBody TodoRequest request,
+            HttpServletRequest httpRequest) {
+        log.info("📝 Todo 생성 요청 - title: {}, date: {}, priority: {}", 
+            request.getTitle(), request.getTodoDate(), request.getPriority());
+            
+        User user = dashboardService.getSessionUser(httpRequest);
+        TodoResponse response = dashboardService.createTodo(request, user);
+        log.info("✅ Todo 생성 완료 - id: {}, date: {}", response.getId(), response.getTodoDate());
+        
         return ResponseEntity.ok(MessageResponse.of("✅ Todo가 생성되었습니다."));
     }
 
@@ -72,18 +84,28 @@ public class DashboardController {
     // ✅ Todo 삭제
     @PostMapping("/todos/delete")
     public ResponseEntity<MessageResponse> deleteTodo(
-            @RequestBody TodoDeleteRequest request
+            @RequestBody TodoDeleteRequest request,
+            HttpServletRequest httpRequest
     ) {
-        dashboardService.deleteTodo(request);
+        dashboardService.deleteTodo(request, httpRequest);
         return ResponseEntity.ok(MessageResponse.of("🗑️ Todo가 삭제되었습니다."));
     }
 
     // ✅ Todo 완료 토글
     @PutMapping("/todos/complete")
-    public ResponseEntity<TodoResponse> toggleTodo(
-            @RequestBody TodoToggleRequest request
+    public ResponseEntity<MessageResponse> toggleTodoCompletion(
+            @RequestBody TodoToggleRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return ResponseEntity.ok(dashboardService.toggleTodoCompletion(request));
+        log.info("�� Todo 완료 상태 변경 요청 - request: {}", request);
+        log.info("🔄 Todo 완료 상태 변경 요청 - todoId: {}", request.getTodoId());
+        try {
+            dashboardService.toggleTodoCompletion(request);
+            return ResponseEntity.ok(MessageResponse.of("✅ Todo가 완료되었습니다."));
+        } catch (Exception e) {
+            log.error("❌ Todo 완료 상태 변경 실패: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     // 🗓 시험 일정 전체 조회
@@ -194,6 +216,12 @@ public class DashboardController {
     @GetMapping("/notices")
     public ResponseEntity<List<NoticeResponse>> getNotices() {
         return ResponseEntity.ok(dashboardService.getNotices());
+    }
+
+    // 📅 모든 Todo 조회
+    @GetMapping("/todos")
+    public ResponseEntity<List<TodoResponse>> getAllTodos(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(dashboardService.getAllTodos(httpRequest));
     }
 
 }

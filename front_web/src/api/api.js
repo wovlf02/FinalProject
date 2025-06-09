@@ -1,5 +1,7 @@
 import axios from 'axios';
-import { API_BASE_URL_8080} from './apiUrl'; // <- .env 대신 명시적 import
+import { API_BASE_URL_8080 } from './apiUrl';
+
+console.log('API_BASE_URL_8080:', API_BASE_URL_8080);
 
 // ✅ 백엔드 API 기본 URL
 // ✅ Axios 인스턴스 생성 (withCredentials 필수)
@@ -12,10 +14,40 @@ const api = axios.create({
     },
 });
 
+console.log('API instance created with baseURL:', api.defaults.baseURL);
+
+// ✅ 요청 인터셉터: 요청 전 로깅
+api.interceptors.request.use(
+    (config) => {
+        console.log('API Request:', {
+            method: config.method,
+            url: config.url,
+            data: config.data,
+            headers: config.headers
+        });
+        return config;
+    },
+    (error) => {
+        console.error('API Request Error:', error);
+        return Promise.reject(error);
+    }
+);
+
 // ✅ 응답 인터셉터: 인증 실패 시 리디렉션 처리
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        console.log('API Response:', {
+            status: response.status,
+            data: response.data
+        });
+        return response;
+    },
     (error) => {
+        console.error('API Response Error:', {
+            message: error.message,
+            response: error.response,
+            request: error.request
+        });
         if (error.response?.status === 401) {
             console.warn('인증 실패: 로그인 페이지로 이동');
             window.location.href = '/login';

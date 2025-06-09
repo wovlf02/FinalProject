@@ -25,7 +25,7 @@ public class QuizProblemResponse {
         return QuizProblemResponse.builder()
                 .problemId(problem.getProblemId())
                 .subject(problem.getSubject())
-                .title(problem.getUnit().getUnit()) // 또는 problem.getTitle() 필드가 있다면 교체
+                .title(problem.getExplanation()) // 또는 problem.getTitle() 필드가 있다면 교체
                 .choices(parseChoices(problem.getAnswer())) // 임시 처리: 실제 choices 필드가 있다면 교체
                 .imagePath(problem.getImagePath())
                 .passage(passageText)
