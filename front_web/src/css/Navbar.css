@@ -13,6 +13,13 @@
     overflow-y: auto;
 }
 
+.logo-image {
+    width: 120px;  /* 적당한 크기로 조정 */
+    height: auto;
+    object-fit: contain;
+    /*display: block;*/
+}
+
 /* 로고 또는 상단 타이틀 */
 .side-menu-logo {
     font-size: 20px;

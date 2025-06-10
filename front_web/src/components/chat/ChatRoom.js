@@ -6,6 +6,7 @@ import api from '../../api/api';
 import base_profile from '../../icons/base_profile.png';
 import { FaPaperPlane, FaSmile, FaPaperclip, FaMicrophone, FaSignOutAlt } from 'react-icons/fa';
 import '../../css/ChatRoom.css';
+import {API_BASE_URL_8080} from "../../api/apiUrl";
 
 const getProfileUrl = (url) => {
   if (!url || url === "" || url === "프로필 사진이 없습니다") return base_profile;
@@ -49,7 +50,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
       setRoomInfo({
         ...room,
         profileImageUrl: room.representative_image_url
-          ? `https://4868-121-127-165-110.ngrok-free.app${room.representative_image_url}`
+          ? `${API_BASE_URL_8080}${room.representative_image_url}`
           : base_profile,
         roomName: room.room_name,
         roomType: room.room_type,
@@ -110,7 +111,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
   }, [roomId]);
 
   const connectStomp = (userData, loadedMessages) => {
-    const socket = new SockJS('https://4868-121-127-165-110.ngrok-free.app/ws/chat');
+    const socket = new SockJS(`${API_BASE_URL_8080}/ws/chat`);
     const client = Stomp.over(socket);
     stompClient.current = client;
 
@@ -119,7 +120,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
 
       // ✅ 최초 입장 시에만 ENTER 메시지 전송
       if (!hasEnteredRef.current) {
-        client.send('/pub/chat/send', {}, JSON.stringify({
+        client.send('/app/chat/send', {}, JSON.stringify({
           room_id: roomId,
           sender_id: userData.user_id,
           type: 'ENTER',
@@ -169,7 +170,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
               roomId,
               messageId: normalizedMsg.messageId,
             };
-            client.send('/pub/chat/read', {}, JSON.stringify(readPayload));
+            client.send('/app/chat/read', {}, JSON.stringify(readPayload));
           }
         }
 
@@ -184,7 +185,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
             room_id: roomId,
             message_id: messageId,
           };
-          client.send('/pub/chat/read', {}, JSON.stringify(initReadPayload));
+          client.send('/app/chat/read', {}, JSON.stringify(initReadPayload));
         }
       });
       if (onReadAllMessages) onReadAllMessages(roomId);
@@ -203,7 +204,7 @@ const ChatRoom = ({ roomId, onReadAllMessages }) => {
       content: message,
       storedFileName: null,
     };
-    stompClient.current.send('/pub/chat/send', {}, JSON.stringify(payload));
+    stompClient.current.send('/app/chat/send', {}, JSON.stringify(payload));
     setMessage('');
     setTimeout(scrollToBottom, 50);
   };

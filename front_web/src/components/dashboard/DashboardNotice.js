@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../api/api'; // ✅ 공통 axios 인스턴스 사용
+import api from '../../api/api';
 
 const DashboardNotice = () => {
     const [notices, setNotices] = useState([]);
@@ -8,7 +8,14 @@ const DashboardNotice = () => {
         const fetchNotices = async () => {
             try {
                 const res = await api.get('/dashboard/notices');
-                setNotices(res.data); // ✅ 공지사항 목록 세팅
+                // 응답 데이터 가공
+                const mapped = (res.data || []).map(n => ({
+                    id: n.id,
+                    type: '공지', // 혹은 n.type이 있다면 그대로 사용
+                    text: n.title,
+                    date: n.created_at?.slice(0, 10).replace(/-/g, '.') || '',
+                }));
+                setNotices(mapped);
             } catch (err) {
                 console.error('공지사항 조회 실패:', err);
             }
@@ -26,8 +33,7 @@ const DashboardNotice = () => {
                 ) : (
                     notices.map((n, i) => (
                         <li key={i} className={`type-${n.type}`}>
-                            <span>[{n.type}]</span>
-                            {n.text}
+                            <span>[{n.type}]</span> {n.text}
                             <span
                                 style={{
                                     float: 'right',
@@ -36,8 +42,8 @@ const DashboardNotice = () => {
                                     fontSize: 13,
                                 }}
                             >
-                {n.date}
-              </span>
+                                {n.date}
+                            </span>
                         </li>
                     ))
                 )}
