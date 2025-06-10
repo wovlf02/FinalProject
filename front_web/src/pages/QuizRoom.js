@@ -239,22 +239,75 @@ const QuizRoom = () => {
         const room = await connectToLiveKit(identity, roomName, wsUrl, token);
         roomRef.current = room;
 
+        // ✅ 이미 접속 중인 참가자 처리
+        room.participants.forEach((participant) => {
+            setParticipants((prev) => {
+                const exists = prev.some(p => p.identity === participant.identity);
+                return exists ? prev : [...prev, { identity: participant.identity, nickname: `참가자 ${participant.identity}` }];
+            });
+
+            // ✅ 이미 publish된 트랙 수동 처리
+            participant.tracks.forEach((publication) => {
+                if (publication.isSubscribed && publication.track.kind === 'video') {
+                    const el = localVideoRefs.current[participant.identity];
+                    if (el && !el.srcObject) {
+                        el.srcObject = new MediaStream([publication.track.mediaStreamTrack]);
+                    }
+                }
+
+                // ✅ 새로 구독될 트랙 처리
+                publication.on('subscribed', (track) => {
+                    if (track.kind === 'video') {
+                        const el = localVideoRefs.current[participant.identity];
+                        if (el && !el.srcObject) {
+                            el.srcObject = new MediaStream([track.mediaStreamTrack]);
+                        }
+                    }
+                });
+            });
+        });
+
+        // ✅ 새로 접속한 참가자 처리
         room.on('participantConnected', (participant) => {
             setParticipants((prev) => {
                 const exists = prev.some(p => p.identity === participant.identity);
                 return exists ? prev : [...prev, { identity: participant.identity, nickname: `참가자 ${participant.identity}` }];
             });
 
+            participant.tracks.forEach((publication) => {
+                if (publication.isSubscribed && publication.track.kind === 'video') {
+                    const el = localVideoRefs.current[participant.identity];
+                    if (el && !el.srcObject) {
+                        el.srcObject = new MediaStream([publication.track.mediaStreamTrack]);
+                    }
+                }
+
+                publication.on('subscribed', (track) => {
+                    if (track.kind === 'video') {
+                        const el = localVideoRefs.current[participant.identity];
+                        if (el && !el.srcObject) {
+                            el.srcObject = new MediaStream([track.mediaStreamTrack]);
+                        }
+                    }
+                });
+            });
+
+            // fallback: trackSubscribed 이벤트도 등록
             participant.on('trackSubscribed', (track) => {
                 if (track.kind === 'video') {
                     const el = localVideoRefs.current[participant.identity];
-                    if (el && !el.srcObject) el.srcObject = new MediaStream([track.mediaStreamTrack]);
+                    if (el && !el.srcObject) {
+                        el.srcObject = new MediaStream([track.mediaStreamTrack]);
+                    }
                 }
             });
         });
 
+        // ✅ 참가자 퇴장 시 정리
         room.on('participantDisconnected', (participant) => {
-            setParticipants((prev) => prev.filter(p => p.identity !== participant.identity));
+            setParticipants((prev) =>
+                prev.filter((p) => p.identity !== participant.identity)
+            );
             const el = localVideoRefs.current[participant.identity];
             if (el) {
                 el.srcObject = null;
@@ -262,6 +315,7 @@ const QuizRoom = () => {
             }
         });
     };
+
 
     const fetchProblem = () => {
         if (!selectedSubject || !selectedLevel || !selectedUnit) {
