@@ -9,7 +9,7 @@ const SideMenu = ({ menuItems, handleNavigation, selectedTab, selectedSubTab, us
     return (
         <div className="side-menu">
             <div className="side-menu-logo">
-                <img alt="HamCam Logo" className="logo-image" src="/static/media/HamCam_Logo_Nav.b438792a4b3bcd82023a.png" />
+                <img src={logo} alt="HamCam Logo" className="logo-image" />
             </div>
 
             <ul className="side-menu-list">
