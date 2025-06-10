@@ -18,6 +18,7 @@ import com.hamcam.back.dto.dashboard.time.request.StudyTimeUpdateRequest;
 import com.hamcam.back.dto.dashboard.todo.request.*;
 import com.hamcam.back.dto.dashboard.todo.response.TodoResponse;
 import com.hamcam.back.entity.auth.User;
+import com.hamcam.back.entity.dashboard.StudyTime;
 import com.hamcam.back.global.response.ApiResponse;
 import com.hamcam.back.service.dashboard.DashboardService;
 import com.hamcam.back.service.dashboard.GPTReflectionService;
@@ -34,6 +35,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/dashboard")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -215,12 +217,14 @@ public class DashboardController {
     }
 
     @PostMapping("/study-time")
-    public ResponseEntity<MessageResponse> updateStudyTime(
-            @RequestBody StudyTimeUpdateRequest request,
-            HttpServletRequest httpRequest
-    ) {
-        dashboardService.updateStudyTime(request, httpRequest);
-        return ResponseEntity.ok(MessageResponse.of("공부시간 설정이 저장되었습니다."));
+    public ResponseEntity<?> updateStudyTime(@RequestBody StudyTimeUpdateRequest request) {
+        try {
+            StudyTime studyTime = dashboardService.updateStudyTime(request);
+            return ResponseEntity.ok(studyTime);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(new ErrorResponse("공부 시간 업데이트 중 오류가 발생했습니다", e.getMessage()));
+        }
     }
 
     // 📢 공지사항 조회
@@ -235,4 +239,5 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getAllTodos(httpRequest));
     }
 
+    private record ErrorResponse(String message, String detail) {}
 }

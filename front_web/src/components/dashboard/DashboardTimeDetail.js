@@ -43,21 +43,32 @@ const DashboardTimeDetail = ({
     };
 
     // ✅ 주간 목표 시간 변경 → 상태 + 서버 반영
-    const handleWeeklyChange = (type, value) => {
-        const hour = type === 'hour' ? Number(value) : Math.floor(weeklyGoalMinutes / 60);
-        const min = type === 'min' ? Number(value) : weeklyGoalMinutes % 60;
-        const total = hour * 60 + min;
-        handleWeeklyGoalChange(type, value);
-        saveStudyGoal(total, todayGoalMinutes);
+    const handleWeeklyChange = (e) => {
+        const value = e.target.value;
+        if (value === '' || /^\d*$/.test(value)) {
+            handleWeeklyGoalChange('hour', value === '' ? 0 : parseInt(value));
+            handleWeeklyGoalChange('min', value === '' ? 0 : parseInt(value));
+            saveStudyGoal(value === '' ? 0 : parseInt(value), todayGoalMinutes);
+        }
     };
 
     // ✅ 오늘 목표 시간 변경 → 상태 + 서버 반영
-    const handleTodayChange = (type, value) => {
-        const hour = type === 'hour' ? Number(value) : Math.floor(todayGoalMinutes / 60);
-        const min = type === 'min' ? Number(value) : todayGoalMinutes % 60;
-        const total = hour * 60 + min;
-        handleTodayGoalChange(type, value);
-        saveStudyGoal(weeklyGoalMinutes, total);
+    const handleTodayChange = (e) => {
+        const value = e.target.value;
+        if (value === '' || /^\d*$/.test(value)) {
+            handleTodayGoalChange('hour', value === '' ? 0 : parseInt(value));
+            handleTodayGoalChange('min', value === '' ? 0 : parseInt(value));
+            saveStudyGoal(weeklyGoalMinutes, value === '' ? 0 : parseInt(value));
+        }
+    };
+
+    // ✅ 오늘 공부 시간 (프론트 상태만 변경)
+    const handleStudyTimeChange = (e) => {
+        const value = e.target.value;
+        if (value === '' || /^\d*$/.test(value)) {
+            handleTodayStudyChange('hour', value === '' ? 0 : parseInt(value));
+            handleTodayStudyChange('min', value === '' ? 0 : parseInt(value));
+        }
     };
 
     return (
@@ -81,7 +92,7 @@ const DashboardTimeDetail = ({
                     max={168}
                     className="dashboard-time-detail-input"
                     value={weeklyGoalHour}
-                    onChange={(e) => handleWeeklyChange('hour', e.target.value)}
+                    onChange={handleWeeklyChange}
                 />
                 시간
                 <input
@@ -90,7 +101,7 @@ const DashboardTimeDetail = ({
                     max={59}
                     className="dashboard-time-detail-input"
                     value={weeklyGoalMin}
-                    onChange={(e) => handleWeeklyChange('min', e.target.value)}
+                    onChange={handleWeeklyChange}
                 />
                 분
             </div>
@@ -104,7 +115,7 @@ const DashboardTimeDetail = ({
                     max={24}
                     className="dashboard-time-detail-input"
                     value={todayGoalHour}
-                    onChange={(e) => handleTodayChange('hour', e.target.value)}
+                    onChange={handleTodayChange}
                 />
                 시간
                 <input
@@ -113,7 +124,7 @@ const DashboardTimeDetail = ({
                     max={59}
                     className="dashboard-time-detail-input"
                     value={todayGoalMin}
-                    onChange={(e) => handleTodayChange('min', e.target.value)}
+                    onChange={handleTodayChange}
                 />
                 분
             </div>
@@ -127,7 +138,7 @@ const DashboardTimeDetail = ({
                     max={24}
                     className="dashboard-time-detail-input"
                     value={todayStudyHour}
-                    onChange={(e) => handleTodayStudyChange('hour', e.target.value)}
+                    onChange={handleStudyTimeChange}
                 />
                 시간
                 <input
@@ -136,7 +147,7 @@ const DashboardTimeDetail = ({
                     max={59}
                     className="dashboard-time-detail-input"
                     value={todayStudyMin}
-                    onChange={(e) => handleTodayStudyChange('min', e.target.value)}
+                    onChange={handleStudyTimeChange}
                 />
                 분
             </div>

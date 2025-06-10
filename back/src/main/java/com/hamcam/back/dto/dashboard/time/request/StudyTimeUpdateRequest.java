@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class StudyTimeUpdateRequest {
-    private int weeklyGoalMinutes;
-    private int todayGoalMinutes;
-    private int todayStudyMinutes;
+    private Integer weeklyGoalMinutes;
+    private Integer todayGoalMinutes;
+    private Integer todayStudyMinutes;
 }

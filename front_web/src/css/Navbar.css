@@ -15,10 +15,23 @@
 
 /* 로고 또는 상단 타이틀 */
 .side-menu-logo {
-    font-size: 20px;
+    width: 100%;
+    height: 60px;
+    background: #ffffff;
+    color: #fff;
+    font-size: 22px;
     font-weight: bold;
-    margin-bottom: 24px;
-    padding-left: 12px;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.logo-image {
+    width: 120px;
+    height: auto;
+    object-fit: contain;
 }
 
 /* 메뉴 리스트 */

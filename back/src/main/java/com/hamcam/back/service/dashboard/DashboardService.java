@@ -402,20 +402,25 @@ public class DashboardService {
                 .build();
     }
 
+    private StudyTime createDefaultStudyTime(User user) {
+        return StudyTime.createDefault(user);
+    }
+
     @Transactional
-    public void updateStudyTime(StudyTimeUpdateRequest request, HttpServletRequest httpRequest) {
-        Long userId = SessionUtil.getUserId(httpRequest);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+    public StudyTime updateStudyTime(StudyTimeUpdateRequest request) {
+        try {
+            User user = userRepository.findAll().stream()
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("사용자를 찾을 수 없습니다."));
+            
+            StudyTime studyTime = studyTimeRepository.findByUser(user)
+                .orElseGet(() -> createDefaultStudyTime(user));
 
-        StudyTime studyTime = studyTimeRepository.findByUser(user)
-                .orElse(StudyTime.builder().user(user).build());
-
-        studyTime.setWeeklyGoalMinutes(request.getWeeklyGoalMinutes());
-        studyTime.setTodayGoalMinutes(request.getTodayGoalMinutes());
-        studyTime.setTodayStudyMinutes(request.getTodayStudyMinutes());
-
-        studyTimeRepository.save(studyTime);
+            studyTime.updateGoals(request.getWeeklyGoalMinutes(), request.getTodayGoalMinutes());
+            return studyTimeRepository.save(studyTime);
+        } catch (Exception e) {
+            throw new RuntimeException("공부 시간 업데이트 중 오류가 발생했습니다: " + e.getMessage(), e);
+        }
     }
 
     public List<NoticeResponse> getNotices() {

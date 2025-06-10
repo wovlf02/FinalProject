@@ -26,6 +26,15 @@ const QuizRoom = () => {
     const [selectedUnit, setSelectedUnit] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
 
+    // 과목별 단원 목록
+    const unitList = {
+        '국어': ['문학', '독서', '문법', '화법과 작문'],
+        '수학': ['수와 연산', '문자와 식', '함수', '기하', '확률과 통계'],
+        '영어': ['문법', '독해', '어휘', '듣기', '말하기']
+    };
+
+    // 선택된 과목에 따른 단원 목록 필터링
+    const filteredUnits = selectedSubject ? unitList[selectedSubject] || [] : [];
 
     // 내 캠 ON/OFF 관리
     const [camOn, setCamOn] = useState(true);

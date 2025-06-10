@@ -9,6 +9,8 @@ import com.hamcam.back.repository.auth.UserRepository;
 import com.hamcam.back.util.SessionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,16 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+
+    /**
+     * ✅ 현재 인증된 사용자 조회
+     */
+    public User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
 
     /**
      * ✅ 내 정보 조회
